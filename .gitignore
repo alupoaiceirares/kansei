@@ -3,9 +3,20 @@
 *.iml
 out/
 
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
 # Build directories
 target/
 build/
 
 # Logs
 *.log
+
+CLAUDE.md
+CLAUDE.local.md
