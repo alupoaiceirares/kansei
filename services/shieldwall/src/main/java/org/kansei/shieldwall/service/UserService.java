@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -51,15 +52,17 @@ public class UserService {
 
     @Transactional
     public MessageResponse register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new EmailAlreadyExistsException(request.email());
+        String email = normalizeEmail(request.email());
+
+        if (userRepository.existsByEmail(email)) {
+            throw new EmailAlreadyExistsException(email);
         }
         if (userRepository.existsByUsername(request.username())) {
             throw new UsernameAlreadyExistsException(request.username());
         }
 
         User user = User.builder()
-                .email(request.email())
+                .email(email)
                 .username(request.username())
                 // Never store the raw password - always through the encoder first.
                 .password(passwordEncoder.encode(request.password()))
@@ -77,7 +80,7 @@ public class UserService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmail(normalizeEmail(request.email()))
                 .orElseThrow(InvalidCredentialsException::new);
 
         // Password checked before touching active/deactivatedAt - never reveal account state to someone who isn't logged in
@@ -87,7 +90,7 @@ public class UserService {
 
         if (!user.isActive()) {
             if (user.getDeactivatedAt() != null && withinRetentionWindow(user.getDeactivatedAt())) {
-                // Still within the retention window - logging back in undoes the deactivation.
+                // Still within the retention window - logging back in undoes the deactivation
                 user.setActive(true);
                 user.setDeactivatedAt(null);
                 userRepository.save(user);
@@ -96,8 +99,7 @@ public class UserService {
             }
         }
 
-        // Same generic error as wrong-password/unknown-email/disabled - don't reveal that the
-        // password was actually correct to someone probing an unverified account.
+        // Same generic error as wrong-password/unknown-email/disabled - don't reveal that the password was actually correct to someone probing an unverified account
         if (!user.isEmailVerified()) {
             throw new InvalidCredentialsException();
         }
@@ -119,13 +121,16 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         // Only touch fields that were actually provided - null means "unchanged".
-        if (request.email() != null && !request.email().equals(user.getEmail())) {
-            if (userRepository.existsByEmail(request.email())) {
-                throw new EmailAlreadyExistsException(request.email());
+        if (request.email() != null) {
+            String email = normalizeEmail(request.email());
+            if (!email.equals(user.getEmail())) {
+                if (userRepository.existsByEmail(email)) {
+                    throw new EmailAlreadyExistsException(email);
+                }
+                user.setEmail(email);
+                // Email is a login credential - invalidate existing tokens, force re-login
+                user.setCredentialsVersion(user.getCredentialsVersion() + 1);
             }
-            user.setEmail(request.email());
-            // Email is a login credential - invalidate existing tokens, force re-login.
-            user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         }
 
         if (request.username() != null && !request.username().equals(user.getUsername())) {
@@ -153,15 +158,13 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        // Require proof of the current password even though the request is
-        // already JWT-authenticated - protects against a leaked/stolen token
-        // being used to lock the real owner out.
+        // Require proof of the current password even though the request is already JWT-authenticated - protects against a leaked/stolen token being used to lock the real owner out
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new InvalidCredentialsException();
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
-        // Invalidate existing tokens - force re-login with the new password.
+        // Invalidate existing tokens - force re-login with the new password
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
     }
@@ -171,20 +174,20 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        // Require the current password even though the request is already JWT-authenticated same reasoning as changePassword: protects against a leaked/stolen token.
+        // Require the current password even though the request is already JWT-authenticated same reasoning as changePassword: protects against a leaked/stolen token
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new InvalidCredentialsException();
         }
 
         user.setActive(false);
         user.setDeactivatedAt(Instant.now());
-        // Invalidate existing tokens immediately, not just at natural expiry.
+        // Invalidate existing tokens immediately, not just at natural expiry
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
     }
 
     /**
-     * Hard-deletes accounts deactivated for longer than the retention window. Invoked by AccountPurgeScheduler on a schedule.
+     * Hard-deletes accounts deactivated for longer than the retention window. Invoked by AccountPurgeScheduler on a schedule
      */
     @Transactional
     public void purgeExpiredDeactivatedAccounts() {
@@ -211,15 +214,15 @@ public class UserService {
         verificationToken.setUsedAt(Instant.now());
         verificationTokenRepository.save(verificationToken);
 
-        // Clicking the link proves email ownership - log them straight in.
+        // Clicking the link proves email ownership - log them straight in
         String token = jwtService.generateToken(user);
         return new AuthResponse(token, user.getId(), user.getUsername());
     }
 
     @Transactional
     public MessageResponse resendVerification(ResendVerificationRequest request) {
-        // Same response regardless of match/state - don't reveal whether the email is registered.
-        userRepository.findByEmail(request.email())
+        // Same response regardless of match/state - don't reveal whether the email is registered
+        userRepository.findByEmail(normalizeEmail(request.email()))
                 .filter(user -> !user.isEmailVerified())
                 .ifPresent(user -> createAndSendToken(user, TokenType.EMAIL_VERIFICATION));
 
@@ -228,8 +231,8 @@ public class UserService {
 
     @Transactional
     public MessageResponse requestPasswordReset(PasswordResetRequest request) {
-        // Same response regardless of match - don't reveal whether the email is registered.
-        userRepository.findByEmail(request.email())
+        // Same response regardless of match - don't reveal whether the email is registered
+        userRepository.findByEmail(normalizeEmail(request.email()))
                 .ifPresent(user -> createAndSendToken(user, TokenType.PASSWORD_RESET));
 
         return new MessageResponse("If that email is registered, a password reset link has been sent.");
@@ -246,7 +249,7 @@ public class UserService {
 
         User user = verificationToken.getUser();
         user.setPassword(passwordEncoder.encode(request.newPassword()));
-        // Invalidate existing tokens - force re-login with the new password.
+        // Invalidate existing tokens - force re-login with the new password
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
 
@@ -272,6 +275,11 @@ public class UserService {
         } else {
             mailEventPublisher.publishPasswordResetEmail(user, verificationToken.getToken());
         }
+    }
+
+    // Email is case-insensitive in practice everywhere - without this, "User@x.com" and "user@x.com" would register/match as different accounts
+    private String normalizeEmail(String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private boolean withinRetentionWindow(Instant deactivatedAt) {

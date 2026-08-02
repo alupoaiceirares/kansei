@@ -9,7 +9,7 @@ public record PasswordResetConfirmRequest(
         String token,
 
         @NotBlank(message = "New password is required")
-        @Size(min = 10, message = "New password must be at least 10 characters")
+        @Size(min = 10, max = 72, message = "New password must be between 10 and 72 characters")
         String newPassword
 ) {
 }

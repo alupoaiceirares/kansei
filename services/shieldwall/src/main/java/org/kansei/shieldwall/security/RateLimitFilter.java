@@ -19,15 +19,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Per-IP rate limit on the endpoints that let an unauthenticated caller trigger an email send
- * (register, resend verification, request password reset) - without it, anyone can script-spam
- * these and burn through the Resend quota or spam a target inbox.
+ * Per-IP rate limit on endpoints that let an unauthenticated caller trigger an email send (register, resend verification, request password reset)
  */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Set<String> LIMITED_PATHS = Set.of(
             "/api/auth/register",
+            "/api/auth/login",
             "/api/auth/verify-email/resend",
             "/api/auth/password-reset/request"
     );

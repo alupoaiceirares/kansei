@@ -123,6 +123,20 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    @Test
+    void register_mixedCaseEmail_normalizedToLowercaseBeforeCheckAndSave() {
+        RegisterRequest request = new RegisterRequest("  User@EXAMPLE.com  ", "newuser", "supersecretpw", null, null);
+        when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        userService.register(request);
+
+        verify(userRepository).existsByEmail("user@example.com");
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedUser.capture());
+        assertThat(savedUser.getValue().getEmail()).isEqualTo("user@example.com");
+    }
+
     // ---- login ----
 
     @Test
@@ -203,6 +217,18 @@ class UserServiceTest {
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.userId()).isEqualTo(user.getId());
         assertThat(response.username()).isEqualTo(user.getUsername());
+    }
+
+    @Test
+    void login_mixedCaseEmail_stillMatchesStoredLowercaseEmail() {
+        User user = baseUser();
+        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("correct", user.getPassword())).thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("jwt-token");
+
+        AuthResponse response = userService.login(new LoginRequest("  User@EXAMPLE.com  ", "correct"));
+
+        assertThat(response.token()).isEqualTo("jwt-token");
     }
 
     // ---- getCurrentUser ----
@@ -295,6 +321,18 @@ class UserServiceTest {
 
         // Same value as the user already has - should be treated as no-op, not a "change"
         userService.updateProfile(user.getId(), new UpdateProfileRequest(user.getEmail(), null, null, null));
+
+        assertThat(user.getCredentialsVersion()).isZero();
+        verify(userRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    void updateProfile_emailSameValueDifferentCase_treatedAsNoChange() {
+        User user = baseUser(); // email = "user@example.com"
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
+
+        userService.updateProfile(user.getId(), new UpdateProfileRequest("User@EXAMPLE.com", null, null, null));
 
         assertThat(user.getCredentialsVersion()).isZero();
         verify(userRepository, never()).existsByEmail(any());
