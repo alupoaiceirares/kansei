@@ -18,5 +18,16 @@ build/
 # Logs
 *.log
 
+# AI
 CLAUDE.md
 CLAUDE.local.md
+
+# Secrets/Certs/Envs
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+*secret*
+*.pem
+*.key
