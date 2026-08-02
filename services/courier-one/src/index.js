@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { consumeMailEvents } from './rabbitmq.js';
 import { render } from './templates.js';
 import { sendMail } from './smtp.js';
+import { startHealthServer, markReady } from './health.js';
 
 export async function handleMailEvent({ to, template, vars }, deps = { render, sendMail }) {
   const { subject, html } = deps.render(template, vars);
@@ -12,8 +13,11 @@ export async function handleMailEvent({ to, template, vars }, deps = { render, s
 
 // Only start consuming when run directly (`node src/index.js`) - not when imported by tests.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  consumeMailEvents(handleMailEvent).catch((err) => {
-    console.error('Fatal error starting courier-one', err);
-    process.exit(1);
-  });
+  startHealthServer();
+  consumeMailEvents(handleMailEvent)
+    .then(() => markReady())
+    .catch((err) => {
+      console.error('Fatal error starting courier-one', err);
+      process.exit(1);
+    });
 }
