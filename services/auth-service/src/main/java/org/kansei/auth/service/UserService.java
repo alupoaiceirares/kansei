@@ -8,10 +8,14 @@ import org.kansei.auth.exception.UsernameAlreadyExistsException;
 import org.kansei.auth.model.User;
 import org.kansei.auth.repository.UserRepository;
 import org.kansei.auth.security.JwtService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -20,6 +24,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+
+    @Value("${account.deactivation.retention-months:3}")
+    private int retentionMonths;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
@@ -52,16 +59,25 @@ public class UserService {
         return new AuthResponse(token, saved.getId(), saved.getUsername());
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(InvalidCredentialsException::new);
 
-        if (!user.isActive()) {
+        // Password checked before touching active/deactivatedAt - never reveal account state to someone who isn't logged in
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new InvalidCredentialsException();
         }
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new InvalidCredentialsException();
+        if (!user.isActive()) {
+            if (user.getDeactivatedAt() != null && withinRetentionWindow(user.getDeactivatedAt())) {
+                // Still within the retention window - logging back in undoes the deactivation.
+                user.setActive(true);
+                user.setDeactivatedAt(null);
+                userRepository.save(user);
+            } else {
+                throw new InvalidCredentialsException();
+            }
         }
 
         String token = jwtService.generateToken(user);
@@ -126,6 +142,38 @@ public class UserService {
         // Invalidate existing tokens - force re-login with the new password.
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void deactivateAccount(UUID userId, DeactivateAccountRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+
+        // Require the current password even though the request is already JWT-authenticated same reasoning as changePassword: protects against a leaked/stolen token.
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new InvalidCredentialsException();
+        }
+
+        user.setActive(false);
+        user.setDeactivatedAt(Instant.now());
+        // Invalidate existing tokens immediately, not just at natural expiry.
+        user.setCredentialsVersion(user.getCredentialsVersion() + 1);
+        userRepository.save(user);
+    }
+
+    /**
+     * Hard-deletes accounts deactivated for longer than the retention window. Invoked by AccountPurgeScheduler on a schedule.
+     */
+    @Transactional
+    public void purgeExpiredDeactivatedAccounts() {
+        Instant cutoff = Instant.now().atZone(ZoneOffset.UTC).minusMonths(retentionMonths).toInstant();
+        List<User> expired = userRepository.findByActiveFalseAndDeactivatedAtBefore(cutoff);
+        userRepository.deleteAll(expired);
+    }
+
+    private boolean withinRetentionWindow(Instant deactivatedAt) {
+        Instant deadline = deactivatedAt.atZone(ZoneOffset.UTC).plusMonths(retentionMonths).toInstant();
+        return Instant.now().isBefore(deadline);
     }
 
     private UserResponse toUserResponse(User user) {

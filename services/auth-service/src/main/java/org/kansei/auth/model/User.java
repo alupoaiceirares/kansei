@@ -55,6 +55,12 @@ public class User {
     @Builder.Default
     private int credentialsVersion = 0;
 
+    /**
+     * Set on deactivation, cleared on reactivation (login within the retention window).
+     * Past the retention window, the purge job hard-deletes the row.
+     */
+    private Instant deactivatedAt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
