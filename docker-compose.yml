@@ -1,7 +1,29 @@
-# Local dev infra for the courier-one service.
-# Services still run locally connecting to rabbitmq on localhost - the ports below are published for exactly that. Postgres/Redis per-service are not wired in here yet.
+# Local dev infra for shieldwall + courier-one.
+# Services still run locally connecting to rabbitmq/postgres on localhost - the ports below are
+# published for exactly that.
 
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      # Must match DB_USERNAME/DB_PASSWORD in services/shieldwall/.env. Read from repo-root .env.
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # Hardcoded, not parameterized - shieldwall's application.properties has this same name
+      # baked directly into the JDBC URL, not read from an env var.
+      POSTGRES_DB: authservice
+    ports:
+      # Host port 5433, not 5432 - a native (non-Docker) Postgres install already owns 5432.
+      # This is a separate, initially-empty database - not the same data.
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
@@ -30,3 +52,6 @@ services:
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  postgres-data:
