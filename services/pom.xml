@@ -29,9 +29,7 @@
         <spring-cloud.version>2025.1.2</spring-cloud.version>
     </properties>
 
-    <!-- Spring Cloud isn't covered by spring-boot-starter-parent's own BOM, so it needs its
-         own import here. Only gateway actually uses Spring Cloud dependencies, but declaring
-         it once here means auth-service and wirehood never have to think about it. -->
+    <!-- Spring Cloud isn't covered by spring-boot-starter-parent's own BOM, so it needs its own import here -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -51,7 +49,7 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
-                <version>1.21.1</version>
+                <version>1.21.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -82,5 +80,69 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <!-- Local quality tooling version + config pinned once here so every module stays in lockstep;
+    Reports only - none of these fail the build by default -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.15</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>3.28.0</version>
+                    <configuration>
+                        <failOnViolation>false</failOnViolation>
+                        <printFailingErrors>true</printFailingErrors>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>pmd</goal>
+                                <goal>cpd</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>4.10.3.0</version>
+                    <configuration>
+                        <failOnError>false</failOnError>
+                        <!-- Resolved relative to each module's own basedir (e.g. auth-service/) every module using this plugin lives one level under services/. -->
+                        <excludeFilterFile>../spotbugs-exclude.xml</excludeFilterFile>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>spotbugs</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>
