@@ -16,8 +16,8 @@
     <version>1.0</version>
     <packaging>pom</packaging>
     <modules>
-        <module>gateway</module>
-        <module>auth-service</module>
+        <module>control-tower</module>
+        <module>shieldwall</module>
         <module>wirehood</module>
     </modules>
 
@@ -129,7 +129,7 @@
                     <version>4.10.3.0</version>
                     <configuration>
                         <failOnError>false</failOnError>
-                        <!-- Resolved relative to each module's own basedir (e.g. auth-service/) every module using this plugin lives one level under services/. -->
+                        <!-- Resolved relative to each module's own basedir (e.g. shieldwall/) every module using this plugin lives one level under services/. -->
                         <excludeFilterFile>../spotbugs-exclude.xml</excludeFilterFile>
                     </configuration>
                     <executions>

@@ -6,11 +6,11 @@ services:
     image: rabbitmq:3-management-alpine
     environment:
       # Overrides the guest/guest default - must match RABBITMQ_USERNAME/PASSWORD in
-      # services/auth-service/.env and services/courier-one/.env. Read from repo-root .env.
+      # services/shieldwall/.env and services/courier-one/.env. Read from repo-root .env.
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "5672:5672"   # AMQP - auth-service (running locally) connects here
+      - "5672:5672"   # AMQP - shieldwall (running locally) connects here
       - "15672:15672" # management UI - http://localhost:15672
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]

@@ -1,0 +1,25 @@
+# Build context for this Dockerfile is services/ (the parent folder) NOT shieldwall/ itself - shieldwall's pom.xml depends on the parent pom.xml one level up, so Docker needs to see both.
+# Build from services/ with: docker build -f shieldwall/Dockerfile -t kansei-shieldwall .
+# To run since env is missing we might need:  docker run --env-file .env -p 8081:8081 kansei-shieldwall
+
+# ---- Stage 1: build the jar ----
+FROM maven:3.9-eclipse-temurin-25 AS build
+WORKDIR /build
+
+# Copy only the POMs first - this layer only gets invalidated (re-run) when a pom.xml changes, not on every source code change, so dependency downloads get cached across rebuilds.
+COPY pom.xml ./pom.xml
+COPY shieldwall/pom.xml ./shieldwall/pom.xml
+RUN mvn -f shieldwall/pom.xml dependency:go-offline -B
+
+# Copy actual source and build.
+COPY shieldwall/src ./shieldwall/src
+RUN mvn -f shieldwall/pom.xml clean package -DskipTests -B
+
+# ---- Stage 2: run ----
+# JRE only (not JDK) - smaller image, no compiler needed to just run a jar.
+FROM eclipse-temurin:25-jre AS run
+WORKDIR /app
+COPY --from=build /build/shieldwall/target/shieldwall-*.jar app.jar
+
+EXPOSE 8081
+ENTRYPOINT ["java", "-jar", "app.jar"]
