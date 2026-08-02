@@ -3,10 +3,14 @@ package org.kansei.auth.service;
 import org.kansei.auth.dto.*;
 import org.kansei.auth.exception.EmailAlreadyExistsException;
 import org.kansei.auth.exception.InvalidCredentialsException;
+import org.kansei.auth.exception.InvalidOrExpiredTokenException;
 import org.kansei.auth.exception.UserNotFoundException;
 import org.kansei.auth.exception.UsernameAlreadyExistsException;
+import org.kansei.auth.model.TokenType;
 import org.kansei.auth.model.User;
+import org.kansei.auth.model.VerificationToken;
 import org.kansei.auth.repository.UserRepository;
+import org.kansei.auth.repository.VerificationTokenRepository;
 import org.kansei.auth.security.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,20 +26,31 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final MailService mailService;
 
     @Value("${account.deactivation.retention-months:3}")
     private int retentionMonths;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    @Value("${app.mail.email-verification-expiry-hours:24}")
+    private int verificationExpiryHours;
+
+    @Value("${app.mail.password-reset-expiry-minutes:60}")
+    private int passwordResetExpiryMinutes;
+
+    public UserService(UserRepository userRepository, VerificationTokenRepository verificationTokenRepository,
+                        PasswordEncoder passwordEncoder, JwtService jwtService, MailService mailService) {
         this.userRepository = userRepository;
+        this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.mailService = mailService;
     }
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public MessageResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
         }
@@ -54,9 +69,10 @@ public class UserService {
                 .build();
 
         User saved = userRepository.save(user);
+        createAndSendToken(saved, TokenType.EMAIL_VERIFICATION);
 
-        String token = jwtService.generateToken(saved);
-        return new AuthResponse(token, saved.getId(), saved.getUsername());
+        // No JWT here - login is blocked until the confirmation link is clicked.
+        return new MessageResponse("Registration successful. Check your email to verify your account before logging in.");
     }
 
     @Transactional
@@ -78,6 +94,12 @@ public class UserService {
             } else {
                 throw new InvalidCredentialsException();
             }
+        }
+
+        // Same generic error as wrong-password/unknown-email/disabled - don't reveal that the
+        // password was actually correct to someone probing an unverified account.
+        if (!user.isEmailVerified()) {
+            throw new InvalidCredentialsException();
         }
 
         String token = jwtService.generateToken(user);
@@ -169,6 +191,87 @@ public class UserService {
         Instant cutoff = Instant.now().atZone(ZoneOffset.UTC).minusMonths(retentionMonths).toInstant();
         List<User> expired = userRepository.findByActiveFalseAndDeactivatedAtBefore(cutoff);
         userRepository.deleteAll(expired);
+
+        verificationTokenRepository.deleteByExpiresAtBefore(Instant.now());
+    }
+
+    @Transactional
+    public AuthResponse verifyEmail(VerifyEmailRequest request) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(request.token())
+                .orElseThrow(InvalidOrExpiredTokenException::new);
+
+        if (verificationToken.getType() != TokenType.EMAIL_VERIFICATION || !verificationToken.isValid()) {
+            throw new InvalidOrExpiredTokenException();
+        }
+
+        User user = verificationToken.getUser();
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        verificationToken.setUsedAt(Instant.now());
+        verificationTokenRepository.save(verificationToken);
+
+        // Clicking the link proves email ownership - log them straight in.
+        String token = jwtService.generateToken(user);
+        return new AuthResponse(token, user.getId(), user.getUsername());
+    }
+
+    @Transactional
+    public MessageResponse resendVerification(ResendVerificationRequest request) {
+        // Same response regardless of match/state - don't reveal whether the email is registered.
+        userRepository.findByEmail(request.email())
+                .filter(user -> !user.isEmailVerified())
+                .ifPresent(user -> createAndSendToken(user, TokenType.EMAIL_VERIFICATION));
+
+        return new MessageResponse("If that email is registered and unverified, a confirmation link has been sent.");
+    }
+
+    @Transactional
+    public MessageResponse requestPasswordReset(PasswordResetRequest request) {
+        // Same response regardless of match - don't reveal whether the email is registered.
+        userRepository.findByEmail(request.email())
+                .ifPresent(user -> createAndSendToken(user, TokenType.PASSWORD_RESET));
+
+        return new MessageResponse("If that email is registered, a password reset link has been sent.");
+    }
+
+    @Transactional
+    public void confirmPasswordReset(PasswordResetConfirmRequest request) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(request.token())
+                .orElseThrow(InvalidOrExpiredTokenException::new);
+
+        if (verificationToken.getType() != TokenType.PASSWORD_RESET || !verificationToken.isValid()) {
+            throw new InvalidOrExpiredTokenException();
+        }
+
+        User user = verificationToken.getUser();
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        // Invalidate existing tokens - force re-login with the new password.
+        user.setCredentialsVersion(user.getCredentialsVersion() + 1);
+        userRepository.save(user);
+
+        verificationToken.setUsedAt(Instant.now());
+        verificationTokenRepository.save(verificationToken);
+    }
+
+    private void createAndSendToken(User user, TokenType type) {
+        long expiryMinutes = type == TokenType.EMAIL_VERIFICATION
+                ? verificationExpiryHours * 60L
+                : passwordResetExpiryMinutes;
+
+        VerificationToken verificationToken = VerificationToken.builder()
+                .user(user)
+                .token(UUID.randomUUID().toString())
+                .type(type)
+                .expiresAt(Instant.now().plusSeconds(expiryMinutes * 60))
+                .build();
+        verificationTokenRepository.save(verificationToken);
+
+        if (type == TokenType.EMAIL_VERIFICATION) {
+            mailService.sendVerificationEmail(user, verificationToken.getToken());
+        } else {
+            mailService.sendPasswordResetEmail(user, verificationToken.getToken());
+        }
     }
 
     private boolean withinRetentionWindow(Instant deactivatedAt) {
