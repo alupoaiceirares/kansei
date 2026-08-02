@@ -31,3 +31,7 @@ application-local.yml
 *secret*
 *.pem
 *.key
+
+# Others
+Information Steps.md
+TODO.MD

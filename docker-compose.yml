@@ -1,0 +1,32 @@
+# Local dev infra for the courier-one service.
+# Services still run locally connecting to rabbitmq on localhost - the ports below are published for exactly that. Postgres/Redis per-service are not wired in here yet.
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      # Overrides the guest/guest default - must match RABBITMQ_USERNAME/PASSWORD in
+      # services/auth-service/.env and services/courier-one/.env. Read from repo-root .env.
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "5672:5672"   # AMQP - auth-service (running locally) connects here
+      - "15672:15672" # management UI - http://localhost:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  courier-one:
+    build:
+      context: ./services/courier-one
+    env_file:
+      - ./services/courier-one/.env
+    environment:
+      # Inside the compose network the broker's hostname is the service name, not localhost.
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
