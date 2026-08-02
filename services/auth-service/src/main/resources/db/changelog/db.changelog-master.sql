@@ -21,3 +21,21 @@ ALTER TABLE users ADD COLUMN credentials_version INTEGER NOT NULL DEFAULT 0;
 --changeset kansei:003-add-deactivated-at-to-users
 -- Set when a user deactivates their account. NULL means the account is not pending deletion. Login within the retention window clears it and reactivates; the purge job hard-deletes rows past the window.
 ALTER TABLE users ADD COLUMN deactivated_at TIMESTAMP;
+
+--changeset kansei:004-add-email-verified-to-users
+-- Login is rejected until the confirmation email is clicked and this flips to true.
+ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+
+--changeset kansei:005-create-verification-tokens-table
+-- Single table backs both email-confirmation and password-reset links - same shape (opaque token, expiry, single-use), told apart by `type`.
+CREATE TABLE verification_tokens (
+                                      id UUID PRIMARY KEY,
+                                      user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+                                      token VARCHAR(255) NOT NULL UNIQUE,
+                                      type VARCHAR(30) NOT NULL,
+                                      expires_at TIMESTAMP NOT NULL,
+                                      used_at TIMESTAMP,
+                                      created_at TIMESTAMP NOT NULL
+);
+
+CREATE INDEX idx_verification_tokens_token ON verification_tokens (token);

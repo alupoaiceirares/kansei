@@ -47,6 +47,11 @@ public class User {
     @Builder.Default
     private boolean active = true;
 
+    // Login is rejected until the confirmation email link is clicked.
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
     /**
      * Password/Email change
      * Every JWT embeds the version it was issued under - JwtAuthenticationFilter rejects a token whose embedded version no longer matches this, forcing re-login after those changes.
