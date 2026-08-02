@@ -29,7 +29,7 @@ public class UserService {
     private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final MailService mailService;
+    private final MailEventPublisher mailEventPublisher;
 
     @Value("${account.deactivation.retention-months:3}")
     private int retentionMonths;
@@ -41,12 +41,12 @@ public class UserService {
     private int passwordResetExpiryMinutes;
 
     public UserService(UserRepository userRepository, VerificationTokenRepository verificationTokenRepository,
-                        PasswordEncoder passwordEncoder, JwtService jwtService, MailService mailService) {
+                        PasswordEncoder passwordEncoder, JwtService jwtService, MailEventPublisher mailEventPublisher) {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
-        this.mailService = mailService;
+        this.mailEventPublisher = mailEventPublisher;
     }
 
     @Transactional
@@ -268,9 +268,9 @@ public class UserService {
         verificationTokenRepository.save(verificationToken);
 
         if (type == TokenType.EMAIL_VERIFICATION) {
-            mailService.sendVerificationEmail(user, verificationToken.getToken());
+            mailEventPublisher.publishVerificationEmail(user, verificationToken.getToken());
         } else {
-            mailService.sendPasswordResetEmail(user, verificationToken.getToken());
+            mailEventPublisher.publishPasswordResetEmail(user, verificationToken.getToken());
         }
     }
 
