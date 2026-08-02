@@ -59,4 +59,15 @@ public class AuthController {
         userService.changePassword(userId, request);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Deactivates the account. Logging back in within the retention window reactivates it, past the window a scheduled job hard-deletes the account.
+     */
+    @PostMapping("/me/deactivate")
+    public ResponseEntity<Void> deactivateAccount(Authentication authentication,
+                                                  @Valid @RequestBody DeactivateAccountRequest request) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        userService.deactivateAccount(userId, request);
+        return ResponseEntity.noContent().build();
+    }
 }
