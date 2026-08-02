@@ -44,7 +44,9 @@ class RateLimitFilterTest {
 
     @Test
     void nonLimitedPath_alwaysPassesThrough() throws Exception {
-        MockHttpServletRequest request = requestTo("/api/auth/login", "10.0.0.1", null);
+        // /api/auth/login IS limited (added alongside register/resend/reset-request) -
+        // /api/auth/verify-email (not the /resend variant) genuinely isn't.
+        MockHttpServletRequest request = requestTo("/api/auth/verify-email", "10.0.0.1", null);
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = mock(FilterChain.class);
 
@@ -98,6 +100,22 @@ class RateLimitFilterTest {
         assertThat(blocked.getHeader("Retry-After")).isNotNull();
         assertThat(Long.parseLong(blocked.getHeader("Retry-After"))).isPositive();
         verify(chain, times(MAX_REQUESTS)).doFilter(any(), any());
+    }
+
+    @Test
+    void loginPath_isRateLimited() throws Exception {
+        // Explicit regression guard - login was added alongside register/resend/reset-request
+        // specifically to stop unthrottled brute-force/credential-stuffing and bcrypt-cost abuse.
+        FilterChain chain = mock(FilterChain.class);
+
+        for (int i = 0; i < MAX_REQUESTS; i++) {
+            filter.doFilterInternal(requestTo("/api/auth/login", "10.0.0.9", null), new MockHttpServletResponse(), chain);
+        }
+
+        MockHttpServletResponse blocked = new MockHttpServletResponse();
+        filter.doFilterInternal(requestTo("/api/auth/login", "10.0.0.9", null), blocked, chain);
+
+        assertThat(blocked.getStatus()).isEqualTo(429);
     }
 
     @Test

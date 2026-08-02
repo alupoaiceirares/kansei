@@ -140,6 +140,36 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    void register_passwordOver72Characters_returns400() throws Exception {
+        String tooLong = "a".repeat(73);
+        RegisterRequest invalid = new RegisterRequest(uniqueEmail(), uniqueUsername(), tooLong, null, null);
+
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void register_usernameWithInvalidCharacters_returns400() throws Exception {
+        RegisterRequest invalid = new RegisterRequest(uniqueEmail(), "bad user!", "supersecretpw", null, null);
+
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void login_withDifferentEmailCasing_stillSucceeds() throws Exception {
+        String email = uniqueEmail();
+        registerAndVerify(email, uniqueUsername(), "supersecretpw");
+
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new LoginRequest(email.toUpperCase(), "supersecretpw"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
+    }
+
+    @Test
     void login_beforeVerification_returns401Generic() throws Exception {
         String email = uniqueEmail();
         mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
