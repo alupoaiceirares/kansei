@@ -1,25 +1,19 @@
 package org.kansei.auth.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Fields map directly to the registration JSON body.
+ * Partial update - null means "leave this field unchanged".
+ * Only apply the constraint when a value is actually provided, since @Email/@Size alone would reject a legitimately absent field otherwise.
  */
-public record RegisterRequest(
+public record UpdateProfileRequest(
 
-        @NotBlank(message = "Email is required")
         @Email(message = "Email must be a valid email address")
         String email,
 
-        @NotBlank(message = "Username is required")
         @Size(min = 3, max = 40, message = "Username must be between 3 and 40 characters")
         String username,
-
-        @NotBlank(message = "Password is required")
-        @Size(min = 8, message = "Password must be at least 8 characters")
-        String password,
 
         String firstName,
 

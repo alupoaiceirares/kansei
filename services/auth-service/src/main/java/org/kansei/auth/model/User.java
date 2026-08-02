@@ -47,6 +47,14 @@ public class User {
     @Builder.Default
     private boolean active = true;
 
+    /**
+     * Password/Email change
+     * Every JWT embeds the version it was issued under - JwtAuthenticationFilter rejects a token whose embedded version no longer matches this, forcing re-login after those changes.
+     */
+    @Column(nullable = false)
+    @Builder.Default
+    private int credentialsVersion = 0;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

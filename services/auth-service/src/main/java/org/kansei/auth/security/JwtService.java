@@ -38,6 +38,7 @@ public class JwtService {
                 .subject(user.getId().toString())
                 .claim("username", user.getUsername())
                 .claim("email", user.getEmail())
+                .claim("ver", user.getCredentialsVersion())
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(signingKey)
@@ -50,6 +51,10 @@ public class JwtService {
 
     public String extractUsername(String token) {
         return extractClaim(token, claims -> claims.get("username", String.class));
+    }
+
+    public int extractCredentialsVersion(String token) {
+        return extractClaim(token, claims -> claims.get("ver", Integer.class));
     }
 
     /**

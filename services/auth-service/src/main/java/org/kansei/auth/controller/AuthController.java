@@ -1,16 +1,14 @@
 package org.kansei.auth.controller;
 
 import jakarta.validation.Valid;
-import org.kansei.auth.dto.AuthResponse;
-import org.kansei.auth.dto.LoginRequest;
-import org.kansei.auth.dto.RegisterRequest;
+import org.kansei.auth.dto.*;
 import org.kansei.auth.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,5 +30,33 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = userService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Protected route
+     * Scope 1: Proving JwtAuthenticationFilter + SecurityConfig's anyRequest().authenticated() rule are working.
+     * Scope 2: Endpoint to get details of user
+     */
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        UserResponse response = userService.getCurrentUser(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(Authentication authentication,
+                                                      @Valid @RequestBody UpdateProfileRequest request) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        UserResponse response = userService.updateProfile(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changePassword(Authentication authentication,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        userService.changePassword(userId, request);
+        return ResponseEntity.noContent().build();
     }
 }
