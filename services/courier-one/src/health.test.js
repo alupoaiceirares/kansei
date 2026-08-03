@@ -10,7 +10,7 @@ function get(port) {
 }
 
 test('health server returns 503 until markReady is called, then 200', async () => {
-  const server = startHealthServer();
+  const server = startHealthServer(3000);
   try {
     assert.equal(await get(3000), 503);
     markReady();

@@ -11,9 +11,9 @@ export async function handleMailEvent({ to, template, vars }, deps = { render, s
   console.log(`Sent "${template}" to ${to}`);
 }
 
-// Only start consuming when run directly (`node src/index.js`) - not when imported by tests.
+// Only start consuming when run directly (`node src/index.js`) - not when imported by tests
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  startHealthServer();
+  startHealthServer(process.env.HEALTH_PORT);
   consumeMailEvents(handleMailEvent)
     .then(() => markReady())
     .catch((err) => {
