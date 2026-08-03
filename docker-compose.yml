@@ -1,20 +1,16 @@
-# Local dev infra for shieldwall + courier-one.
-# Services still run locally connecting to rabbitmq/postgres on localhost - the ports below are
-# published for exactly that.
+# Local dev infra for shieldwall + courier-one
+# Services still run locally connecting to rabbitmq/postgres on localhost - the ports below are published for exactly that
 
 services:
   postgres:
     image: postgres:17-alpine
     environment:
-      # Must match DB_USERNAME/DB_PASSWORD in services/shieldwall/.env. Read from repo-root .env.
+      # Must match DB_USERNAME/DB_PASSWORD/DB_NAME in services/shieldwall/.env. Read from repo-root .env
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      # Hardcoded, not parameterized - shieldwall's application.properties has this same name
-      # baked directly into the JDBC URL, not read from an env var.
-      POSTGRES_DB: authservice
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      # Host port 5433, not 5432 - a native (non-Docker) Postgres install already owns 5432.
-      # This is a separate, initially-empty database - not the same data.
+      # Host port 5433, not 5432 - a native (non-Docker) Postgres install already owns 5432. This is a separate, initially-empty database - not the same data
       - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -27,8 +23,7 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
-      # Overrides the guest/guest default - must match RABBITMQ_USERNAME/PASSWORD in
-      # services/shieldwall/.env and services/courier-one/.env. Read from repo-root .env.
+      # Overrides the guest/guest default - must match RABBITMQ_USERNAME/PASSWORD in services/shieldwall/.env and services/courier-one/.env. Read from repo-root .env
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
@@ -46,7 +41,7 @@ services:
     env_file:
       - ./services/courier-one/.env
     environment:
-      # Inside the compose network the broker's hostname is the service name, not localhost.
+      # Inside the compose network the broker's hostname is the service name, not localhost
       RABBITMQ_HOST: rabbitmq
     depends_on:
       rabbitmq:
