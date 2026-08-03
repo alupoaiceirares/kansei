@@ -2,20 +2,21 @@
 # Services still run locally connecting to rabbitmq/postgres on localhost - the ports below are published for exactly that
 
 services:
-  postgres:
+  # Dedicated to shieldwall - not a shared project-wide Postgres. Each service that needs a DB gets its own container/volume/env-var namespace
+  postgres-shieldwall:
     image: postgres:17-alpine
     environment:
-      # Must match DB_USERNAME/DB_PASSWORD/DB_NAME in services/shieldwall/.env. Read from repo-root .env
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      # SHIELDWALL_DB_USERNAME/PASSWORD/NAME read from repo-root .env - must match DB_USERNAME/DB_PASSWORD/DB_NAME in services/shieldwall/.env
+      POSTGRES_USER: ${SHIELDWALL_DB_USERNAME}
+      POSTGRES_PASSWORD: ${SHIELDWALL_DB_PASSWORD}
+      POSTGRES_DB: ${SHIELDWALL_DB_NAME}
     ports:
-      # Host port 5433, not 5432 - a native (non-Docker) Postgres install already owns 5432. This is a separate, initially-empty database - not the same data
-      - "5433:5432"
+      # Host-side port from .env - container-side 5432 is fixed by the postgres image itself
+      - "${SHIELDWALL_DB_PORT}:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - shieldwall-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${SHIELDWALL_DB_USERNAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,13 +28,38 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "5672:5672"   # AMQP - shieldwall (running locally) connects here
-      - "15672:15672" # management UI - http://localhost:15672
+      # Host-side ports from .env - container-side 5672/15672 are fixed by the rabbitmq image itself
+      - "${RABBITMQ_PORT}:5672"             # AMQP - shieldwall (running locally) connects here
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672" # management UI
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  shieldwall:
+    profiles: ["full"]
+    build:
+      context: ./services
+      dockerfile: shieldwall/Dockerfile
+    env_file:
+      - ./services/shieldwall/.env
+    environment:
+      # Inside the compose network, services reach each other by service name, not localhost - same reasoning as courier-one's RABBITMQ_HOST override below
+      DB_HOST: postgres-shieldwall
+      DB_PORT: "5432" # container-internal, fixed by the postgres image - not the host-published SHIELDWALL_DB_PORT from .env
+      DB_USERNAME: ${SHIELDWALL_DB_USERNAME}
+      DB_PASSWORD: ${SHIELDWALL_DB_PASSWORD}
+      DB_NAME: ${SHIELDWALL_DB_NAME}
+      RABBITMQ_HOST: rabbitmq
+    ports:
+      - "${SHIELDWALL_PORT}:${SHIELDWALL_PORT}"
+    depends_on:
+      postgres-shieldwall:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
 
   courier-one:
     build:
@@ -49,4 +75,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres-data:
+  shieldwall-postgres-data:
