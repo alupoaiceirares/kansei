@@ -198,6 +198,17 @@ public class UserService {
         verificationTokenRepository.deleteByExpiresAtBefore(Instant.now());
     }
 
+    /**
+     * Hard-deletes accounts that never verified their email and have no unexpired/unused verification token left (a recent resend keeps the account alive)
+     * Invoked by AccountPurgeScheduler on a schedule
+     * Runs before the expired-token cleanup below, since that cleanup would otherwise erase the evidence this query depends on
+     */
+    @Transactional
+    public void purgeUnverifiedAccounts() {
+        List<User> unverified = userRepository.findUnverifiedWithNoValidToken(Instant.now());
+        userRepository.deleteAll(unverified);
+    }
+
     @Transactional
     public AuthResponse verifyEmail(VerifyEmailRequest request) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(request.token())

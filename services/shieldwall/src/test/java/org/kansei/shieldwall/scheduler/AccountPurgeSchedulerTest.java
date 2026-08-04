@@ -21,6 +21,7 @@ class AccountPurgeSchedulerTest {
 
         scheduler.purgeExpiredAccounts();
 
+        verify(userService).purgeUnverifiedAccounts();
         verify(userService).purgeExpiredDeactivatedAccounts();
         verifyNoMoreInteractions(userService);
     }
