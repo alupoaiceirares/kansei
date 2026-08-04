@@ -1,5 +1,5 @@
-# Local dev infra for shieldwall + courier-one
-# Services still run locally connecting to rabbitmq/postgres on localhost - the ports below are published for exactly that
+# Local dev infra for shieldwall + control-tower + courier-one
+# wirehood still runs via mvn/IntelliJ, connecting in over published ports - no container for it yet
 
 services:
   # Dedicated to shieldwall - not a shared project-wide Postgres. Each service that needs a DB gets its own container/volume/env-var namespace
@@ -59,6 +59,23 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    restart: unless-stopped
+
+  control-tower:
+    profiles: ["full"]
+    build:
+      context: ./services
+      dockerfile: control-tower/Dockerfile
+    env_file:
+      - ./services/control-tower/.env
+    environment:
+      # Inside the compose network, shieldwall is reached by service name, not localhost - same reasoning as shieldwall's DB_HOST override above
+      SHIELDWALL_URI: http://shieldwall:${SHIELDWALL_PORT}
+      # wirehood has no container yet (see top-of-file note) - this route will 502 until it does, not a blocker for control-tower itself
+    ports:
+      - "${CONTROL_TOWER_PORT}:${CONTROL_TOWER_PORT}"
+    depends_on:
+      - shieldwall
     restart: unless-stopped
 
   courier-one:
