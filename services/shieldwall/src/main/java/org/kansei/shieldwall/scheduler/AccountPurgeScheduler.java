@@ -15,6 +15,7 @@ public class AccountPurgeScheduler {
 
     @Scheduled(cron = "${account.purge.cron:0 0 3 * * *}")
     public void purgeExpiredAccounts() {
+        userService.purgeUnverifiedAccounts();
         userService.purgeExpiredDeactivatedAccounts();
     }
 }
