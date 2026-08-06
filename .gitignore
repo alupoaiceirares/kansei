@@ -32,6 +32,9 @@ application-local.yml
 *.pem
 *.key
 
+# Downloaded media - never belongs in git
+services/wirehood/storage/
+
 # Others
 Information Steps.md
 TODO.MD
