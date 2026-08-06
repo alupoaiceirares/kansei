@@ -19,7 +19,7 @@ import java.util.List;
 @Component
 public class YtDlpSearchClient {
 
-    private static final int MAX_RESULTS = 15;
+    private static final int MAX_RESULTS = 30;
 
     private final ObjectMapper objectMapper;
 
@@ -31,6 +31,42 @@ public class YtDlpSearchClient {
         return Mono.fromCallable(() -> runSearch(query))
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMapMany(Flux::fromIterable);
+    }
+
+    /**
+     * Direct lookup for a pasted YouTube link, resolved by SearchController via
+     * YouTubeUrlExtractor - not a search, hits the video's own page instead of ytsearch
+     */
+    public Mono<YouTubeSearchResult> lookupByVideoId(String videoId) {
+        return Mono.fromCallable(() -> runLookup(videoId))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private YouTubeSearchResult runLookup(String videoId) throws IOException, InterruptedException {
+        Process process = new ProcessBuilder(
+                "yt-dlp", "https://www.youtube.com/watch?v=" + videoId,
+                "--dump-json", "--no-playlist", "--no-warnings"
+        ).start();
+
+        String json;
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            json = reader.readLine();
+        }
+
+        int exitCode = process.waitFor();
+        if (exitCode != 0 || json == null || json.isBlank()) {
+            throw new IllegalStateException("yt-dlp lookup exited with code " + exitCode + " for video: " + videoId);
+        }
+
+        return toResult(objectMapper.readValue(json, YtDlpVideoInfo.class));
+    }
+
+    private YouTubeSearchResult toResult(YtDlpVideoInfo info) {
+        String channel = info.channel() != null ? info.channel() : info.uploader();
+        long durationSeconds = info.duration() == null ? 0 : Math.round(info.duration());
+
+        return new YouTubeSearchResult(info.id(), info.title(), channel, info.thumbnail(), durationSeconds);
     }
 
     private List<YouTubeSearchResult> runSearch(String query) throws IOException, InterruptedException {
