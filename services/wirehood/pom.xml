@@ -50,6 +50,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Download job queue - producer here (submit-download endpoint), consumer is the
+             yt-dlp/FFmpeg worker (separate TODO item, not built yet) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>springboot4-dotenv</artifactId>
