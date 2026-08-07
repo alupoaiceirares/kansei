@@ -57,6 +57,12 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
+        <!-- Reactive client for the shared Redis instance -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>springboot4-dotenv</artifactId>
@@ -107,7 +113,7 @@
             </plugin>
 
             <!-- Local quality tooling in place of Sonar - version/config pinned in the parent
-                 POM's pluginManagement; reports only, doesn't fail the build. -->
+                 POM's pluginManagement; reports only, doesn't fail the build -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
