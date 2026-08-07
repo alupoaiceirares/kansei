@@ -6,6 +6,7 @@ import org.kansei.wirehood.model.TrackFormat;
 import org.kansei.wirehood.model.TrackStatus;
 import org.kansei.wirehood.repository.TrackFormatRepository;
 import org.kansei.wirehood.repository.TrackRepository;
+import org.kansei.wirehood.service.DownloadService;
 import org.kansei.wirehood.storage.FilenameBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,17 +27,20 @@ public class DownloadWorkerService {
     private final TrackRepository trackRepository;
     private final TrackFormatRepository trackFormatRepository;
     private final YtDlpDownloadClient downloadClient;
+    private final DownloadService downloadService;
     private final Path storageRoot;
 
     public DownloadWorkerService(
             TrackRepository trackRepository,
             TrackFormatRepository trackFormatRepository,
             YtDlpDownloadClient downloadClient,
+            DownloadService downloadService,
             @Value("${wirehood.storage.root-dir}") String storageRootDir
     ) {
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
         this.downloadClient = downloadClient;
+        this.downloadService = downloadService;
         this.storageRoot = Path.of(storageRootDir);
     }
 
@@ -79,7 +83,8 @@ public class DownloadWorkerService {
                     track.setThumbnailPath(files.thumbnailFile() == null ? null : files.thumbnailFile().toString());
                     track.setUpdatedAt(Instant.now());
                     return trackRepository.save(track);
-                }));
+                }))
+                .flatMap(saved -> downloadService.fulfillReadyTrack(saved).thenReturn(saved));
     }
 
     private Mono<Track> markFailed(Track track) {
