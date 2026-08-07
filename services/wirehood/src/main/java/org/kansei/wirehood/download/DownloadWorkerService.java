@@ -90,6 +90,7 @@ public class DownloadWorkerService {
     private Mono<Track> markFailed(Track track) {
         track.setStatus(TrackStatus.FAILED);
         track.setUpdatedAt(Instant.now());
-        return trackRepository.save(track);
+        return trackRepository.save(track)
+                .flatMap(saved -> downloadService.notifyFailedTrack(saved).thenReturn(saved));
     }
 }
