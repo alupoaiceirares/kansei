@@ -1,5 +1,6 @@
 package org.kansei.wirehood.service;
 
+import org.kansei.wirehood.dto.DownloadEvent;
 import org.kansei.wirehood.dto.DownloadOutcome;
 import org.kansei.wirehood.dto.SubmitDownloadRequest;
 import org.kansei.wirehood.dto.SubmitDownloadResponse;
@@ -28,17 +29,20 @@ public class DownloadService {
     private final UserLibraryRepository userLibraryRepository;
     private final DownloadRequestRepository downloadRequestRepository;
     private final DownloadJobPublisher downloadJobPublisher;
+    private final DownloadEventPublisher downloadEventPublisher;
 
     public DownloadService(
             TrackRepository trackRepository,
             UserLibraryRepository userLibraryRepository,
             DownloadRequestRepository downloadRequestRepository,
-            DownloadJobPublisher downloadJobPublisher
+            DownloadJobPublisher downloadJobPublisher,
+            DownloadEventPublisher downloadEventPublisher
     ) {
         this.trackRepository = trackRepository;
         this.userLibraryRepository = userLibraryRepository;
         this.downloadRequestRepository = downloadRequestRepository;
         this.downloadJobPublisher = downloadJobPublisher;
+        this.downloadEventPublisher = downloadEventPublisher;
     }
 
     // Entry point for POST /wirehood/downloads - looks up the track by youtube_video_id, branches to existing-track handling or creates a brand new one
@@ -77,11 +81,13 @@ public class DownloadService {
                 .then();
     }
 
-    // Called by DownloadWorkerService once a track flips to READY - every user with an unacknowledged download_requests row on it gets auto-added to their library and the request marked acknowledged
+    // Called by DownloadWorkerService once a track flips to READY - every user with an unacknowledged download_requests row on it gets auto-added to their library, the request marked acknowledged, and a READY event pushed to their SSE stream if one's open
     public Mono<Void> fulfillReadyTrack(Track track) {
         return downloadRequestRepository.findByTrackIdAndAcknowledgedAtIsNull(track.getId())
                 .flatMap(request -> addTrackToLibraryIfAbsent(request.getUserId(), track.getId())
-                        .then(acknowledge(request)))
+                        .then(acknowledge(request))
+                        .doOnSuccess(v -> downloadEventPublisher.publish(
+                                new DownloadEvent(request.getUserId(), track.getId(), TrackStatus.READY))))
                 .then();
     }
 
@@ -89,6 +95,14 @@ public class DownloadService {
     private Mono<DownloadRequest> acknowledge(DownloadRequest request) {
         request.setAcknowledgedAt(Instant.now());
         return downloadRequestRepository.save(request);
+    }
+
+    // Called by DownloadWorkerService when a track permanently fails - every user still waiting on it gets a FAILED event, but the download_requests row stays unacknowledged so a later retry's eventual READY still fulfills it
+    public Mono<Void> notifyFailedTrack(Track track) {
+        return downloadRequestRepository.findByTrackIdAndAcknowledgedAtIsNull(track.getId())
+                .doOnNext(request -> downloadEventPublisher.publish(
+                        new DownloadEvent(request.getUserId(), track.getId(), TrackStatus.FAILED)))
+                .then();
     }
 
     // Track is PENDING/DOWNLOADING already - just record this user as also waiting on it (ALREADY_PENDING outcome), worker will fulfill them later via fulfillReadyTrack
