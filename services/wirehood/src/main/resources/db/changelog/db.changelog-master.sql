@@ -66,3 +66,29 @@ CREATE TABLE wirehood_users (
                                      CHECK (role IN ('USER', 'ADMIN')),
                                  joined_at TIMESTAMP NOT NULL
 );
+
+--changeset kansei:006-create-genres-table
+-- Fixed, seeded list - not user-created, keeps tagging consistent and avoids genre-name drift/duplicates (see WIREHOOD_PLAN.md's Genres + music profile section)
+CREATE TABLE genres (
+                         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                         name VARCHAR(50) NOT NULL UNIQUE
+);
+
+INSERT INTO genres (name) VALUES
+    ('Pop'), ('Rock'), ('Hip-Hop'), ('R&B'), ('Electronic'), ('Jazz'), ('Classical'),
+    ('Country'), ('Metal'), ('Folk'), ('Reggae'), ('Blues'), ('Punk'), ('Indie'), ('Latin'),
+    ('K-Pop'), ('J-Pop'), ('Funk'), ('Soul'), ('Disco'), ('House'), ('Techno'), ('Trance'),
+    ('Dubstep'), ('Ambient'), ('Lo-fi'), ('Gospel'), ('World'), ('Soundtrack'), ('Alternative'),
+    ('Synthpop'), ('Drum & Bass'), ('EDM'), ('Grunge'), ('Hard Rock'), ('Prog Rock'), ('Trap'),
+    ('Emo'), ('Ska'), ('Reggaeton'), ('Bossa Nova'), ('Flamenco'), ('New Age'), ('Chillout'),
+    ('Vaporwave');
+
+--changeset kansei:007-create-track-genre-tags-table
+-- Crowd-tagging vote, not a plain join - one vote per (track, genre, user) enforced by the PK, so a track's "real" genre(s) are whichever tags accumulate the most distinct-user votes over time. Self-heals with usage (folksonomy-style), no moderation system needed to start
+CREATE TABLE track_genre_tags (
+                                   track_id UUID NOT NULL REFERENCES tracks (id) ON DELETE CASCADE,
+                                   genre_id UUID NOT NULL REFERENCES genres (id) ON DELETE CASCADE,
+                                   user_id UUID NOT NULL,
+                                   tagged_at TIMESTAMP NOT NULL,
+                                   PRIMARY KEY (track_id, genre_id, user_id)
+);
