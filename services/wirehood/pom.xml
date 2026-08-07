@@ -63,6 +63,14 @@
             <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
         </dependency>
 
+        <!-- WebClient.Builder autoconfiguration - split out of spring-boot-starter-webflux in Boot 4,
+             same per-technology-starter pattern as the Liquibase/dotenv gotchas above. Needed for
+             ShieldwallUserClient's service-to-service call -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webclient</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>springboot4-dotenv</artifactId>

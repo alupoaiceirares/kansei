@@ -34,6 +34,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidInternalSecretException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidInternalSecret(InvalidInternalSecretException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     // Triggered by @Valid on RegisterRequest/LoginRequest failing their constraints e.g.(blank email, password too short, etc.) - returns per-field messages.
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
