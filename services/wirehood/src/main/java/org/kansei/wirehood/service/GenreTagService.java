@@ -1,6 +1,6 @@
 package org.kansei.wirehood.service;
 
-import org.kansei.wirehood.model.TrackGenreTag;
+import org.kansei.wirehood.dto.GenreVoteResponse;
 import org.kansei.wirehood.repository.TrackGenreTagRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -31,7 +31,7 @@ public class GenreTagService {
                 .then();
     }
 
-    public Flux<TrackGenreTag> tagsForTrack(UUID trackId) {
-        return trackGenreTagRepository.findByTrackId(trackId);
+    public Flux<GenreVoteResponse> tagsForTrack(UUID trackId) {
+        return trackGenreTagRepository.countVotesByTrackId(trackId);
     }
 }

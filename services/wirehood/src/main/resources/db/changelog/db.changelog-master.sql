@@ -92,3 +92,20 @@ CREATE TABLE track_genre_tags (
                                    tagged_at TIMESTAMP NOT NULL,
                                    PRIMARY KEY (track_id, genre_id, user_id)
 );
+
+--changeset kansei:008-create-track-comments-table
+-- parent_comment_id (nullable, self-FK) gives threaded replies at arbitrary depth via a self-join - no separate "replies" table needed
+-- Soft delete (deleted_at) not hard delete - if a parent with live replies were hard-deleted the thread would break; render as "[deleted]" at read time instead, replies stay visible
+CREATE TABLE track_comments (
+                                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                                 track_id UUID NOT NULL REFERENCES tracks (id) ON DELETE CASCADE,
+                                 user_id UUID NOT NULL,
+                                 parent_comment_id UUID REFERENCES track_comments (id),
+                                 body VARCHAR(2000) NOT NULL,
+                                 created_at TIMESTAMP NOT NULL,
+                                 edited_at TIMESTAMP,
+                                 deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_track_comments_track_id ON track_comments (track_id);
+CREATE INDEX idx_track_comments_parent_comment_id ON track_comments (parent_comment_id);

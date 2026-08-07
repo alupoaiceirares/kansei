@@ -35,6 +35,8 @@ public class SecurityConfig {
                                 "/api/auth/password-reset/confirm"
                         ).permitAll()
                         .requestMatchers("/actuator/**").permitAll()
+                        // No end-user JWT on a service-to-service call - actual protection is the X-Internal-Secret header check in InternalUserController, not this filter chain
+                        .requestMatchers("/api/internal/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
