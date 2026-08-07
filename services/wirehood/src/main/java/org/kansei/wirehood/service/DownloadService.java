@@ -41,12 +41,14 @@ public class DownloadService {
         this.downloadJobPublisher = downloadJobPublisher;
     }
 
+    // Entry point for POST /wirehood/downloads - looks up the track by youtube_video_id, branches to existing-track handling or creates a brand new one
     public Mono<SubmitDownloadResponse> submit(UUID userId, SubmitDownloadRequest request) {
         return trackRepository.findByYoutubeVideoId(request.youtubeVideoId())
                 .flatMap(existing -> handleExisting(userId, existing))
                 .switchIfEmpty(Mono.defer(() -> createAndQueue(userId, request)));
     }
 
+    // Track already exists somewhere in the pipeline - route by its current status
     private Mono<SubmitDownloadResponse> handleExisting(UUID userId, Track track) {
         return switch (track.getStatus()) {
             case READY -> addToLibrary(userId, track);
@@ -56,24 +58,46 @@ public class DownloadService {
         };
     }
 
+    // Track is READY - just add it to this user's library (ALREADY_READY outcome), no worker call needed
     private Mono<SubmitDownloadResponse> addToLibrary(UUID userId, Track track) {
-        return userLibraryRepository.existsByUserIdAndTrackId(userId, track.getId())
-                .flatMap(alreadyInLibrary -> alreadyInLibrary
-                        ? Mono.just(track)
-                        : userLibraryRepository.save(UserLibrary.builder()
-                                .userId(userId)
-                                .trackId(track.getId())
-                                .addedAt(Instant.now())
-                                .build()
-                        ).thenReturn(track))
-                .map(t -> new SubmitDownloadResponse(t.getId(), DownloadOutcome.ALREADY_READY));
+        return addTrackToLibraryIfAbsent(userId, track.getId())
+                .thenReturn(new SubmitDownloadResponse(track.getId(), DownloadOutcome.ALREADY_READY));
     }
 
+    // Shared idempotent insert - used both by the single-user addToLibrary path above and the multi-user fulfillReadyTrack path below
+    private Mono<Void> addTrackToLibraryIfAbsent(UUID userId, UUID trackId) {
+        return userLibraryRepository.existsByUserIdAndTrackId(userId, trackId)
+                .flatMap(alreadyInLibrary -> alreadyInLibrary
+                        ? Mono.empty()
+                        : userLibraryRepository.save(UserLibrary.builder()
+                                .userId(userId)
+                                .trackId(trackId)
+                                .addedAt(Instant.now())
+                                .build()))
+                .then();
+    }
+
+    // Called by DownloadWorkerService once a track flips to READY - every user with an unacknowledged download_requests row on it gets auto-added to their library and the request marked acknowledged
+    public Mono<Void> fulfillReadyTrack(Track track) {
+        return downloadRequestRepository.findByTrackIdAndAcknowledgedAtIsNull(track.getId())
+                .flatMap(request -> addTrackToLibraryIfAbsent(request.getUserId(), track.getId())
+                        .then(acknowledge(request)))
+                .then();
+    }
+
+    // Marks one download_requests row as handled, used only from fulfillReadyTrack
+    private Mono<DownloadRequest> acknowledge(DownloadRequest request) {
+        request.setAcknowledgedAt(Instant.now());
+        return downloadRequestRepository.save(request);
+    }
+
+    // Track is PENDING/DOWNLOADING already - just record this user as also waiting on it (ALREADY_PENDING outcome), worker will fulfill them later via fulfillReadyTrack
     private Mono<SubmitDownloadResponse> trackAsPending(UUID userId, Track track) {
         return saveDownloadRequest(userId, track.getId())
                 .thenReturn(new SubmitDownloadResponse(track.getId(), DownloadOutcome.ALREADY_PENDING));
     }
 
+    // Track permanently FAILED - flip it back to PENDING and re-queue as if it were a fresh request
     private Mono<SubmitDownloadResponse> retry(UUID userId, Track track) {
         track.setStatus(TrackStatus.PENDING);
         track.setUpdatedAt(Instant.now());
@@ -81,6 +105,7 @@ public class DownloadService {
                 .flatMap(saved -> queue(userId, saved));
     }
 
+    // Track doesn't exist yet - insert the canonical PENDING row, then queue it
     private Mono<SubmitDownloadResponse> createAndQueue(UUID userId, SubmitDownloadRequest request) {
         Instant now = Instant.now();
         Track track = Track.builder()
@@ -102,12 +127,14 @@ public class DownloadService {
                         .flatMap(existing -> handleExisting(userId, existing)));
     }
 
+    // Publishes the RabbitMQ download job and records this user's download_requests row (QUEUED outcome)
     private Mono<SubmitDownloadResponse> queue(UUID userId, Track track) {
         return downloadJobPublisher.publish(track)
                 .then(saveDownloadRequest(userId, track.getId()))
                 .thenReturn(new SubmitDownloadResponse(track.getId(), DownloadOutcome.QUEUED));
     }
 
+    // Shared insert used by both queue() (new/pending track) and trackAsPending() (already in-flight track)
     private Mono<DownloadRequest> saveDownloadRequest(UUID userId, UUID trackId) {
         return downloadRequestRepository.save(DownloadRequest.builder()
                 .userId(userId)
