@@ -10,5 +10,5 @@ public interface DownloadRequestRepository extends ReactiveCrudRepository<Downlo
 
     Flux<DownloadRequest> findByUserIdAndAcknowledgedAtIsNull(UUID userId);
 
-    Flux<DownloadRequest> findByTrackIdAndAcknowledgedAtIsNull(UUID trackId);
+    Flux<DownloadRequest> findByTrackIdAndFormatAndAcknowledgedAtIsNull(UUID trackId, String format);
 }

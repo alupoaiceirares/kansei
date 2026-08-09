@@ -1,6 +1,6 @@
 package org.kansei.wirehood.model;
 
-public enum  TrackStatus {
+public enum TrackFormatStatus {
     PENDING,
     DOWNLOADING,
     READY,

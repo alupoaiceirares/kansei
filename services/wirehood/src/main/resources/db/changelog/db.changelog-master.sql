@@ -163,3 +163,23 @@ CREATE TABLE song_of_the_day (
                                   day DATE PRIMARY KEY,
                                   track_id UUID NOT NULL REFERENCES tracks (id) ON DELETE CASCADE
 );
+
+--changeset kansei:014-move-status-to-track-formats
+-- Readiness moves from tracks (one field per video) to track_formats (one field per format), a video can have an mp3 that's READY and an mp4 that's still DOWNLOADING at the same time, one shared field on tracks couldn't represent that
+-- Default READY on the new column is backward-compat only: every pre-existing track_formats row was, by the old code's own design, only ever inserted at success time, so "already existing" genuinely means ready
+ALTER TABLE track_formats
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'READY'
+        CHECK (status IN ('PENDING', 'DOWNLOADING', 'READY', 'FAILED'));
+
+-- file_path/file_size_bytes are only known once the download actually finishes - a row now gets inserted at
+-- request time (status PENDING), before either of these exist yet
+ALTER TABLE track_formats ALTER COLUMN file_path DROP NOT NULL;
+ALTER TABLE track_formats ALTER COLUMN file_size_bytes DROP NOT NULL;
+
+ALTER TABLE track_formats ADD CONSTRAINT uq_track_formats_track_id_format UNIQUE (track_id, format);
+
+-- Needed so fulfillReadyTrack/notifyFailedTrack only resolve users actually waiting on the specific format that
+-- just finished, not everyone waiting on the track regardless of which format they asked for
+ALTER TABLE download_requests ADD COLUMN format VARCHAR(10) NOT NULL DEFAULT 'mp3';
+
+ALTER TABLE tracks DROP COLUMN status;
