@@ -1,6 +1,7 @@
 package org.kansei.shieldwall.repository;
 
 import org.kansei.shieldwall.model.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,7 +23,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     List<User> findByActiveFalseAndDeactivatedAtBefore(Instant cutoff);
 
-    // active, never verified, and no unexpired/unused EMAIL_VERIFICATION token left as a recent /verify-email/resend may keep the account alive.
+    // Friend-search: excludes deactivated accounts, caller supplies the page size via Pageable
+    List<User> findByActiveTrueAndUsernameContainingIgnoreCase(String username, Pageable pageable);
+
+    // active, never verified, and no unexpired/unused EMAIL_VERIFICATION token left as a recent /verify-email/resend may keep the account alive
     @Query("""
             SELECT u FROM User u
             WHERE u.active = true
