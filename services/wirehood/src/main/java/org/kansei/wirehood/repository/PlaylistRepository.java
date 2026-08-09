@@ -17,4 +17,7 @@ public interface PlaylistRepository extends ReactiveCrudRepository<Playlist, UUI
             ORDER BY p.created_at DESC
             """)
     Flux<Playlist> findAccessibleByUserId(UUID userId);
+
+    // Owned only, not collaborated-on - used by data export ("your own musical data")
+    Flux<Playlist> findByOwnerId(UUID ownerId);
 }
