@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Per-IP rate limit on endpoints that let an unauthenticated caller trigger an email send (register, resend verification, request password reset)
+ * Per-IP rate limit on endpoints attractive to brute-forcing/abuse: register, login, resend verification, request password reset
  */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
@@ -81,8 +81,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String clientIp(HttpServletRequest request) {
-        // Set by Spring Cloud Gateway when traffic is routed through it - getRemoteAddr()
-        // would otherwise see the gateway's IP for every caller instead of the real client.
+        // Set by Spring Cloud Gateway when traffic is routed through it, getRemoteAddr() would otherwise see the gateway's IP for every caller instead of the real client
         String forwardedFor = request.getHeader("X-Forwarded-For");
         if (forwardedFor != null && !forwardedFor.isBlank()) {
             return forwardedFor.split(",")[0].trim();

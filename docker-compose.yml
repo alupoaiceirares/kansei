@@ -1,5 +1,4 @@
-# Local dev infra for shieldwall + control-tower + courier-one
-# wirehood still runs via mvn/IntelliJ, connecting in over published ports - no container for it yet
+# Local dev infra for shieldwall + control-tower + wirehood + courier-one
 
 services:
   # Dedicated to shieldwall - not a shared project-wide Postgres. Each service that needs a DB gets its own container/volume/env-var namespace
@@ -21,7 +20,26 @@ services:
       timeout: 5s
       retries: 5
 
-  # Shared across services - wirehood's SSE tickets today, control-tower/wirehood's credentials_version cache
+  # Dedicated to wirehood
+  postgres-wirehood:
+    image: postgres:17-alpine
+    environment:
+      # WIREHOOD_DB_USERNAME/PASSWORD/NAME read from repo-root .env - must match DB_USERNAME/DB_PASSWORD/DB_NAME in services/wirehood/.env
+      POSTGRES_USER: ${WIREHOOD_DB_USERNAME}
+      POSTGRES_PASSWORD: ${WIREHOOD_DB_PASSWORD}
+      POSTGRES_DB: ${WIREHOOD_DB_NAME}
+    ports:
+      # Host-side port from .env - container-side 5432 is fixed by the postgres image itself
+      - "${WIREHOOD_DB_PORT}:5432"
+    volumes:
+      - wirehood-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WIREHOOD_DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Shared across services - wirehood's SSE tickets + username cache today, control-tower/wirehood's credentials_version cache
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
@@ -81,13 +99,44 @@ services:
     env_file:
       - ./services/control-tower/.env
     environment:
-      # Inside the compose network, shieldwall is reached by service name, not localhost - same reasoning as shieldwall's DB_HOST override above
+      # Inside the compose network, shieldwall/wirehood are reached by service name, not localhost - same reasoning as shieldwall's DB_HOST override above
       SHIELDWALL_URI: http://shieldwall:${SHIELDWALL_PORT}
-      # wirehood has no container yet (see top-of-file note) - this route will 502 until it does, not a blocker for control-tower itself
+      WIREHOOD_URI: http://wirehood:${WIREHOOD_PORT}
     ports:
       - "${CONTROL_TOWER_PORT}:${CONTROL_TOWER_PORT}"
     depends_on:
       - shieldwall
+      - wirehood
+    restart: unless-stopped
+
+  wirehood:
+    profiles: ["full"]
+    build:
+      context: ./services
+      dockerfile: wirehood/Dockerfile
+    env_file:
+      - ./services/wirehood/.env
+    environment:
+      DB_HOST: postgres-wirehood
+      DB_PORT: "5432" # container-internal, fixed by the postgres image - not the host-published WIREHOOD_DB_PORT from .env
+      DB_USERNAME: ${WIREHOOD_DB_USERNAME}
+      DB_PASSWORD: ${WIREHOOD_DB_PASSWORD}
+      DB_NAME: ${WIREHOOD_DB_NAME}
+      RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
+      STORAGE_ROOT: /app/storage
+    volumes:
+      # Bind mount, not a named volume - downloaded tracks/thumbnails survive `docker-compose down -v` and stay browsable directly on the host
+      - ${WIREHOOD_STORAGE_HOST_DIR}:/app/storage
+    ports:
+      - "${WIREHOOD_PORT}:${WIREHOOD_PORT}"
+    depends_on:
+      postgres-wirehood:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   courier-one:
@@ -105,3 +154,4 @@ services:
 
 volumes:
   shieldwall-postgres-data:
+  wirehood-postgres-data:
