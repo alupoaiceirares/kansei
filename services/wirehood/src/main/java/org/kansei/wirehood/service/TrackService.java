@@ -5,12 +5,14 @@ import org.kansei.wirehood.dto.TrackDetailResponse;
 import org.kansei.wirehood.dto.TrackFormatSummary;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackFormat;
+import org.kansei.wirehood.model.TrackFormatStatus;
 import org.kansei.wirehood.model.UserLibrary;
 import org.kansei.wirehood.repository.TrackFormatRepository;
 import org.kansei.wirehood.repository.TrackRepository;
 import org.kansei.wirehood.repository.UserLibraryRepository;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -59,6 +62,28 @@ public class TrackService {
                                 .contentType(MediaType.IMAGE_JPEG) // yt-dlp always converts thumbnails to jpg (--convert-thumbnails jpg)
                                 .body(new FileSystemResource(track.getThumbnailPath())))
                 );
+    }
+
+    // Scoped to the user's own library on purpose, platform-wide dedup means the file exists once for everyone, but "download to my machine" is a personal action, not a way to pull any track's file without having saved it
+    public Mono<ResponseEntity<Resource>> downloadFile(UUID userId, UUID trackId, String format) {
+        return userLibraryRepository.existsByUserIdAndTrackId(userId, trackId)
+                .flatMap(inLibrary -> inLibrary
+                        ? trackFormatRepository.findByTrackIdAndFormat(trackId, format)
+                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "This format hasn't been downloaded for this track")))
+                                .flatMap(this::toFileResponse)
+                        : Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Track not in your library")));
+    }
+
+    private Mono<ResponseEntity<Resource>> toFileResponse(TrackFormat trackFormat) {
+        if (trackFormat.getStatus() != TrackFormatStatus.READY || trackFormat.getFilePath() == null) {
+            return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "This format isn't ready yet"));
+        }
+        Path path = Path.of(trackFormat.getFilePath());
+        MediaType mediaType = "mp4".equals(trackFormat.getFormat()) ? MediaType.valueOf("video/mp4") : MediaType.valueOf("audio/mpeg");
+        return Mono.just(ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + path.getFileName() + "\"")
+                .body(new FileSystemResource(path)));
     }
 
     // Batches both lookups across the whole library (2 queries total, not 2N)
