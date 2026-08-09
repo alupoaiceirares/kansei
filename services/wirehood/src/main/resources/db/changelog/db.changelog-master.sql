@@ -156,3 +156,10 @@ CREATE TABLE friendships (
 );
 
 CREATE INDEX idx_friendships_user_id_b ON friendships (user_id_b);
+
+--changeset kansei:013-create-song-of-the-day-table
+-- One row per day, home-page pick from the READY pool. Column named "day" not "date" to avoid confusion with the DATE type. Cascades with the track (hard-delete admin action) since a picked-then-deleted track has nothing left to show
+CREATE TABLE song_of_the_day (
+                                  day DATE PRIMARY KEY,
+                                  track_id UUID NOT NULL REFERENCES tracks (id) ON DELETE CASCADE
+);
