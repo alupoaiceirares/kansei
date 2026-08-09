@@ -139,3 +139,20 @@ CREATE TABLE playlist_collaborators (
                                          added_at TIMESTAMP NOT NULL,
                                          PRIMARY KEY (playlist_id, user_id)
 );
+
+--changeset kansei:012-create-friendships-table
+-- user_id_a/b are order-independent (always smaller UUID first) so A-requests-B and B-requests-A can't both exist as separate rows.
+-- requested_by is the actual semantic requester (a or b) - separate from the ordering above, needed so accept/decline know who's allowed to act.
+CREATE TABLE friendships (
+                              user_id_a UUID NOT NULL,
+                              user_id_b UUID NOT NULL,
+                              requested_by UUID NOT NULL,
+                              status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+                                  CHECK (status IN ('PENDING', 'ACCEPTED')),
+                              requested_at TIMESTAMP NOT NULL,
+                              responded_at TIMESTAMP,
+                              CHECK (user_id_a <> user_id_b),
+                              PRIMARY KEY (user_id_a, user_id_b)
+);
+
+CREATE INDEX idx_friendships_user_id_b ON friendships (user_id_b);

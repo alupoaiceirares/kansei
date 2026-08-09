@@ -5,6 +5,7 @@ import org.kansei.shieldwall.exception.InvalidInternalSecretException;
 import org.kansei.shieldwall.model.User;
 import org.kansei.shieldwall.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -27,6 +28,10 @@ public class InternalUserController {
     // Keeps a misconfigured/malicious caller from forcing one giant IN (...) query
     private static final int MAX_IDS = 200;
 
+    // Search results stay small on purpose, this backs a friend-search typeahead, not a directory browse
+    private static final int MAX_SEARCH_LIMIT = 50;
+    private static final int DEFAULT_SEARCH_LIMIT = 20;
+
     private final UserRepository userRepository;
     private final String internalServiceSecret;
 
@@ -43,15 +48,39 @@ public class InternalUserController {
             @RequestHeader("X-Internal-Secret") String providedSecret,
             @RequestParam String ids
     ) {
-        if (!internalServiceSecret.equals(providedSecret)) {
-            throw new InvalidInternalSecretException();
-        }
+        requireValidSecret(providedSecret);
 
         List<UUID> userIds = parseIds(ids);
 
         return userRepository.findAllById(userIds).stream()
                 .map(user -> new UserSummaryResponse(user.getId(), user.getUsername()))
                 .toList();
+    }
+
+    // ILIKE-prefix-style match (ContainingIgnoreCase), bounded result count - not a bulk "list all users" dump,
+    // deliberately narrower than that so a leaked internal secret exposes at most one bounded page of matches
+    @GetMapping("/users/search")
+    public List<UserSummaryResponse> searchUsers(
+            @RequestHeader("X-Internal-Secret") String providedSecret,
+            @RequestParam String query,
+            @RequestParam(required = false) Integer limit
+    ) {
+        requireValidSecret(providedSecret);
+
+        if (query.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "query must not be blank");
+        }
+        int pageSize = (limit == null) ? DEFAULT_SEARCH_LIMIT : Math.min(Math.max(limit, 1), MAX_SEARCH_LIMIT);
+
+        return userRepository.findByActiveTrueAndUsernameContainingIgnoreCase(query, PageRequest.of(0, pageSize)).stream()
+                .map(user -> new UserSummaryResponse(user.getId(), user.getUsername()))
+                .toList();
+    }
+
+    private void requireValidSecret(String providedSecret) {
+        if (!internalServiceSecret.equals(providedSecret)) {
+            throw new InvalidInternalSecretException();
+        }
     }
 
     private List<UUID> parseIds(String ids) {

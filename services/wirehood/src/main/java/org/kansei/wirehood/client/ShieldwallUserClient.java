@@ -7,13 +7,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Batch id-to-username lookup against shieldwall's internal endpoint - one call per list, not one per user, so viewing N comments doesn't mean N calls to shieldwall
- * Service-to-service only. On any failure (shieldwall down, network blip) falls back to an empty map rather than failing the caller's whole request
+ * Batch id-to-username lookup, one call per list, not one per user, on any failure falls back to an empty map rather than failing the caller's whole request
  */
 @Component
 public class ShieldwallUserClient {
@@ -46,6 +46,23 @@ public class ShieldwallUserClient {
                 .onErrorResume(ex -> Mono.just(Map.of()));
     }
 
+    // Friend-search typeahead - same fail-soft shape as resolveUsernames (shieldwall down/slow -> empty list, never blocks the caller)
+    public Mono<List<UserMatch>> searchUsers(String query, int limit) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/internal/users/search")
+                        .queryParam("query", query)
+                        .queryParam("limit", limit)
+                        .build())
+                .header("X-Internal-Secret", internalServiceSecret)
+                .retrieve()
+                .bodyToFlux(UserMatch.class)
+                .collectList()
+                .onErrorResume(ex -> Mono.just(List.of()));
+    }
+
     private record UserSummary(UUID id, String username) {
+    }
+
+    public record UserMatch(UUID id, String username) {
     }
 }
