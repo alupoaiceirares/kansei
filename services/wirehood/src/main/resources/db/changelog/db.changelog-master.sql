@@ -109,3 +109,33 @@ CREATE TABLE track_comments (
 
 CREATE INDEX idx_track_comments_track_id ON track_comments (track_id);
 CREATE INDEX idx_track_comments_parent_comment_id ON track_comments (parent_comment_id);
+
+--changeset kansei:009-create-playlists-table
+-- Owner-scoped resource
+CREATE TABLE playlists (
+                            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                            owner_id UUID NOT NULL,
+                            name VARCHAR(255) NOT NULL,
+                            shared BOOLEAN NOT NULL DEFAULT FALSE,
+                            created_at TIMESTAMP NOT NULL
+);
+
+CREATE INDEX idx_playlists_owner_id ON playlists (owner_id);
+
+--changeset kansei:010-create-playlist-tracks-table
+-- True composite PK (playlist_id, track_id), no surrogate id needed since reorder/remove/exists-check all address rows by that pair
+CREATE TABLE playlist_tracks (
+                                  playlist_id UUID NOT NULL REFERENCES playlists (id) ON DELETE CASCADE,
+                                  track_id UUID NOT NULL REFERENCES tracks (id) ON DELETE CASCADE,
+                                  position INTEGER NOT NULL,
+                                  PRIMARY KEY (playlist_id, track_id)
+);
+
+--changeset kansei:011-create-playlist-collaborators-table
+-- Multi-owner CRUD (last-write-wins, no live cursors/OT/CRDT), true composite PK, same pattern as track_genre_tags
+CREATE TABLE playlist_collaborators (
+                                         playlist_id UUID NOT NULL REFERENCES playlists (id) ON DELETE CASCADE,
+                                         user_id UUID NOT NULL,
+                                         added_at TIMESTAMP NOT NULL,
+                                         PRIMARY KEY (playlist_id, user_id)
+);
