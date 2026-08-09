@@ -41,9 +41,7 @@ public class Track {
 
     private String thumbnailPath;
 
-    @Builder.Default
-    private TrackStatus status = TrackStatus.PENDING;
-
+    // Readiness lives on TrackFormat now, per format - a video can have a READY mp3 and a DOWNLOADING mp4 at once, one field here couldn't represent that
     @Builder.Default
     private boolean visible = true;
 

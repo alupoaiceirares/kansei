@@ -14,10 +14,10 @@ public class DownloadJobPublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public Mono<Void> publish(Track track) {
+    public Mono<Void> publish(Track track, String format) {
         return Mono.fromRunnable(() -> rabbitTemplate.convertAndSend(
                 RabbitMQConfig.DOWNLOAD_JOBS_QUEUE,
-                new DownloadJobMessage(track.getId(), track.getYoutubeVideoId())
+                new DownloadJobMessage(track.getId(), track.getYoutubeVideoId(), format)
         ));
     }
 }

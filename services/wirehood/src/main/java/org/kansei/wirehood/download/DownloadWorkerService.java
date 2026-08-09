@@ -3,7 +3,7 @@ package org.kansei.wirehood.download;
 import org.kansei.wirehood.messaging.DownloadJobMessage;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackFormat;
-import org.kansei.wirehood.model.TrackStatus;
+import org.kansei.wirehood.model.TrackFormatStatus;
 import org.kansei.wirehood.repository.TrackFormatRepository;
 import org.kansei.wirehood.repository.TrackRepository;
 import org.kansei.wirehood.service.DownloadService;
@@ -18,8 +18,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 
 /**
- * Consumes a download job: DOWNLOADING -> run yt-dlp (blocking, boundedElastic) -> READY (with a TrackFormat row + thumbnail_path) or FAILED
- * Exceptions are caught and mapped to FAILED here rather than propagated - letting them reach the RabbitMQ listener would trigger a requeue-and-retry loop on a message that's likely to fail the same way every time
+ * Consumes a download job: DOWNLOADING -> run yt-dlp (blocking, boundedElastic) -> READY (with the TrackFormat
+ * row's filePath/fileSizeBytes filled in, plus the track's thumbnail_path) or FAILED. All state transitions land
+ * on the TrackFormat row identified by (trackId, format) in the job message - not on the track itself, since a
+ * track can have another format sitting READY/DOWNLOADING at the same time.
+ * Exceptions are caught and mapped to FAILED here rather than propagated - letting them reach the RabbitMQ
+ * listener would trigger a requeue-and-retry loop on a message that's likely to fail the same way every time.
  */
 @Service
 public class DownloadWorkerService {
@@ -46,51 +50,52 @@ public class DownloadWorkerService {
 
     public Mono<Void> process(DownloadJobMessage message) {
         return trackRepository.findById(message.trackId())
-                .flatMap(this::markDownloading)
-                .flatMap(track -> runDownload(track).onErrorResume(ex -> markFailed(track)))
+                .zipWith(trackFormatRepository.findByTrackIdAndFormat(message.trackId(), message.format()))
+                .flatMap(tuple -> markDownloading(tuple.getT2())
+                        .flatMap(format -> runDownload(tuple.getT1(), format)
+                                .onErrorResume(ex -> markFailed(tuple.getT1(), format))))
                 .then();
     }
 
-    private Mono<Track> markDownloading(Track track) {
-        track.setStatus(TrackStatus.DOWNLOADING);
+    private Mono<TrackFormat> markDownloading(TrackFormat format) {
+        format.setStatus(TrackFormatStatus.DOWNLOADING);
+        return trackFormatRepository.save(format);
+    }
+
+    private Mono<TrackFormat> runDownload(Track track, TrackFormat format) {
+        return Mono.fromCallable(() -> {
+                    Files.createDirectories(storageRoot);
+                    Path outputBase = storageRoot.resolve(FilenameBuilder.baseName(track));
+                    return downloadClient.download(track.getYoutubeVideoId(), outputBase, format.getFormat());
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(files -> saveFormatAndMarkReady(track, format, files));
+    }
+
+    private Mono<TrackFormat> saveFormatAndMarkReady(Track track, TrackFormat format, YtDlpDownloadClient.DownloadedFiles files) {
+        return Mono.fromCallable(() -> Files.size(files.mediaFile()))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(sizeBytes -> {
+                    format.setFilePath(files.mediaFile().toString());
+                    format.setFileSizeBytes(sizeBytes);
+                    format.setStatus(TrackFormatStatus.READY);
+                    return trackFormatRepository.save(format);
+                })
+                .flatMap(savedFormat -> updateThumbnail(track, files)
+                        .flatMap(savedTrack -> downloadService.fulfillReadyTrack(savedTrack, savedFormat.getFormat())
+                                .thenReturn(savedFormat)));
+    }
+
+    // Track-level, format-independent - if two formats for the same track both download, this runs twice with the same result, harmless
+    private Mono<Track> updateThumbnail(Track track, YtDlpDownloadClient.DownloadedFiles files) {
+        track.setThumbnailPath(files.thumbnailFile() == null ? null : files.thumbnailFile().toString());
         track.setUpdatedAt(Instant.now());
         return trackRepository.save(track);
     }
 
-    private Mono<Track> runDownload(Track track) {
-        return Mono.fromCallable(() -> {
-                    Files.createDirectories(storageRoot);
-                    Path outputBase = storageRoot.resolve(FilenameBuilder.baseName(track));
-                    return downloadClient.download(track.getYoutubeVideoId(), outputBase);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(files -> saveFormatAndMarkReady(track, files));
-    }
-
-    private Mono<Track> saveFormatAndMarkReady(Track track, YtDlpDownloadClient.DownloadedFiles files) {
-        return Mono.fromCallable(() -> Files.size(files.audioFile()))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(sizeBytes -> trackFormatRepository.save(TrackFormat.builder()
-                        .trackId(track.getId())
-                        .format("mp3")
-                        // Real bitrate/quality isn't parsed out of yt-dlp's output yet - fixed placeholder until multi-format/quality support is built
-                        .quality("audio")
-                        .filePath(files.audioFile().toString())
-                        .fileSizeBytes(sizeBytes)
-                        .build()))
-                .then(Mono.defer(() -> {
-                    track.setStatus(TrackStatus.READY);
-                    track.setThumbnailPath(files.thumbnailFile() == null ? null : files.thumbnailFile().toString());
-                    track.setUpdatedAt(Instant.now());
-                    return trackRepository.save(track);
-                }))
-                .flatMap(saved -> downloadService.fulfillReadyTrack(saved).thenReturn(saved));
-    }
-
-    private Mono<Track> markFailed(Track track) {
-        track.setStatus(TrackStatus.FAILED);
-        track.setUpdatedAt(Instant.now());
-        return trackRepository.save(track)
-                .flatMap(saved -> downloadService.notifyFailedTrack(saved).thenReturn(saved));
+    private Mono<TrackFormat> markFailed(Track track, TrackFormat format) {
+        format.setStatus(TrackFormatStatus.FAILED);
+        return trackFormatRepository.save(format)
+                .flatMap(saved -> downloadService.notifyFailedTrack(track, saved.getFormat()).thenReturn(saved));
     }
 }

@@ -12,7 +12,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Per-user "waiting on this download" record - separate from tracks.status (shared/global) because multiple users can each be waiting on the same in-flight download
+ * Per-user "waiting on this download" record - separate from track_formats.status (shared/global per format)
+ * because multiple users can each be waiting on the same in-flight download. format matters here too - two
+ * users waiting on the same track but different formats must only get acknowledged by their own format finishing.
  */
 @Table("download_requests")
 @Getter
@@ -28,6 +30,8 @@ public class DownloadRequest {
     private UUID userId;
 
     private UUID trackId;
+
+    private String format;
 
     private Instant requestedAt;
 
