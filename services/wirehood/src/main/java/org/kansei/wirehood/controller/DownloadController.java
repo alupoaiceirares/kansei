@@ -1,6 +1,7 @@
 package org.kansei.wirehood.controller;
 
 import org.kansei.wirehood.dto.DownloadEvent;
+import org.kansei.wirehood.dto.DownloadStatusResponse;
 import org.kansei.wirehood.dto.SubmitDownloadRequest;
 import org.kansei.wirehood.dto.SubmitDownloadResponse;
 import org.kansei.wirehood.service.DownloadEventPublisher;
@@ -50,6 +51,12 @@ public class DownloadController {
             @RequestBody SubmitDownloadRequest request
     ) {
         return downloadService.submit(userId, request);
+    }
+
+    // Page-load/reconnect badge, complements the SSE stream below (which only pushes while connected) rather than replacing it, so a completed/failed download while offline isn't silently lost
+    @GetMapping("/pending")
+    public Mono<DownloadStatusResponse> pendingAndFailed(@RequestHeader("X-User-Id") UUID userId) {
+        return downloadService.getMyPendingAndFailed(userId);
     }
 
     // Ticket-based auth since EventSource can't send an Authorization header - burn it here to resolve the user, then scope the stream to that user only (filter server-side, never broadcast + client-filter)

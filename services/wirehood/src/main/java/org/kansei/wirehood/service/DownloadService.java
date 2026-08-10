@@ -2,6 +2,9 @@ package org.kansei.wirehood.service;
 
 import org.kansei.wirehood.dto.DownloadEvent;
 import org.kansei.wirehood.dto.DownloadOutcome;
+import org.kansei.wirehood.dto.DownloadStatusResponse;
+import org.kansei.wirehood.dto.FailedDownloadItem;
+import org.kansei.wirehood.dto.PendingDownloadItem;
 import org.kansei.wirehood.dto.SubmitDownloadRequest;
 import org.kansei.wirehood.dto.SubmitDownloadResponse;
 import org.kansei.wirehood.messaging.DownloadJobPublisher;
@@ -16,9 +19,13 @@ import org.kansei.wirehood.repository.TrackRepository;
 import org.kansei.wirehood.repository.UserLibraryRepository;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -94,9 +101,8 @@ public class DownloadService {
                 .then();
     }
 
-    // Called by DownloadWorkerService once a (track, format) flips to READY - every user with an unacknowledged
-    // download_requests row on that exact (track, format) gets auto-added to their library, the request marked
-    // acknowledged, and a READY event pushed to their SSE stream if one's open
+    // Called by DownloadWorkerService once a (track, format) flips to READY, every user with an unacknowledged download_requests row on that exact (track, format) gets auto-added to their library,
+    // the request will be marked acknowledged, and a READY event pushed to their SSE stream if one's open
     public Mono<Void> fulfillReadyTrack(Track track, String format) {
         return downloadRequestRepository.findByTrackIdAndFormatAndAcknowledgedAtIsNull(track.getId(), format)
                 .flatMap(request -> addTrackToLibraryIfAbsent(request.getUserId(), track.getId())
@@ -112,14 +118,60 @@ public class DownloadService {
         return downloadRequestRepository.save(request);
     }
 
-    // Called by DownloadWorkerService when a (track, format) permanently fails - every user still waiting on
-    // that exact format gets a FAILED event, but the download_requests row stays unacknowledged so a later
-    // retry's eventual READY still fulfills it
+    // Called by DownloadWorkerService when a (track, format) permanently fails - every user still waiting on that exact format gets a FAILED event, but the download_requests row stays unacknowledged so a later retry's eventual READY still fulfills it
     public Mono<Void> notifyFailedTrack(Track track, String format) {
         return downloadRequestRepository.findByTrackIdAndFormatAndAcknowledgedAtIsNull(track.getId(), format)
                 .doOnNext(request -> downloadEventPublisher.publish(
                         new DownloadEvent(request.getUserId(), track.getId(), format, TrackFormatStatus.FAILED)))
                 .then();
+    }
+
+    // Backs the "Pending 2 / Failed 1" badge on page load/reconnect, the SSE stream only pushes while connected, this reads current state straight from the DB so nothing gets silently lost across a disconnect
+    public Mono<DownloadStatusResponse> getMyPendingAndFailed(UUID userId) {
+        return downloadRequestRepository.findByUserIdAndAcknowledgedAtIsNull(userId)
+                .collectList()
+                .flatMap(requests -> requests.isEmpty()
+                        ? Mono.just(new DownloadStatusResponse(List.of(), List.of()))
+                        : resolvePendingAndFailed(requests));
+    }
+
+    private Mono<DownloadStatusResponse> resolvePendingAndFailed(List<DownloadRequest> requests) {
+        List<UUID> trackIds = requests.stream().map(DownloadRequest::getTrackId).distinct().toList();
+
+        Mono<Map<UUID, Track>> tracksById = trackRepository.findAllById(trackIds).collectMap(Track::getId);
+        Mono<Map<String, TrackFormat>> formatsByKey = trackFormatRepository.findByTrackIdIn(trackIds)
+                .collectMap(f -> f.getTrackId() + "|" + f.getFormat());
+
+        return Mono.zip(tracksById, formatsByKey)
+                .flatMap(resolved -> bucketAndAcknowledge(requests, resolved.getT1(), resolved.getT2()));
+    }
+
+    // Buckets each unacknowledged request by its matching TrackFormat's current status, then acknowledges (only) the failed ones so they don't resurface on the next call, pending ones stay unacknowledged since they're still in flight
+    private Mono<DownloadStatusResponse> bucketAndAcknowledge(
+            List<DownloadRequest> requests, Map<UUID, Track> tracksById, Map<String, TrackFormat> formatsByKey) {
+        List<PendingDownloadItem> pending = new ArrayList<>();
+        List<FailedDownloadItem> failed = new ArrayList<>();
+        List<DownloadRequest> toAcknowledge = new ArrayList<>();
+
+        for (DownloadRequest request : requests) {
+            TrackFormat format = formatsByKey.get(request.getTrackId() + "|" + request.getFormat());
+            Track track = tracksById.get(request.getTrackId());
+            if (format == null || track == null) {
+                continue; // defensive - shouldn't happen, the (track, format) a request points at always exists
+            }
+            switch (format.getStatus()) {
+                case PENDING, DOWNLOADING -> pending.add(PendingDownloadItem.of(track, request));
+                case FAILED -> {
+                    failed.add(FailedDownloadItem.of(track, request));
+                    toAcknowledge.add(request);
+                }
+                case READY -> { } // fulfillReadyTrack already acknowledges on flip-to-READY; shouldn't be reachable here
+            }
+        }
+
+        return Flux.fromIterable(toAcknowledge)
+                .concatMap(this::acknowledge)
+                .then(Mono.just(new DownloadStatusResponse(pending, failed)));
     }
 
     // This (track, format) is PENDING/DOWNLOADING already - just record this user as also waiting on it (ALREADY_PENDING outcome), worker will fulfill them later via fulfillReadyTrack
