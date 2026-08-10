@@ -183,3 +183,23 @@ ALTER TABLE track_formats ADD CONSTRAINT uq_track_formats_track_id_format UNIQUE
 ALTER TABLE download_requests ADD COLUMN format VARCHAR(10) NOT NULL DEFAULT 'mp3';
 
 ALTER TABLE tracks DROP COLUMN status;
+
+--changeset kansei:015-create-track-thumbnail-submissions-table
+-- Crowd-submitted thumbnails, admin-approved. file_path points at wherever the file currently lives - the
+-- pending-submissions storage subdirectory while PENDING/REJECTED, or the main storage root once APPROVED
+-- (moved there and pointed at by tracks.thumbnail_path) - so an unreviewed/rejected file is never confused
+-- with a live one. Multiple simultaneous pending submissions per track are allowed on purpose (no dedup/lock).
+CREATE TABLE track_thumbnail_submissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    track_id UUID NOT NULL REFERENCES tracks (id) ON DELETE CASCADE,
+    submitted_by UUID NOT NULL,
+    file_path VARCHAR(1024) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    submitted_at TIMESTAMP NOT NULL,
+    reviewed_at TIMESTAMP,
+    reviewed_by UUID
+);
+
+CREATE INDEX idx_track_thumbnail_submissions_track_id ON track_thumbnail_submissions (track_id);
+CREATE INDEX idx_track_thumbnail_submissions_status ON track_thumbnail_submissions (status);
