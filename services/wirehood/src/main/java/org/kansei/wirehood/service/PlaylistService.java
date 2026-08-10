@@ -39,19 +39,22 @@ public class PlaylistService {
     private final PlaylistCollaboratorRepository playlistCollaboratorRepository;
     private final TrackRepository trackRepository;
     private final ShieldwallUserClient shieldwallUserClient;
+    private final AdminAuthService adminAuthService;
 
     public PlaylistService(
             PlaylistRepository playlistRepository,
             PlaylistTrackRepository playlistTrackRepository,
             PlaylistCollaboratorRepository playlistCollaboratorRepository,
             TrackRepository trackRepository,
-            ShieldwallUserClient shieldwallUserClient
+            ShieldwallUserClient shieldwallUserClient,
+            AdminAuthService adminAuthService
     ) {
         this.playlistRepository = playlistRepository;
         this.playlistTrackRepository = playlistTrackRepository;
         this.playlistCollaboratorRepository = playlistCollaboratorRepository;
         this.trackRepository = trackRepository;
         this.shieldwallUserClient = shieldwallUserClient;
+        this.adminAuthService = adminAuthService;
     }
 
     // ownerUsername is always null here, not "Unknown user" - the owner IS the caller, who already knows their own username client-side, so there's no reason to round-trip to shieldwall for it
@@ -113,9 +116,9 @@ public class PlaylistService {
                         }));
     }
 
-    // Same as create() - owner is always the caller here (requireOwner enforces it), so ownerUsername is left null rather than paying a shieldwall round-trip for a name the caller already knows
+    // Owner OR an admin, ownerUsername left null when the caller IS the owner, an admin editing someone else's playlist pays the lookup instead
     public Mono<PlaylistResponse> update(UUID playlistId, UUID userId, UpdatePlaylistRequest request) {
-        return requireOwner(playlistId, userId)
+        return requireOwnerOrAdmin(playlistId, userId)
                 .map(playlist -> {
                     playlist.setName(request.name());
                     playlist.setShared(request.shared());
@@ -123,11 +126,15 @@ public class PlaylistService {
                 })
                 .flatMap(playlistRepository::save)
                 .flatMap(saved -> playlistTrackRepository.countByPlaylistId(playlistId)
-                        .map(count -> new PlaylistResponse(saved.getId(), saved.getOwnerId(), null, saved.getName(), saved.isShared(), saved.getCreatedAt(), count)));
+                        .flatMap(count -> saved.getOwnerId().equals(userId)
+                                // caller IS the owner - raw null, not the factory's "Unknown user" fallback, they already know their own name
+                                ? Mono.just(new PlaylistResponse(saved.getId(), saved.getOwnerId(), null, saved.getName(), saved.isShared(), saved.getCreatedAt(), count))
+                                : shieldwallUserClient.resolveUsernames(List.of(saved.getOwnerId()))
+                                        .map(usernames -> PlaylistResponse.from(saved, usernames.get(saved.getOwnerId()), count))));
     }
 
     public Mono<Void> delete(UUID playlistId, UUID userId) {
-        return requireOwner(playlistId, userId)
+        return requireOwnerOrAdmin(playlistId, userId)
                 .flatMap(playlistRepository::delete);
     }
 
@@ -206,6 +213,14 @@ public class PlaylistService {
                 .flatMap(playlist -> playlist.getOwnerId().equals(userId)
                         ? Mono.just(playlist)
                         : Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your playlist")));
+    }
+
+    // Only update()/delete() use this, addCollaborator/reorder/etc. stay strictly owner-only
+    private Mono<Playlist> requireOwnerOrAdmin(UUID playlistId, UUID userId) {
+        return findPlaylistOr404(playlistId)
+                .flatMap(playlist -> playlist.getOwnerId().equals(userId)
+                        ? Mono.just(playlist)
+                        : adminAuthService.requireAdmin(userId).thenReturn(playlist));
     }
 
     private Mono<Playlist> requireAccess(UUID playlistId, UUID userId) {

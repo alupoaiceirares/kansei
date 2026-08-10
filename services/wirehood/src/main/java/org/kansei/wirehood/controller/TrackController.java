@@ -3,9 +3,11 @@ package org.kansei.wirehood.controller;
 import org.kansei.wirehood.dto.CommentResponse;
 import org.kansei.wirehood.dto.CreateCommentRequest;
 import org.kansei.wirehood.dto.GenreVoteResponse;
+import org.kansei.wirehood.dto.SetTrackVisibleRequest;
 import org.kansei.wirehood.dto.TagTrackRequest;
 import org.kansei.wirehood.dto.ThumbnailSubmissionResponse;
 import org.kansei.wirehood.dto.TrackDetailResponse;
+import org.kansei.wirehood.dto.UpdateTrackMetadataRequest;
 import org.kansei.wirehood.service.CommentService;
 import org.kansei.wirehood.service.GenreTagService;
 import org.kansei.wirehood.service.ThumbnailSubmissionService;
@@ -15,13 +17,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -61,6 +66,33 @@ public class TrackController {
         return trackService.getThumbnail(trackId);
     }
 
+    // Admin-only - fixing a bad parse-and-confirm entry
+    @PatchMapping
+    public Mono<TrackDetailResponse> updateMetadata(
+            @PathVariable UUID trackId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestBody UpdateTrackMetadataRequest request
+    ) {
+        return trackService.updateMetadata(trackId, userId, request);
+    }
+
+    // Admin-only - hide from regular users, keep on server
+    @PatchMapping("/visible")
+    public Mono<Void> setVisible(
+            @PathVariable UUID trackId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestBody SetTrackVisibleRequest request
+    ) {
+        return trackService.setVisible(trackId, userId, request.visible());
+    }
+
+    // Admin-only, permanent
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> hardDelete(@PathVariable UUID trackId, @RequestHeader("X-User-Id") UUID userId) {
+        return trackService.hardDelete(trackId, userId);
+    }
+
     // Any wirehood user, submission sits PENDING until an admin approves/rejects it
     @PostMapping(value = "/thumbnail-submissions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<ResponseEntity<ThumbnailSubmissionResponse>> submitThumbnail(
@@ -85,6 +117,17 @@ public class TrackController {
     @GetMapping("/genre-tags")
     public Flux<GenreVoteResponse> tags(@PathVariable UUID trackId) {
         return genreTagService.tagsForTrack(trackId);
+    }
+
+    // Admin-only - wipes every voter's row for this (track, genre) pair
+    @DeleteMapping("/genre-tags/{genreId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> removeTag(
+            @PathVariable UUID trackId,
+            @PathVariable UUID genreId,
+            @RequestHeader("X-User-Id") UUID userId
+    ) {
+        return genreTagService.removeTag(trackId, genreId, userId);
     }
 
     // parentCommentId in the body (null = top-level) makes this a reply if set

@@ -34,6 +34,9 @@ public class WirehoodUser implements Persistable<UUID> {
 
     private Instant joinedAt;
 
+    @Builder.Default
+    private boolean enabled = true;
+
     @Transient
     @Builder.Default
     private boolean isNew = true;

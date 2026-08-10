@@ -203,3 +203,7 @@ CREATE TABLE track_thumbnail_submissions (
 
 CREATE INDEX idx_track_thumbnail_submissions_track_id ON track_thumbnail_submissions (track_id);
 CREATE INDEX idx_track_thumbnail_submissions_status ON track_thumbnail_submissions (status);
+
+--changeset kansei:016-add-wirehood-users-enabled-column
+-- "Disable a wirehood_user" admin action, wirehood-scoped only, kicks them off wirehood
+ALTER TABLE wirehood_users ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE;
