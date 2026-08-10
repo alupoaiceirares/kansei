@@ -9,6 +9,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ReactiveValueOperations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
@@ -36,12 +38,18 @@ class JwtAuthenticationFilterTest {
 
     @Mock
     private GatewayFilterChain chain;
+    // Never stubbed by default - existing tests' tokens carry no ver claim, so hasCurrentCredentialsVersion
+    // short-circuits without touching Redis at all; only the new credentials-version tests below stub it
+    @Mock
+    private ReactiveStringRedisTemplate redisTemplate;
+    @Mock
+    private ReactiveValueOperations<String, String> valueOperations;
 
     private JwtAuthenticationFilter filter;
 
     @BeforeEach
     void setUp() {
-        filter = new JwtAuthenticationFilter(SECRET, new ObjectMapper());
+        filter = new JwtAuthenticationFilter(SECRET, new ObjectMapper(), redisTemplate);
     }
 
     @Test
@@ -125,6 +133,72 @@ class JwtAuthenticationFilterTest {
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(SIGNING_KEY)
                 .compact();
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    // ---- credentials_version (ver claim) checked against Redis ----
+
+    @Test
+    void protectedPath_staleCredentialsVersion_returns401() {
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .claim("ver", 1)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("shieldwall:credentials-version:" + userId)).thenReturn(Mono.just("2"));
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain, never()).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        String body = exchange.getResponse().getBodyAsString().block();
+        assertThat(body).contains("Invalid or expired token");
+    }
+
+    @Test
+    void protectedPath_matchingCredentialsVersion_forwardsRequest() {
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .claim("ver", 2)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("shieldwall:credentials-version:" + userId)).thenReturn(Mono.just("2"));
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    @Test
+    void protectedPath_noRedisEntryForCredentialsVersion_failsOpenAndForwardsRequest() {
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .claim("ver", 1)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("shieldwall:credentials-version:" + userId)).thenReturn(Mono.empty());
         MockServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
 

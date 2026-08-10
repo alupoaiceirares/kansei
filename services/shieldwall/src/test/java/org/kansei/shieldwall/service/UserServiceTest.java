@@ -18,6 +18,7 @@ import org.kansei.shieldwall.security.JwtService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -46,6 +47,10 @@ class UserServiceTest {
     private JwtService jwtService;
     @Mock
     private MailEventPublisher mailEventPublisher;
+    // Never stubbed - publishCredentialsVersion swallows any exception, including the NPE an unstubbed
+    // opsForValue() chain would throw, so tests don't need to care about Redis at all
+    @Mock
+    private StringRedisTemplate redisTemplate;
 
     private UserService userService;
 
@@ -53,7 +58,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, verificationTokenRepository, passwordEncoder, jwtService, mailEventPublisher);
+        userService = new UserService(userRepository, verificationTokenRepository, passwordEncoder, jwtService, mailEventPublisher, redisTemplate);
         ReflectionTestUtils.setField(userService, "retentionMonths", RETENTION_MONTHS);
         ReflectionTestUtils.setField(userService, "verificationExpiryHours", 24);
         ReflectionTestUtils.setField(userService, "passwordResetExpiryMinutes", 60);

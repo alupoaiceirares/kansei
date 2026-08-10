@@ -13,6 +13,7 @@ import org.kansei.shieldwall.repository.UserRepository;
 import org.kansei.shieldwall.repository.VerificationTokenRepository;
 import org.kansei.shieldwall.security.JwtService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,11 +27,15 @@ import java.util.UUID;
 @Service
 public class UserService {
 
+    // control-tower reads this to check a token's ver claim without needing its own DB access
+    private static final String CREDENTIALS_VERSION_KEY_PREFIX = "shieldwall:credentials-version:";
+
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MailEventPublisher mailEventPublisher;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${account.deactivation.retention-months:3}")
     private int retentionMonths;
@@ -42,12 +47,14 @@ public class UserService {
     private int passwordResetExpiryMinutes;
 
     public UserService(UserRepository userRepository, VerificationTokenRepository verificationTokenRepository,
-                        PasswordEncoder passwordEncoder, JwtService jwtService, MailEventPublisher mailEventPublisher) {
+                        PasswordEncoder passwordEncoder, JwtService jwtService, MailEventPublisher mailEventPublisher,
+                        StringRedisTemplate redisTemplate) {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.mailEventPublisher = mailEventPublisher;
+        this.redisTemplate = redisTemplate;
     }
 
     @Transactional
@@ -121,6 +128,7 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         // Only touch fields that were actually provided - null means "unchanged".
+        boolean credentialsBumped = false;
         if (request.email() != null) {
             String email = normalizeEmail(request.email());
             if (!email.equals(user.getEmail())) {
@@ -128,8 +136,9 @@ public class UserService {
                     throw new EmailAlreadyExistsException(email);
                 }
                 user.setEmail(email);
-                // Email is a login credential - invalidate existing tokens, force re-login
+                // Email is a login credential, invalidate existing tokens, force re-login
                 user.setCredentialsVersion(user.getCredentialsVersion() + 1);
+                credentialsBumped = true;
             }
         }
 
@@ -148,8 +157,11 @@ public class UserService {
             user.setLastName(request.lastName());
         }
 
-        // @PreUpdate on the entity sets updatedAt automatically on save.
+        // @PreUpdate on the entity sets updatedAt automatically on save
         User saved = userRepository.save(user);
+        if (credentialsBumped) {
+            publishCredentialsVersion(saved);
+        }
         return toUserResponse(saved);
     }
 
@@ -158,15 +170,16 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(UserNotFoundException::new);
 
-        // Require proof of the current password even though the request is already JWT-authenticated - protects against a leaked/stolen token being used to lock the real owner out
+        // Require proof of the current password even though the request is already JWT-authenticated, protects against a leaked/stolen token being used to lock the real owner out
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new InvalidCredentialsException();
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
-        // Invalidate existing tokens - force re-login with the new password
+        // Invalidate existing tokens, force re-login with the new password
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
+        publishCredentialsVersion(user);
     }
 
     @Transactional
@@ -184,6 +197,7 @@ public class UserService {
         // Invalidate existing tokens immediately, not just at natural expiry
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
+        publishCredentialsVersion(user);
     }
 
     /**
@@ -263,9 +277,20 @@ public class UserService {
         // Invalidate existing tokens - force re-login with the new password
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
+        publishCredentialsVersion(user);
 
         verificationToken.setUsedAt(Instant.now());
         verificationTokenRepository.save(verificationToken);
+    }
+
+    // Fail-soft, a Redis outage must never block a password/email change.
+    // Shieldwall's own DB-backed check (JwtAuthenticationFilter re-reading credentialsVersion from Postgres on every request) stays authoritative regardless; this only feeds control-tower's earlier, DB-less gateway check
+    private void publishCredentialsVersion(User user) {
+        try {
+            redisTemplate.opsForValue().set(CREDENTIALS_VERSION_KEY_PREFIX + user.getId(), String.valueOf(user.getCredentialsVersion()));
+        } catch (Exception ex) {
+            // swallow
+        }
     }
 
     private void createAndSendToken(User user, TokenType type) {
