@@ -19,7 +19,15 @@ RUN mvn -f control-tower/pom.xml clean package -DskipTests -B
 # JRE only (not JDK) - smaller image, no compiler needed to just run a jar
 FROM eclipse-temurin:25-jre AS run
 WORKDIR /app
+
+# wget only, kept (not purged), needed at runtime by the HEALTHCHECK below, not just at build time
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /build/control-tower/target/control-tower-*.jar app.jar
 
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=20s \
+    CMD wget --spider -q http://localhost:8080/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "app.jar"]

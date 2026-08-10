@@ -3,6 +3,7 @@ package org.kansei.wirehood.controller;
 import org.kansei.wirehood.dto.CommentResponse;
 import org.kansei.wirehood.dto.EditCommentRequest;
 import org.kansei.wirehood.service.CommentService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +30,7 @@ public class CommentController {
     public Mono<CommentResponse> edit(
             @PathVariable UUID commentId,
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody EditCommentRequest request
+            @Valid @RequestBody EditCommentRequest request
     ) {
         return commentService.edit(commentId, userId, request);
     }

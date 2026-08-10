@@ -105,8 +105,12 @@ services:
     ports:
       - "${CONTROL_TOWER_PORT}:${CONTROL_TOWER_PORT}"
     depends_on:
-      - shieldwall
-      - wirehood
+      # Waits for the HEALTHCHECK baked into each image's Dockerfile (wget against /actuator/health),
+      # not just "container started" - a JVM takes a few seconds to actually bind its port and be ready
+      shieldwall:
+        condition: service_healthy
+      wirehood:
+        condition: service_healthy
     restart: unless-stopped
 
   wirehood:

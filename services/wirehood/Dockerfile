@@ -22,8 +22,9 @@ WORKDIR /app
 
 # yt-dlp/FFmpeg - search and download both shell out to a bare "yt-dlp" command via ProcessBuilder, FFmpeg is invoked by yt-dlp itself, not called directly the code, both just need to be on PATH
 # Standalone yt-dlp binary, not pip - avoids the PEP 668 --break-system-packages mess entirely, no Python needed either
+# wget kept (not purged, unlike curl), needed at runtime by the HEALTHCHECK below, not just at build time
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg curl \
+    && apt-get install -y --no-install-recommends ffmpeg curl wget \
     && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o /usr/local/bin/yt-dlp \
     && chmod a+rx /usr/local/bin/yt-dlp \
     && apt-get purge -y curl \
@@ -33,4 +34,6 @@ RUN apt-get update \
 COPY --from=build /build/wirehood/target/wirehood-*.jar app.jar
 
 EXPOSE 8082
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 --start-period=20s \
+    CMD wget --spider -q http://localhost:8082/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,5 +1,6 @@
 package org.kansei.wirehood.controller;
 
+import org.kansei.wirehood.dto.PageResponse;
 import org.kansei.wirehood.dto.ThumbnailSubmissionResponse;
 import org.kansei.wirehood.model.ThumbnailSubmissionStatus;
 import org.kansei.wirehood.service.ThumbnailSubmissionService;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -29,11 +29,13 @@ public class AdminThumbnailController {
     }
 
     @GetMapping
-    public Flux<ThumbnailSubmissionResponse> list(
+    public Mono<PageResponse<ThumbnailSubmissionResponse>> list(
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestParam(required = false, defaultValue = "PENDING") ThumbnailSubmissionStatus status
+            @RequestParam(required = false, defaultValue = "PENDING") ThumbnailSubmissionStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
-        return thumbnailSubmissionService.listByStatus(userId, status);
+        return thumbnailSubmissionService.listByStatus(userId, status, page, size);
     }
 
     // Lets an admin actually see the submitted image before deciding

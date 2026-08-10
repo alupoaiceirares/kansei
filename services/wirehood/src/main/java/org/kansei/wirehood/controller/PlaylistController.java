@@ -9,6 +9,7 @@ import org.kansei.wirehood.dto.PlaylistResponse;
 import org.kansei.wirehood.dto.ReorderPlaylistRequest;
 import org.kansei.wirehood.dto.UpdatePlaylistRequest;
 import org.kansei.wirehood.service.PlaylistService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,7 +41,7 @@ public class PlaylistController {
     @PostMapping
     public Mono<PlaylistResponse> create(
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody CreatePlaylistRequest request
+            @Valid @RequestBody CreatePlaylistRequest request
     ) {
         return playlistService.create(userId, request);
     }
@@ -62,7 +63,7 @@ public class PlaylistController {
     public Mono<PlaylistResponse> update(
             @PathVariable UUID playlistId,
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody UpdatePlaylistRequest request
+            @Valid @RequestBody UpdatePlaylistRequest request
     ) {
         return playlistService.update(playlistId, userId, request);
     }
@@ -78,7 +79,7 @@ public class PlaylistController {
     public Mono<Void> addTrack(
             @PathVariable UUID playlistId,
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody AddTrackRequest request
+            @Valid @RequestBody AddTrackRequest request
     ) {
         return playlistService.addTrack(playlistId, userId, request);
     }
@@ -98,7 +99,7 @@ public class PlaylistController {
     public Mono<Void> reorder(
             @PathVariable UUID playlistId,
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody ReorderPlaylistRequest request
+            @Valid @RequestBody ReorderPlaylistRequest request
     ) {
         return playlistService.reorder(playlistId, userId, request);
     }
@@ -116,7 +117,7 @@ public class PlaylistController {
     public Mono<Void> addCollaborator(
             @PathVariable UUID playlistId,
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody AddCollaboratorRequest request
+            @Valid @RequestBody AddCollaboratorRequest request
     ) {
         return playlistService.addCollaborator(playlistId, userId, request);
     }

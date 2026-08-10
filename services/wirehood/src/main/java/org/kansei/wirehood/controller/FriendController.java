@@ -5,6 +5,7 @@ import org.kansei.wirehood.dto.FriendResponse;
 import org.kansei.wirehood.dto.FriendSearchResult;
 import org.kansei.wirehood.dto.SendFriendRequestRequest;
 import org.kansei.wirehood.service.FriendshipService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,7 +55,7 @@ public class FriendController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Mono<Void> sendRequest(
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody SendFriendRequestRequest request
+            @Valid @RequestBody SendFriendRequestRequest request
     ) {
         return friendshipService.sendRequest(userId, request.userId());
     }

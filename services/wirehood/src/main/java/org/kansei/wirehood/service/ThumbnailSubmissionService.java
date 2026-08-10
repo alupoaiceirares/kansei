@@ -1,5 +1,6 @@
 package org.kansei.wirehood.service;
 
+import org.kansei.wirehood.dto.PageResponse;
 import org.kansei.wirehood.dto.ThumbnailSubmissionResponse;
 import org.kansei.wirehood.model.ThumbnailSubmissionStatus;
 import org.kansei.wirehood.model.Track;
@@ -9,17 +10,19 @@ import org.kansei.wirehood.repository.TrackThumbnailSubmissionRepository;
 import org.kansei.wirehood.storage.FilenameBuilder;
 import org.kansei.wirehood.storage.ImageMagicBytes;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -75,10 +78,19 @@ public class ThumbnailSubmissionService {
                 });
     }
 
-    public Flux<ThumbnailSubmissionResponse> listByStatus(UUID adminUserId, ThumbnailSubmissionStatus status) {
+    public Mono<PageResponse<ThumbnailSubmissionResponse>> listByStatus(
+            UUID adminUserId, ThumbnailSubmissionStatus status, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), Sort.by(Sort.Direction.ASC, "submittedAt"));
         return adminAuthService.requireAdmin(adminUserId)
-                .flatMapMany(admin -> submissionRepository.findByStatus(status))
-                .map(ThumbnailSubmissionResponse::from);
+                .then(Mono.zip(
+                        submissionRepository.findByStatus(status, pageable).map(ThumbnailSubmissionResponse::from).collectList(),
+                        submissionRepository.countByStatus(status)))
+                .map(resolved -> PageResponse.of(resolved.getT1(), pageable.getPageNumber(), pageable.getPageSize(), resolved.getT2()));
+    }
+
+    // 1-100, defaulting downward rather than erroring, a bad size param isn't worth 400ing over
+    private static int clampSize(int size) {
+        return Math.min(Math.max(size, 1), 100);
     }
 
     // Lets an admin actually see the image before approving/rejecting it - same FileSystemResource pattern as TrackService.getThumbnail
