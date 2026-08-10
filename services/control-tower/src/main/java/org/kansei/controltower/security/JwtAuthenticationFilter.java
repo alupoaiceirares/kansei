@@ -10,6 +10,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -27,12 +28,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Verifies signature + expiry only. No DB access here, so no credentials_version check like shieldwall does - a password/email change won't invalidate a token at the gateway until it naturally expires
+ * Verifies signature + expiry, and credentials_version (the ver claim) against Redis, shieldwall writes the current version there on every password/email change, so a token issued before such a change is rejected here instead of surviving until natural expiry
+ * Still no DB access, Redis is a mirror shieldwall pushes to, not a source this filter reads through to Postgres
  */
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String CREDENTIALS_VERSION_KEY_PREFIX = "shieldwall:credentials-version:";
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/login",
@@ -43,10 +46,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final SecretKey signingKey;
     private final ObjectMapper objectMapper;
+    private final ReactiveStringRedisTemplate redisTemplate;
 
-    public JwtAuthenticationFilter(@Value("${jwt.secret}") String secret, ObjectMapper objectMapper) {
+    public JwtAuthenticationFilter(
+            @Value("${jwt.secret}") String secret,
+            ObjectMapper objectMapper,
+            ReactiveStringRedisTemplate redisTemplate
+    ) {
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
         this.objectMapper = objectMapper;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
@@ -69,7 +78,31 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             return unauthorized(exchange, "Invalid or expired token");
         }
 
-        return chain.filter(withUserIdHeader(exchange, claims.getSubject()));
+        return hasCurrentCredentialsVersion(claims)
+                .flatMap(current -> current
+                        ? chain.filter(withUserIdHeader(exchange, claims.getSubject()))
+                        : unauthorized(exchange, "Invalid or expired token"));
+    }
+
+    // A missing ver claim, a missing Redis key (never bumped, or Redis flushed/restarted), or Redis being unreachable all fail OPEN, not closed: there's no DB fallback at this layer, shieldwall's own credentials_version check remains the
+    // authoritative backstop regardless
+    private Mono<Boolean> hasCurrentCredentialsVersion(Claims claims) {
+        Integer tokenVersion = claims.get("ver", Integer.class);
+        if (tokenVersion == null) {
+            return Mono.just(true);
+        }
+        return redisTemplate.opsForValue().get(CREDENTIALS_VERSION_KEY_PREFIX + claims.getSubject())
+                .map(storedVersion -> matchesOrUnparseable(storedVersion, tokenVersion))
+                .defaultIfEmpty(true)
+                .onErrorReturn(true);
+    }
+
+    private static boolean matchesOrUnparseable(String storedVersion, int tokenVersion) {
+        try {
+            return Integer.parseInt(storedVersion) == tokenVersion;
+        } catch (NumberFormatException ex) {
+            return true;
+        }
     }
 
     @Override
