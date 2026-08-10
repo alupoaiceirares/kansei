@@ -1,6 +1,7 @@
 package org.kansei.wirehood.repository;
 
 import org.kansei.wirehood.dto.GenreVoteResponse;
+import org.kansei.wirehood.dto.TrackGenreVoteRow;
 import org.kansei.wirehood.model.TrackGenreTag;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -8,6 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -33,4 +35,14 @@ public interface TrackGenreTagRepository extends Repository<TrackGenreTag, Void>
     // Admin moderation action, wipes every voter's row for this (track, genre) pair, not just one user's vote, since the tag itself only exists as the aggregate of votes
     @Query("DELETE FROM track_genre_tags WHERE track_id = :trackId AND genre_id = :genreId")
     Mono<Void> deleteTag(UUID trackId, UUID genreId);
+
+    // Per-track vote breakdown across a whole set of tracks (a user's library) - MusicProfileService picks each track's dominant genre in Java, then buckets/percentages by genre for the music profile
+    @Query("""
+            SELECT t.track_id AS track_id, g.id AS genre_id, g.name AS genre_name, COUNT(*) AS votes
+            FROM track_genre_tags t
+            JOIN genres g ON g.id = t.genre_id
+            WHERE t.track_id IN (:trackIds)
+            GROUP BY t.track_id, g.id, g.name
+            """)
+    Flux<TrackGenreVoteRow> countVotesForTracks(Collection<UUID> trackIds);
 }

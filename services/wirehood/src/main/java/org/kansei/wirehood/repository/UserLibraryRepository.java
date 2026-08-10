@@ -12,4 +12,6 @@ public interface UserLibraryRepository extends ReactiveCrudRepository<UserLibrar
     Mono<Boolean> existsByUserIdAndTrackId(UUID userId, UUID trackId);
 
     Flux<UserLibrary> findByUserId(UUID userId);
+
+    Mono<Long> countByUserId(UUID userId);
 }

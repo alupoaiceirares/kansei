@@ -26,4 +26,8 @@ public interface PlaylistCollaboratorRepository extends Repository<PlaylistColla
 
     @Query("SELECT * FROM playlist_collaborators WHERE playlist_id = :playlistId")
     Flux<PlaylistCollaborator> findByPlaylistId(UUID playlistId);
+
+    // Music profile's playlistsCollaborated field
+    @Query("SELECT COUNT(*) FROM playlist_collaborators WHERE user_id = :userId")
+    Mono<Long> countByUserId(UUID userId);
 }

@@ -1,0 +1,22 @@
+type Query {
+    musicProfile: MusicProfile!
+}
+
+# A profile screen pulling from several joined tables at once - fields are resolved lazily
+# (MusicProfileController), so a compact-card query and a full-stats-page query only pay for
+# the fields they actually ask for. See WIREHOOD_PLAN.md's Genres + music profile section.
+type MusicProfile {
+    totalTracksSaved: Int!
+    genreBreakdown: [GenreBreakdown!]!
+    mostDownloadedArtist: String
+    playlistsOwned: Int!
+    playlistsCollaborated: Int!
+    friendCount: Int!
+}
+
+type GenreBreakdown {
+    genreId: ID!
+    genreName: String!
+    trackCount: Int!
+    percentage: Float!
+}
