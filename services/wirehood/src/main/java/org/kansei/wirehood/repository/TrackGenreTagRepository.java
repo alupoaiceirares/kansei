@@ -29,4 +29,8 @@ public interface TrackGenreTagRepository extends Repository<TrackGenreTag, Void>
             ORDER BY votes DESC
             """)
     Flux<GenreVoteResponse> countVotesByTrackId(UUID trackId);
+
+    // Admin moderation action, wipes every voter's row for this (track, genre) pair, not just one user's vote, since the tag itself only exists as the aggregate of votes
+    @Query("DELETE FROM track_genre_tags WHERE track_id = :trackId AND genre_id = :genreId")
+    Mono<Void> deleteTag(UUID trackId, UUID genreId);
 }

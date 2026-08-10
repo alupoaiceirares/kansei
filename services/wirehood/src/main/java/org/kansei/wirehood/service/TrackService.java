@@ -3,6 +3,7 @@ package org.kansei.wirehood.service;
 import org.kansei.wirehood.dto.LibraryTrackResponse;
 import org.kansei.wirehood.dto.TrackDetailResponse;
 import org.kansei.wirehood.dto.TrackFormatSummary;
+import org.kansei.wirehood.dto.UpdateTrackMetadataRequest;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackFormat;
 import org.kansei.wirehood.model.TrackFormatStatus;
@@ -18,9 +19,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,15 +37,18 @@ public class TrackService {
     private final TrackRepository trackRepository;
     private final TrackFormatRepository trackFormatRepository;
     private final UserLibraryRepository userLibraryRepository;
+    private final AdminAuthService adminAuthService;
 
     public TrackService(
             TrackRepository trackRepository,
             TrackFormatRepository trackFormatRepository,
-            UserLibraryRepository userLibraryRepository
+            UserLibraryRepository userLibraryRepository,
+            AdminAuthService adminAuthService
     ) {
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
         this.userLibraryRepository = userLibraryRepository;
+        this.adminAuthService = adminAuthService;
     }
 
     public Mono<TrackDetailResponse> getDetail(UUID trackId) {
@@ -114,5 +122,68 @@ public class TrackService {
                                 .collect(Collectors.toList());
                     });
                 });
+    }
+
+    // Admin-only, fixing a bad parse-and-confirm entry (title/artist/extra_info)
+    public Mono<TrackDetailResponse> updateMetadata(UUID trackId, UUID adminUserId, UpdateTrackMetadataRequest request) {
+        if (request.title() == null || request.title().isBlank()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required"));
+        }
+        return adminAuthService.requireAdmin(adminUserId)
+                .then(findTrackOr404(trackId))
+                .flatMap(track -> {
+                    track.setTitle(request.title());
+                    track.setArtist(request.artist());
+                    track.setExtraInfo(request.extraInfo());
+                    track.setUpdatedAt(Instant.now());
+                    return trackRepository.save(track);
+                })
+                .flatMap(saved -> trackFormatRepository.findByTrackId(trackId)
+                        .map(TrackFormatSummary::from)
+                        .collectList()
+                        .map(formats -> TrackDetailResponse.of(saved, formats)));
+    }
+
+    // Admin-only, hide from regular users, keep on server/DB for admin/archive purposes; distinct from hardDelete below
+    public Mono<Void> setVisible(UUID trackId, UUID adminUserId, boolean visible) {
+        return adminAuthService.requireAdmin(adminUserId)
+                .then(findTrackOr404(trackId))
+                .flatMap(track -> {
+                    track.setVisible(visible);
+                    track.setUpdatedAt(Instant.now());
+                    return trackRepository.save(track);
+                })
+                .then();
+    }
+
+    // Admin-only, permanent, the audit_log row is what preserves the history, not the row itself
+    // Every FK to tracks(id) is ON DELETE CASCADE, so DB rows clean up on their own; the actual media/thumbnail files on disk don't, so those are gathered before the delete and removed (best-effort) after
+    public Mono<Void> hardDelete(UUID trackId, UUID adminUserId) {
+        return adminAuthService.requireAdmin(adminUserId)
+                .then(findTrackOr404(trackId))
+                .flatMap(track -> trackFormatRepository.findByTrackId(trackId).collectList()
+                        .flatMap(formats -> trackRepository.delete(track)
+                                .then(deleteTrackFiles(track, formats))));
+    }
+
+    private Mono<Void> deleteTrackFiles(Track track, List<TrackFormat> formats) {
+        return Flux.fromIterable(formats)
+                .map(TrackFormat::getFilePath)
+                .filter(path -> path != null)
+                .concatMap(path -> deleteFileIfPresent(Path.of(path)))
+                .then(track.getThumbnailPath() == null ? Mono.empty() : deleteFileIfPresent(Path.of(track.getThumbnailPath())));
+    }
+
+    // Best-effort, fail-soft, same pattern as ThumbnailSubmissionService, a leftover file is cheaper than blocking the caller over disk cleanup
+    private Mono<Void> deleteFileIfPresent(Path path) {
+        return Mono.fromCallable(() -> Files.deleteIfExists(path))
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(ex -> Mono.just(false))
+                .then();
+    }
+
+    private Mono<Track> findTrackOr404(UUID trackId) {
+        return trackRepository.findById(trackId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Track not found")));
     }
 }

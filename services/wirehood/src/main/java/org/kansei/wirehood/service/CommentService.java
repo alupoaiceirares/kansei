@@ -22,10 +22,16 @@ public class CommentService {
 
     private final TrackCommentRepository trackCommentRepository;
     private final ShieldwallUserClient shieldwallUserClient;
+    private final AdminAuthService adminAuthService;
 
-    public CommentService(TrackCommentRepository trackCommentRepository, ShieldwallUserClient shieldwallUserClient) {
+    public CommentService(
+            TrackCommentRepository trackCommentRepository,
+            ShieldwallUserClient shieldwallUserClient,
+            AdminAuthService adminAuthService
+    ) {
         this.trackCommentRepository = trackCommentRepository;
         this.shieldwallUserClient = shieldwallUserClient;
+        this.adminAuthService = adminAuthService;
     }
 
     public Mono<CommentResponse> post(UUID trackId, UUID userId, CreateCommentRequest request) {
@@ -65,8 +71,9 @@ public class CommentService {
                         .map(usernames -> CommentResponse.from(saved, usernames.get(userId))));
     }
 
+    // Own comment OR an admin, editing stays owner-only, only delete is admin-gated
     public Mono<Void> softDelete(UUID commentId, UUID userId) {
-        return findOwned(commentId, userId)
+        return findOwnedOrAdmin(commentId, userId)
                 .map(comment -> {
                     comment.setDeletedAt(Instant.now());
                     return comment;
@@ -75,12 +82,20 @@ public class CommentService {
                 .then();
     }
 
-    // Edit/delete restricted to the comment's own author - 404 if the comment doesn't exist, 403 if it exists but belongs to someone else
+    // Edit restricted to the comment's own author - 404 if the comment doesn't exist, 403 if it exists but belongs to someone else
     private Mono<TrackComment> findOwned(UUID commentId, UUID userId) {
         return trackCommentRepository.findById(commentId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found")))
                 .flatMap(comment -> comment.getUserId().equals(userId)
                         ? Mono.just(comment)
                         : Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your comment")));
+    }
+
+    private Mono<TrackComment> findOwnedOrAdmin(UUID commentId, UUID userId) {
+        return trackCommentRepository.findById(commentId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found")))
+                .flatMap(comment -> comment.getUserId().equals(userId)
+                        ? Mono.just(comment)
+                        : adminAuthService.requireAdmin(userId).thenReturn(comment));
     }
 }
