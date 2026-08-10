@@ -4,6 +4,7 @@ import org.kansei.wirehood.model.Playlist;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -18,6 +19,8 @@ public interface PlaylistRepository extends ReactiveCrudRepository<Playlist, UUI
             """)
     Flux<Playlist> findAccessibleByUserId(UUID userId);
 
-    // Owned only, not collaborated-on - used by data export ("your own musical data")
+    // Owned only, not collaborated-on, used by data export ("your own musical data") and the music profile's playlistsOwned field
     Flux<Playlist> findByOwnerId(UUID ownerId);
+
+    Mono<Long> countByOwnerId(UUID ownerId);
 }

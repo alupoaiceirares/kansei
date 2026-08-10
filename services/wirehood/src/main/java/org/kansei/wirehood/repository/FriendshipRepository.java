@@ -29,4 +29,8 @@ public interface FriendshipRepository extends Repository<Friendship, Void> {
     // Serves "my friends" (filter ACCEPTED), "my pending requests" (filter PENDING), and search-result annotation - all filtered in-memory by the caller, one query covers all three
     @Query("SELECT * FROM friendships WHERE user_id_a = :userId OR user_id_b = :userId")
     Flux<Friendship> findAllForUser(UUID userId);
+
+    // Music profile's friendCount field - cheaper than findAllForUser + client-side filter/count, which fetches full rows just to discard most of them
+    @Query("SELECT COUNT(*) FROM friendships WHERE (user_id_a = :userId OR user_id_b = :userId) AND status = 'ACCEPTED'")
+    Mono<Long> countAcceptedForUser(UUID userId);
 }
