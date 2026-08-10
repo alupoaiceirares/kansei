@@ -1,18 +1,24 @@
 package org.kansei.wirehood.service;
 
 import org.kansei.wirehood.dto.LibraryTrackResponse;
+import org.kansei.wirehood.dto.PageResponse;
 import org.kansei.wirehood.dto.TrackDetailResponse;
 import org.kansei.wirehood.dto.TrackFormatSummary;
 import org.kansei.wirehood.dto.UpdateTrackMetadataRequest;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackFormat;
 import org.kansei.wirehood.model.TrackFormatStatus;
+import org.kansei.wirehood.model.TrackThumbnailSubmission;
 import org.kansei.wirehood.model.UserLibrary;
 import org.kansei.wirehood.repository.TrackFormatRepository;
 import org.kansei.wirehood.repository.TrackRepository;
+import org.kansei.wirehood.repository.TrackThumbnailSubmissionRepository;
 import org.kansei.wirehood.repository.UserLibraryRepository;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -37,17 +43,20 @@ public class TrackService {
     private final TrackRepository trackRepository;
     private final TrackFormatRepository trackFormatRepository;
     private final UserLibraryRepository userLibraryRepository;
+    private final TrackThumbnailSubmissionRepository trackThumbnailSubmissionRepository;
     private final AdminAuthService adminAuthService;
 
     public TrackService(
             TrackRepository trackRepository,
             TrackFormatRepository trackFormatRepository,
             UserLibraryRepository userLibraryRepository,
+            TrackThumbnailSubmissionRepository trackThumbnailSubmissionRepository,
             AdminAuthService adminAuthService
     ) {
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
         this.userLibraryRepository = userLibraryRepository;
+        this.trackThumbnailSubmissionRepository = trackThumbnailSubmissionRepository;
         this.adminAuthService = adminAuthService;
     }
 
@@ -94,13 +103,17 @@ public class TrackService {
                 .body(new FileSystemResource(path)));
     }
 
-    // Batches both lookups across the whole library (2 queries total, not 2N)
-    public Mono<List<LibraryTrackResponse>> getLibrary(UUID userId) {
-        return userLibraryRepository.findByUserId(userId)
-                .collectList()
-                .flatMap(entries -> {
+    // Batches both lookups across the page (2 queries total, not 2N), plus a 3rd for the total count
+    public Mono<PageResponse<LibraryTrackResponse>> getLibrary(UUID userId, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), Sort.by(Sort.Direction.DESC, "addedAt"));
+        return Mono.zip(
+                        userLibraryRepository.findByUserId(userId, pageable).collectList(),
+                        userLibraryRepository.countByUserId(userId))
+                .flatMap(counted -> {
+                    List<UserLibrary> entries = counted.getT1();
+                    long total = counted.getT2();
                     if (entries.isEmpty()) {
-                        return Mono.just(List.of());
+                        return Mono.just(PageResponse.of(List.<LibraryTrackResponse>of(), pageable.getPageNumber(), pageable.getPageSize(), total));
                     }
 
                     List<UUID> trackIds = entries.stream().map(UserLibrary::getTrackId).collect(Collectors.toList());
@@ -112,7 +125,7 @@ public class TrackService {
                         Map<UUID, Track> tracks = resolved.getT1();
                         Map<UUID, List<TrackFormat>> formatsByTrack = resolved.getT2();
 
-                        return entries.stream()
+                        List<LibraryTrackResponse> items = entries.stream()
                                 .map(entry -> {
                                     List<TrackFormatSummary> formats = formatsByTrack
                                             .getOrDefault(entry.getTrackId(), List.of())
@@ -120,15 +133,18 @@ public class TrackService {
                                     return LibraryTrackResponse.of(tracks.get(entry.getTrackId()), formats, entry.getAddedAt());
                                 })
                                 .collect(Collectors.toList());
+                        return PageResponse.of(items, pageable.getPageNumber(), pageable.getPageSize(), total);
                     });
                 });
     }
 
-    // Admin-only, fixing a bad parse-and-confirm entry (title/artist/extra_info)
+    // 1-100, defaulting downward rather than erroring, a bad size param isn't worth 400ing over
+    private static int clampSize(int size) {
+        return Math.min(Math.max(size, 1), 100);
+    }
+
+    // Admin-only, fixing a bad parse-and-confirm entry (title/artist/extra_info), title's @NotBlank enforced by @Valid at the controller, not re-checked here
     public Mono<TrackDetailResponse> updateMetadata(UUID trackId, UUID adminUserId, UpdateTrackMetadataRequest request) {
-        if (request.title() == null || request.title().isBlank()) {
-            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "title is required"));
-        }
         return adminAuthService.requireAdmin(adminUserId)
                 .then(findTrackOr404(trackId))
                 .flatMap(track -> {
@@ -157,19 +173,24 @@ public class TrackService {
     }
 
     // Admin-only, permanent, the audit_log row is what preserves the history, not the row itself
-    // Every FK to tracks(id) is ON DELETE CASCADE, so DB rows clean up on their own; the actual media/thumbnail files on disk don't, so those are gathered before the delete and removed (best-effort) after
+    // Every FK to tracks(id) is ON DELETE CASCADE, so DB rows clean up on their own
+    // The actual media/thumbnail/submission files on disk don't, so those are gathered before the delete and removed after
     public Mono<Void> hardDelete(UUID trackId, UUID adminUserId) {
         return adminAuthService.requireAdmin(adminUserId)
                 .then(findTrackOr404(trackId))
-                .flatMap(track -> trackFormatRepository.findByTrackId(trackId).collectList()
-                        .flatMap(formats -> trackRepository.delete(track)
-                                .then(deleteTrackFiles(track, formats))));
+                .flatMap(track -> Mono.zip(
+                                trackFormatRepository.findByTrackId(trackId).collectList(),
+                                trackThumbnailSubmissionRepository.findByTrackId(trackId).collectList()
+                        )
+                        .flatMap(gathered -> trackRepository.delete(track)
+                                .then(deleteTrackFiles(track, gathered.getT1(), gathered.getT2()))));
     }
 
-    private Mono<Void> deleteTrackFiles(Track track, List<TrackFormat> formats) {
+    private Mono<Void> deleteTrackFiles(Track track, List<TrackFormat> formats, List<TrackThumbnailSubmission> submissions) {
         return Flux.fromIterable(formats)
                 .map(TrackFormat::getFilePath)
                 .filter(path -> path != null)
+                .concatWith(Flux.fromIterable(submissions).map(TrackThumbnailSubmission::getFilePath).filter(path -> path != null))
                 .concatMap(path -> deleteFileIfPresent(Path.of(path)))
                 .then(track.getThumbnailPath() == null ? Mono.empty() : deleteFileIfPresent(Path.of(track.getThumbnailPath())));
     }

@@ -7,6 +7,7 @@ import org.kansei.wirehood.dto.SubmitDownloadResponse;
 import org.kansei.wirehood.service.DownloadEventPublisher;
 import org.kansei.wirehood.service.DownloadService;
 import org.kansei.wirehood.service.SseTicketService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -48,7 +49,7 @@ public class DownloadController {
     @PostMapping
     public Mono<SubmitDownloadResponse> submit(
             @RequestHeader("X-User-Id") UUID userId,
-            @RequestBody SubmitDownloadRequest request
+            @Valid @RequestBody SubmitDownloadRequest request
     ) {
         return downloadService.submit(userId, request);
     }
