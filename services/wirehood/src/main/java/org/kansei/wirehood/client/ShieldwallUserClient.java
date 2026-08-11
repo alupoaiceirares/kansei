@@ -27,6 +27,9 @@ public class ShieldwallUserClient {
     private static final Duration USERNAME_CACHE_TTL = Duration.ofMinutes(15);
     private static final String USERNAME_KEY_PREFIX = "wirehood:username:";
 
+    // A merely-slow shieldwall (not erroring) would otherwise hang the caller indefinitely onErrorResume already covers a hard failure, this makes "too slow" fail the same way
+    private static final Duration SHIELDWALL_CALL_TIMEOUT = Duration.ofSeconds(2);
+
     private final WebClient webClient;
     private final String internalServiceSecret;
     private final ReactiveStringRedisTemplate redisTemplate;
@@ -87,6 +90,7 @@ public class ShieldwallUserClient {
                 .retrieve()
                 .bodyToFlux(UserSummary.class)
                 .collectMap(UserSummary::id, UserSummary::username)
+                .timeout(SHIELDWALL_CALL_TIMEOUT)
                 .onErrorResume(ex -> Mono.just(Map.of()));
     }
 
@@ -113,6 +117,7 @@ public class ShieldwallUserClient {
                 .retrieve()
                 .bodyToFlux(UserMatch.class)
                 .collectList()
+                .timeout(SHIELDWALL_CALL_TIMEOUT)
                 .onErrorResume(ex -> Mono.just(List.of()));
     }
 

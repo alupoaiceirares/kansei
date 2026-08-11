@@ -36,6 +36,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String CREDENTIALS_VERSION_KEY_PREFIX = "shieldwall:credentials-version:";
+    private static final String BLACKLISTED_JTI_KEY_PREFIX = "shieldwall:blacklisted-jti:";
 
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/login",
@@ -79,7 +80,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         return hasCurrentCredentialsVersion(claims)
-                .flatMap(current -> current
+                .zipWith(isNotBlacklisted(claims))
+                .flatMap(checks -> (checks.getT1() && checks.getT2())
                         ? chain.filter(withUserIdHeader(exchange, claims.getSubject()))
                         : unauthorized(exchange, "Invalid or expired token"));
     }
@@ -97,6 +99,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .onErrorReturn(true);
     }
 
+    // Redis is the only store for a blacklisted jti, no Postgres-backed backstop the way ver has, so this check lives only here
+    // Missing jti (token issued before this claim existed) or Redis being unreachable both fail OPEN, same philosophy as above
+    private Mono<Boolean> isNotBlacklisted(Claims claims) {
+        String jti = claims.getId();
+        if (jti == null) {
+            return Mono.just(true);
+        }
+        return redisTemplate.hasKey(BLACKLISTED_JTI_KEY_PREFIX + jti)
+                .map(blacklisted -> !blacklisted)
+                .defaultIfEmpty(true)
+                .onErrorReturn(true);
+    }
+
     private static boolean matchesOrUnparseable(String storedVersion, int tokenVersion) {
         try {
             return Integer.parseInt(storedVersion) == tokenVersion;
@@ -105,9 +120,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
+    // One below RateLimitFilter's HIGHEST_PRECEDENCE, the coarse per-IP throttle should reject spam before this filter spends any crypto work verifying a signature
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE;
+        return Ordered.HIGHEST_PRECEDENCE + 1;
     }
 
     private boolean isPublic(String path) {

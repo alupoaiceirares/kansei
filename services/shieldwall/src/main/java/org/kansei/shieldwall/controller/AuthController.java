@@ -57,6 +57,16 @@ public class AuthController {
     }
 
     /**
+     * Blacklists this specific token's jti (UserService.logout) rather than bumping credentialsVersion
+     * Not in SecurityConfig's permitAll list, so JwtAuthenticationFilter/anyRequest().authenticated() already guarantee the header is a valid, currently-authenticated Bearer token by the time this runs
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authHeader) {
+        userService.logout(authHeader.substring(7));
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Protected route
      * Scope 1: Proving JwtAuthenticationFilter + SecurityConfig's anyRequest().authenticated() rule are working.
      * Scope 2: Endpoint to get details of user
