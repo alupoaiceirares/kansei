@@ -631,4 +631,33 @@ class UserServiceTest {
         verify(userRepository).deleteAll(java.util.List.of(expiredUser));
         verify(verificationTokenRepository).deleteByExpiresAtBefore(any(Instant.class));
     }
+
+    // ---- logout ----
+
+    @Test
+    void logout_validToken_blacklistsJtiWithRemainingTtl() {
+        String token = "some.jwt.token";
+        Instant expiresAt = Instant.now().plusSeconds(120);
+        when(jwtService.extractJti(token)).thenReturn("jti-123");
+        when(jwtService.extractExpiration(token)).thenReturn(expiresAt);
+        org.springframework.data.redis.core.ValueOperations<String, String> valueOperations = mock(org.springframework.data.redis.core.ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        userService.logout(token);
+
+        ArgumentCaptor<java.time.Duration> ttlCaptor = ArgumentCaptor.forClass(java.time.Duration.class);
+        verify(valueOperations).set(eq("shieldwall:blacklisted-jti:jti-123"), eq("1"), ttlCaptor.capture());
+        assertThat(ttlCaptor.getValue().toSeconds()).isBetween(115L, 120L);
+    }
+
+    @Test
+    void logout_alreadyExpiredToken_doesNotWriteToRedis() {
+        String token = "some.jwt.token";
+        when(jwtService.extractJti(token)).thenReturn("jti-123");
+        when(jwtService.extractExpiration(token)).thenReturn(Instant.now().minusSeconds(5));
+
+        userService.logout(token);
+
+        verify(redisTemplate, never()).opsForValue();
+    }
 }

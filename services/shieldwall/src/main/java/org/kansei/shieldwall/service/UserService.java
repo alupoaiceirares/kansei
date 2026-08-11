@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -29,6 +30,10 @@ public class UserService {
 
     // control-tower reads this to check a token's ver claim without needing its own DB access
     private static final String CREDENTIALS_VERSION_KEY_PREFIX = "shieldwall:credentials-version:";
+
+    // control-tower reads this to reject one specific logged-out token without invalidating every
+    // other token the same user holds (unlike credentials_version, which bumps for all of them)
+    private static final String BLACKLISTED_JTI_KEY_PREFIX = "shieldwall:blacklisted-jti:";
 
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
@@ -290,6 +295,16 @@ public class UserService {
             redisTemplate.opsForValue().set(CREDENTIALS_VERSION_KEY_PREFIX + user.getId(), String.valueOf(user.getCredentialsVersion()));
         } catch (Exception ex) {
             // swallow
+        }
+    }
+
+    // Not fail-soft, unlike publishCredentialsVersion above, Redis is the only place a blacklisted jti is recorded, so a swallowed failure here would mean logout silently does nothing while reporting success. Let it surface as a 500 instead
+    public void logout(String token) {
+        String jti = jwtService.extractJti(token);
+        Instant expiresAt = jwtService.extractExpiration(token);
+        Duration remaining = Duration.between(Instant.now(), expiresAt);
+        if (remaining.isPositive()) {
+            redisTemplate.opsForValue().set(BLACKLISTED_JTI_KEY_PREFIX + jti, "1", remaining);
         }
     }
 

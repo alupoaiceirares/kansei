@@ -208,6 +208,87 @@ class JwtAuthenticationFilterTest {
         assertThat(exchange.getResponse().getStatusCode()).isNull();
     }
 
+    // ---- jti blacklist (logout) ----
+
+    @Test
+    void protectedPath_blacklistedJti_returns401() {
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .id("jti-123")
+                .subject(userId)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        when(redisTemplate.hasKey("shieldwall:blacklisted-jti:jti-123")).thenReturn(Mono.just(true));
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain, never()).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void protectedPath_notBlacklistedJti_forwardsRequest() {
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .id("jti-123")
+                .subject(userId)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        when(redisTemplate.hasKey("shieldwall:blacklisted-jti:jti-123")).thenReturn(Mono.just(false));
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    @Test
+    void protectedPath_noJtiClaim_failsOpenAndForwardsRequest() {
+        // Existing tests' tokens carry no jti - this asserts that's intentionally safe (pre-existing tokens issued before this claim was added)
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    @Test
+    void protectedPath_redisUnreachableForBlacklistCheck_failsOpenAndForwardsRequest() {
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .id("jti-123")
+                .subject(userId)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        when(redisTemplate.hasKey("shieldwall:blacklisted-jti:jti-123"))
+                .thenReturn(Mono.error(new RuntimeException("connection refused")));
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        verify(chain).filter(any());
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
     private static byte[] bytes(int length, byte fill) {
         byte[] result = new byte[length];
         Arrays.fill(result, fill);

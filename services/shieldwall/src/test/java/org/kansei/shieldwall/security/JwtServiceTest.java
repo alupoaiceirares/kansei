@@ -47,6 +47,25 @@ class JwtServiceTest {
     }
 
     @Test
+    void generateToken_eachTokenGetsAUniqueJti() {
+        User user = user(0);
+
+        String jtiOne = jwtService.extractJti(jwtService.generateToken(user));
+        String jtiTwo = jwtService.extractJti(jwtService.generateToken(user));
+
+        assertThat(jtiOne).isNotBlank().isNotEqualTo(jtiTwo);
+    }
+
+    @Test
+    void extractExpiration_matchesConfiguredExpirationMs() {
+        String token = jwtService.generateToken(user(0));
+
+        Instant expiresAt = jwtService.extractExpiration(token);
+
+        assertThat(expiresAt).isCloseTo(Instant.now().plusMillis(60_000), org.assertj.core.api.Assertions.within(2, java.time.temporal.ChronoUnit.SECONDS));
+    }
+
+    @Test
     void isTokenValid_freshlyIssuedToken_isValid() {
         String token = jwtService.generateToken(user(0));
 

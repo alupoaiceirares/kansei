@@ -39,10 +39,37 @@ services:
       timeout: 5s
       retries: 5
 
-  # Shared across services - wirehood's SSE tickets + username cache today, control-tower/wirehood's credentials_version cache
+  # Shared across services, wirehood's SSE tickets + username cache, control-tower/wirehood's credentials_version cache default user keeps REDIS_PASSWORD + full access, used for redis-cli/manual debugging and this healthcheck
+  # Each app service now authenticates as its own scoped ACL user instead (see spring.data.redis.username in each service's application.properties), not default
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    command:
+      - redis-server
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+      - "--user"
+      - "shieldwall"
+      - "on"
+      - ">${SHIELDWALL_REDIS_PASSWORD}"
+      - "~shieldwall:*"
+      - "+@all"
+      - "-@dangerous"
+      - "--user"
+      - "control-tower"
+      - "on"
+      - ">${CONTROL_TOWER_REDIS_PASSWORD}"
+      - "~control-tower:*"
+      - "~shieldwall:credentials-version:*"
+      - "+@all"
+      - "-@dangerous"
+      - "--user"
+      - "wirehood"
+      - "on"
+      - ">${WIREHOOD_REDIS_PASSWORD}"
+      - "~wirehood:*"
+      - "~shieldwall:credentials-version:*"
+      - "+@all"
+      - "-@dangerous"
     ports:
       - "127.0.0.1:${REDIS_PORT}:6379"
     healthcheck:
@@ -82,6 +109,7 @@ services:
       DB_PASSWORD: ${SHIELDWALL_DB_PASSWORD}
       DB_NAME: ${SHIELDWALL_DB_NAME}
       RABBITMQ_HOST: rabbitmq
+      REDIS_HOST: redis
     ports:
       - "${SHIELDWALL_PORT}:${SHIELDWALL_PORT}"
     depends_on:
@@ -102,6 +130,7 @@ services:
       # Inside the compose network, shieldwall/wirehood are reached by service name, not localhost - same reasoning as shieldwall's DB_HOST override above
       SHIELDWALL_URI: http://shieldwall:${SHIELDWALL_PORT}
       WIREHOOD_URI: http://wirehood:${WIREHOOD_PORT}
+      REDIS_HOST: redis
     ports:
       - "${CONTROL_TOWER_PORT}:${CONTROL_TOWER_PORT}"
     depends_on:
