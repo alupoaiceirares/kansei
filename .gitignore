@@ -21,6 +21,7 @@ build/
 # AI
 CLAUDE.md
 CLAUDE.local.md
+AGENTS.md
 
 # Secrets/Certs/Envs
 .env
