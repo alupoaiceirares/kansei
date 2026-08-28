@@ -3,6 +3,7 @@ package org.kansei.shieldwall.service;
 import org.kansei.shieldwall.dto.*;
 import org.kansei.shieldwall.exception.EmailAlreadyExistsException;
 import org.kansei.shieldwall.exception.InvalidCredentialsException;
+import org.kansei.shieldwall.exception.InvalidCurrentPasswordException;
 import org.kansei.shieldwall.exception.InvalidOrExpiredTokenException;
 import org.kansei.shieldwall.exception.UserNotFoundException;
 import org.kansei.shieldwall.exception.UsernameAlreadyExistsException;
@@ -176,8 +177,9 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         // Require proof of the current password even though the request is already JWT-authenticated, protects against a leaked/stolen token being used to lock the real owner out
+        // 400, not the 401 InvalidCredentialsException uses for login, the JWT itself is valid here, only this field was wrong, and a client needs to tell that apart from a gateway-level 401 (dead token)
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCurrentPasswordException();
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
@@ -193,8 +195,9 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
 
         // Require the current password even though the request is already JWT-authenticated same reasoning as changePassword: protects against a leaked/stolen token
+        // Same 400-not-401 reasoning as changePassword above
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException();
+            throw new InvalidCurrentPasswordException();
         }
 
         user.setActive(false);

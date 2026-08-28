@@ -1,0 +1,151 @@
+@keyframes kansei-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes kansei-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+@keyframes kansei-flow {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+@keyframes kansei-highlight {
+  0% {
+    background-color: var(--full);
+    box-shadow: 0 0 6px var(--full);
+  }
+  12% {
+    background-color: var(--dim);
+    box-shadow: none;
+  }
+  88% {
+    background-color: var(--dim);
+    box-shadow: none;
+  }
+  100% {
+    background-color: var(--full);
+    box-shadow: 0 0 6px var(--full);
+  }
+}
+
+/* Form inputs - focus color defaults to the brand pink, overridden per profile section via the --focus-color custom property */
+.ks-input:focus {
+  border-color: var(--focus-color, oklch(65% 0.2 340));
+  outline: none;
+}
+
+/* Hamburger dropdown rows */
+.ks-menu-row {
+  display: block;
+  padding: 9px 14px;
+  border-radius: 8px;
+  font: 400 14px "Inter", sans-serif;
+  color: oklch(30% 0.01 60);
+}
+.ks-menu-row:hover {
+  background: oklch(96% 0.01 70);
+}
+.ks-menu-row--active {
+  font-weight: 500;
+  background: oklch(96% 0.01 70);
+}
+
+/* Service dropdown items - a 1.5px padded wrapper whose background becomes a gradient ring on hover, around a white inner pill */
+.ks-svc-ring {
+  display: block;
+  padding: 1.5px;
+  border-radius: 999px;
+  background: transparent;
+}
+.ks-svc-ring--1:hover {
+  background: linear-gradient(90deg, oklch(48% 0.18 25), oklch(42% 0.12 150));
+}
+.ks-svc-ring--2:hover {
+  background: linear-gradient(90deg, oklch(62% 0.13 200), oklch(65% 0.2 340));
+}
+.ks-svc-ring--3:hover {
+  background: linear-gradient(90deg, oklch(70% 0.15 80), oklch(62% 0.13 200));
+}
+.ks-svc-ring__inner {
+  display: block;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: #fff;
+  font: 400 14px "Inter", sans-serif;
+  color: oklch(30% 0.01 60);
+}
+
+/* Profile: deactivate button inverts to solid on hover */
+.ks-deactivate-btn {
+  padding: 13px 28px;
+  border-radius: 999px;
+  border: 1.5px solid oklch(48% 0.18 25);
+  background: transparent;
+  color: oklch(45% 0.17 25);
+  font: 600 14px "Inter", sans-serif;
+  cursor: pointer;
+}
+.ks-deactivate-btn:hover {
+  background: oklch(48% 0.18 25);
+  color: #fff;
+}
+
+/* Timeline: hidden on desktop, becomes the single visible content column on mobile (see the @media rule below - display:none items don't consume a grid cell, so the marker column naturally becomes column 1 once the left/right columns are hidden) */
+.ks-timeline-col-mobile {
+  display: none;
+}
+
+/* Responsive collapses the design bundle didn't specify (README: "known gaps"). */
+@media (max-width: 419px) {
+  .ks-register-names {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 699px) {
+  .ks-timeline-entry {
+    grid-template-columns: 40px 1fr !important;
+  }
+  .ks-timeline-col-left,
+  .ks-timeline-col-right {
+    display: none !important;
+  }
+  .ks-timeline-col-mobile {
+    display: block !important;
+  }
+}
+
+@media (max-width: 799px) {
+  .ks-profile-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+  .ks-profile-nav-line {
+    display: none !important;
+  }
+  .ks-profile-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .ks-profile-nav button {
+    padding: 8px 4px !important;
+    white-space: nowrap;
+  }
+}
