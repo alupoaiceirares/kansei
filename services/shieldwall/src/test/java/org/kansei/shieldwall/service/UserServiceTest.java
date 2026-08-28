@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.kansei.shieldwall.dto.*;
 import org.kansei.shieldwall.exception.EmailAlreadyExistsException;
 import org.kansei.shieldwall.exception.InvalidCredentialsException;
+import org.kansei.shieldwall.exception.InvalidCurrentPasswordException;
 import org.kansei.shieldwall.exception.InvalidOrExpiredTokenException;
 import org.kansei.shieldwall.exception.UserNotFoundException;
 import org.kansei.shieldwall.exception.UsernameAlreadyExistsException;
@@ -390,7 +391,7 @@ class UserServiceTest {
         when(passwordEncoder.matches("wrong", user.getPassword())).thenReturn(false);
 
         assertThatThrownBy(() -> userService.changePassword(user.getId(), new ChangePasswordRequest("wrong", "newpassword1")))
-                .isInstanceOf(InvalidCredentialsException.class);
+                .isInstanceOf(InvalidCurrentPasswordException.class);
 
         verify(userRepository, never()).save(any());
     }
@@ -418,7 +419,7 @@ class UserServiceTest {
         when(passwordEncoder.matches("wrong", user.getPassword())).thenReturn(false);
 
         assertThatThrownBy(() -> userService.deactivateAccount(user.getId(), new DeactivateAccountRequest("wrong")))
-                .isInstanceOf(InvalidCredentialsException.class);
+                .isInstanceOf(InvalidCurrentPasswordException.class);
 
         assertThat(user.isActive()).isTrue();
     }

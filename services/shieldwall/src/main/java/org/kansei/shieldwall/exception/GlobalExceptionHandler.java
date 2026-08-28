@@ -29,6 +29,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCurrentPassword(InvalidCurrentPasswordException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidOrExpiredTokenException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidOrExpiredToken(InvalidOrExpiredTokenException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());

@@ -287,7 +287,9 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void changePassword_wrongCurrentPassword_returns401() throws Exception {
+    void changePassword_wrongCurrentPassword_returns400() throws Exception {
+        // 400, not 401 - the bearer token is valid here, only the current-password field was wrong
+        // A 401 would be indistinguishable from control-tower's gateway-level "token is dead" rejection
         String email = uniqueEmail();
         AuthResponse auth = registerAndVerify(email, uniqueUsername(), "supersecretpw");
 
@@ -295,7 +297,7 @@ class AuthControllerIntegrationTest {
                         .header("Authorization", "Bearer " + auth.token())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ChangePasswordRequest("wrongcurrent", "newpassword1"))))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
