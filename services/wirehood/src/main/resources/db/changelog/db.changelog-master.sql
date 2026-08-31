@@ -207,3 +207,28 @@ CREATE INDEX idx_track_thumbnail_submissions_status ON track_thumbnail_submissio
 --changeset kansei:016-add-wirehood-users-enabled-column
 -- "Disable a wirehood_user" admin action, wirehood-scoped only, kicks them off wirehood
 ALTER TABLE wirehood_users ADD COLUMN enabled BOOLEAN NOT NULL DEFAULT TRUE;
+
+--changeset kansei:017-create-track-format-favorites-table
+-- Per-user favorite, scoped to a specific format (mp3 vs mp4 of the same track can be favorited independently)
+-- True composite PK, same all-client/server-assigned shape as track_genre_tags
+CREATE TABLE track_format_favorites (
+                                         user_id UUID NOT NULL,
+                                         track_format_id UUID NOT NULL REFERENCES track_formats (id) ON DELETE CASCADE,
+                                         favorited_at TIMESTAMP NOT NULL,
+                                         PRIMARY KEY (user_id, track_format_id)
+);
+
+CREATE INDEX idx_track_format_favorites_track_format_id ON track_format_favorites (track_format_id);
+
+--changeset kansei:018-create-track-format-play-counts-table
+-- Per-user play count, same per-format scoping as favorites above.
+-- Incremented only by the actual file-serve  endpoint, never by a standalone "record a play" endpoint... a client couldn't fake plays without also pulling the file's bytes
+CREATE TABLE track_format_play_counts (
+                                           user_id UUID NOT NULL,
+                                           track_format_id UUID NOT NULL REFERENCES track_formats (id) ON DELETE CASCADE,
+                                           play_count INTEGER NOT NULL DEFAULT 0,
+                                           last_played_at TIMESTAMP NOT NULL,
+                                           PRIMARY KEY (user_id, track_format_id)
+);
+
+CREATE INDEX idx_track_format_play_counts_track_format_id ON track_format_play_counts (track_format_id);

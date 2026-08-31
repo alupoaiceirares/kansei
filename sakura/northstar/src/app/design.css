@@ -42,18 +42,21 @@
   }
 }
 
-/* Form inputs - focus color defaults to the brand pink, overridden per profile section via the --focus-color custom property */
+/* Form inputs - focus color defaults to the brand pink, overridden per profile section via
+   the --focus-color custom property. !important: the input's resting border-color is set
+   inline (inputStyle/inputStyleWhite), and an inline style beats a plain :focus rule on the
+   same property regardless of selector specificity - only !important in the stylesheet wins. */
 .ks-input:focus {
-  border-color: var(--focus-color, oklch(65% 0.2 340));
+  border-color: var(--focus-color, oklch(65% 0.2 340)) !important;
   outline: none;
 }
 
 /* Hamburger dropdown rows */
 .ks-menu-row {
   display: block;
-  padding: 9px 14px;
-  border-radius: 8px;
-  font: 400 14px "Inter", sans-serif;
+  padding: 13px 20px;
+  border-radius: 10px;
+  font: 400 16px "Inter", sans-serif;
   color: oklch(30% 0.01 60);
 }
 .ks-menu-row:hover {
@@ -82,10 +85,10 @@
 }
 .ks-svc-ring__inner {
   display: block;
-  padding: 9px 14px;
+  padding: 13px 20px;
   border-radius: 999px;
   background: #fff;
-  font: 400 14px "Inter", sans-serif;
+  font: 400 16px "Inter", sans-serif;
   color: oklch(30% 0.01 60);
 }
 
@@ -98,10 +101,53 @@
   color: oklch(45% 0.17 25);
   font: 600 14px "Inter", sans-serif;
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .ks-deactivate-btn:hover {
   background: oklch(48% 0.18 25);
   color: #fff;
+}
+
+/* Header pills (Log in / Register / Sign out) - same invert-on-hover language as the
+   deactivate button above. Base look differs per pill (soft fill vs outline), all three
+   converge on a solid white fill with dark text on hover. */
+.ks-pill {
+  padding: 9px 20px;
+  border-radius: 999px;
+  font: 500 14px "Inter", sans-serif;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.ks-pill--fill {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border: none;
+}
+.ks-pill--fill:hover {
+  background: #fff;
+  color: oklch(30% 0.01 60);
+}
+.ks-pill--outline {
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  color: #fff;
+}
+.ks-pill--outline:hover {
+  background: #fff;
+  color: oklch(30% 0.01 60);
+  border-color: #fff;
+}
+.ks-pill--signout {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.92);
+}
+.ks-pill--signout:hover {
+  background: #fff;
+  color: oklch(30% 0.01 60);
+  border-color: #fff;
 }
 
 /* Timeline: hidden on desktop, becomes the single visible content column on mobile (see the @media rule below - display:none items don't consume a grid cell, so the marker column naturally becomes column 1 once the left/right columns are hidden) */

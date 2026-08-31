@@ -7,9 +7,13 @@ import org.kansei.wirehood.dto.TrackFormatSummary;
 import org.kansei.wirehood.dto.UpdateTrackMetadataRequest;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackFormat;
+import org.kansei.wirehood.model.TrackFormatFavorite;
+import org.kansei.wirehood.model.TrackFormatPlayCount;
 import org.kansei.wirehood.model.TrackFormatStatus;
 import org.kansei.wirehood.model.TrackThumbnailSubmission;
 import org.kansei.wirehood.model.UserLibrary;
+import org.kansei.wirehood.repository.TrackFormatFavoriteRepository;
+import org.kansei.wirehood.repository.TrackFormatPlayCountRepository;
 import org.kansei.wirehood.repository.TrackFormatRepository;
 import org.kansei.wirehood.repository.TrackRepository;
 import org.kansei.wirehood.repository.TrackThumbnailSubmissionRepository;
@@ -34,6 +38,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,6 +49,8 @@ public class TrackService {
     private final TrackFormatRepository trackFormatRepository;
     private final UserLibraryRepository userLibraryRepository;
     private final TrackThumbnailSubmissionRepository trackThumbnailSubmissionRepository;
+    private final TrackFormatFavoriteRepository trackFormatFavoriteRepository;
+    private final TrackFormatPlayCountRepository trackFormatPlayCountRepository;
     private final AdminAuthService adminAuthService;
 
     public TrackService(
@@ -51,22 +58,51 @@ public class TrackService {
             TrackFormatRepository trackFormatRepository,
             UserLibraryRepository userLibraryRepository,
             TrackThumbnailSubmissionRepository trackThumbnailSubmissionRepository,
+            TrackFormatFavoriteRepository trackFormatFavoriteRepository,
+            TrackFormatPlayCountRepository trackFormatPlayCountRepository,
             AdminAuthService adminAuthService
     ) {
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
         this.userLibraryRepository = userLibraryRepository;
         this.trackThumbnailSubmissionRepository = trackThumbnailSubmissionRepository;
+        this.trackFormatFavoriteRepository = trackFormatFavoriteRepository;
+        this.trackFormatPlayCountRepository = trackFormatPlayCountRepository;
         this.adminAuthService = adminAuthService;
     }
 
-    public Mono<TrackDetailResponse> getDetail(UUID trackId) {
+    // userId optional - anonymous browsing still works (matches this endpoint's existing no-auth behavior), just
+    // without per-format playCount/favorited on the response
+    public Mono<TrackDetailResponse> getDetail(UUID trackId, UUID userId) {
         return trackRepository.findById(trackId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Track not found")))
-                .flatMap(track -> trackFormatRepository.findByTrackId(trackId)
-                        .map(TrackFormatSummary::from)
-                        .collectList()
+                .flatMap(track -> trackFormatRepository.findByTrackId(trackId).collectList()
+                        .flatMap(formats -> userId == null ? plainSummaries(formats) : summariesForUser(userId, formats))
                         .map(formats -> TrackDetailResponse.of(track, formats)));
+    }
+
+    private Mono<List<TrackFormatSummary>> plainSummaries(List<TrackFormat> formats) {
+        return Mono.just(formats.stream().map(TrackFormatSummary::from).collect(Collectors.toList()));
+    }
+
+    private Mono<List<TrackFormatSummary>> summariesForUser(UUID userId, List<TrackFormat> formats) {
+        List<UUID> formatIds = formats.stream().map(TrackFormat::getId).collect(Collectors.toList());
+        if (formatIds.isEmpty()) {
+            return Mono.just(List.of());
+        }
+
+        Mono<Map<UUID, Integer>> playsMono = trackFormatPlayCountRepository.findByUserIdAndTrackFormatIdIn(userId, formatIds)
+                .collectMap(TrackFormatPlayCount::getTrackFormatId, TrackFormatPlayCount::getPlayCount);
+        Mono<Set<UUID>> favoritesMono = trackFormatFavoriteRepository.findByUserIdAndTrackFormatIdIn(userId, formatIds)
+                .map(TrackFormatFavorite::getTrackFormatId)
+                .collect(Collectors.toSet());
+
+        return Mono.zip(playsMono, favoritesMono).map(resolved -> formats.stream()
+                .map(format -> TrackFormatSummary.from(
+                        format,
+                        resolved.getT1().getOrDefault(format.getId(), 0),
+                        resolved.getT2().contains(format.getId())))
+                .collect(Collectors.toList()));
     }
 
     // Streams the file directly - the raw disk path never leaves the server, unlike returning thumbnailPath in JSON would
@@ -87,20 +123,23 @@ public class TrackService {
                 .flatMap(inLibrary -> inLibrary
                         ? trackFormatRepository.findByTrackIdAndFormat(trackId, format)
                                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "This format hasn't been downloaded for this track")))
-                                .flatMap(this::toFileResponse)
+                                .flatMap(trackFormat -> toFileResponse(userId, trackFormat))
                         : Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Track not in your library")));
     }
 
-    private Mono<ResponseEntity<Resource>> toFileResponse(TrackFormat trackFormat) {
+    // Records the play only on an actual successful serve (status READY, file present) - never on a 404/409, so a
+    // not-ready or missing format can't rack up plays
+    private Mono<ResponseEntity<Resource>> toFileResponse(UUID userId, TrackFormat trackFormat) {
         if (trackFormat.getStatus() != TrackFormatStatus.READY || trackFormat.getFilePath() == null) {
             return Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "This format isn't ready yet"));
         }
         Path path = Path.of(trackFormat.getFilePath());
         MediaType mediaType = "mp4".equals(trackFormat.getFormat()) ? MediaType.valueOf("video/mp4") : MediaType.valueOf("audio/mpeg");
-        return Mono.just(ResponseEntity.ok()
-                .contentType(mediaType)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + path.getFileName() + "\"")
-                .body(new FileSystemResource(path)));
+        return trackFormatPlayCountRepository.recordPlay(userId, trackFormat.getId(), Instant.now())
+                .then(Mono.just(ResponseEntity.ok()
+                        .contentType(mediaType)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + path.getFileName() + "\"")
+                        .body(new FileSystemResource(path))));
     }
 
     // Batches both lookups across the page (2 queries total, not 2N), plus a 3rd for the total count

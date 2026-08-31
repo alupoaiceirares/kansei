@@ -60,4 +60,9 @@ public class MusicProfileController {
     public Mono<Long> friendCount(MusicProfileRoot root) {
         return musicProfileService.friendCount(root.userId());
     }
+
+    @SchemaMapping(typeName = "MusicProfile")
+    public Mono<Long> totalPlays(MusicProfileRoot root) {
+        return musicProfileService.totalPlays(root.userId());
+    }
 }

@@ -1,5 +1,6 @@
 import type { Style } from "./styleTypes";
 import { PALETTE } from "./palette";
+import { r1 } from "./petals";
 
 export type HexTile = {
   key: string;
@@ -54,9 +55,9 @@ export function buildHexRow(
       const delay = phase + (i / 6) * HIGHLIGHT_DURATION_S;
       const segment: Style = {
         position: "absolute",
-        left: v[0],
-        top: v[1],
-        width: len,
+        left: r1(v[0]),
+        top: r1(v[1]),
+        width: r1(len),
         height: 1,
         background: dim,
         opacity: 0.75,
@@ -75,7 +76,7 @@ export function buildHexRow(
 
     hexes.push({
       key: `${rowIdx}-${c}`,
-      groupStyle: { position: "absolute", left: cx, top: cy, width: 0, height: 0 },
+      groupStyle: { position: "absolute", left: r1(cx), top: r1(cy), width: 0, height: 0 },
       segments,
       hasDot,
       dotStyle: hasDot

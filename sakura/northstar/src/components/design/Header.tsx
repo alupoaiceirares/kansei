@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SakuraMark from "./SakuraMark";
@@ -19,15 +19,6 @@ type Props = {
   highlightProfile?: boolean;
 };
 
-const pillBase = {
-  fontWeight: 500,
-  fontSize: 14,
-  padding: "9px 20px",
-  borderRadius: 999,
-  whiteSpace: "nowrap" as const,
-  flexShrink: 0,
-};
-
 export default function Header({
   overlay = false,
   rightVariant = "auto",
@@ -36,6 +27,7 @@ export default function Header({
 }: Props) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
   const loggedIn = useSyncExternalStore(
     subscribeToken,
     () => !!getToken(),
@@ -48,6 +40,19 @@ export default function Header({
     if (!getToken()) return;
     apiFetch("/api/auth/me").catch(() => {});
   }, []);
+
+  // Close the dropdown on any click outside it - it previously only closed via the
+  // hamburger button itself, which reads as stuck/unresponsive when clicking elsewhere.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleOutsideClick(e: MouseEvent) {
+      if (menuContainerRef.current && !menuContainerRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [menuOpen]);
 
   async function handleSignOut() {
     await logout();
@@ -89,35 +94,23 @@ export default function Header({
       </Link>
 
       {showLogin && (
-        <Link href="/login" style={{ ...pillBase, background: "rgba(255,255,255,0.16)", color: "#fff" }}>
+        <Link href="/login" className="ks-pill ks-pill--fill">
           Log in
         </Link>
       )}
       {showRegister && (
-        <Link
-          href="/register"
-          style={{ ...pillBase, border: "1.5px solid rgba(255,255,255,0.85)", color: "#fff" }}
-        >
+        <Link href="/register" className="ks-pill ks-pill--outline">
           Register
         </Link>
       )}
       {showSignOut && (
-        <button
-          onClick={handleSignOut}
-          style={{
-            ...pillBase,
-            border: "1px solid rgba(255,255,255,0.5)",
-            background: "transparent",
-            color: "rgba(255,255,255,0.92)",
-            cursor: "pointer",
-          }}
-        >
+        <button onClick={handleSignOut} className="ks-pill ks-pill--signout">
           Sign out
         </button>
       )}
 
       {showHamburger && (
-        <div style={{ position: "relative", flexShrink: 0 }}>
+        <div ref={menuContainerRef} style={{ position: "relative", flexShrink: 0 }}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
             style={{
@@ -141,21 +134,21 @@ export default function Header({
                 position: "absolute",
                 right: 0,
                 top: "calc(100% + 10px)",
-                minWidth: 190,
-                padding: 8,
-                borderRadius: 12,
+                minWidth: 280,
+                padding: 16,
+                borderRadius: 16,
                 background: "#fff",
                 border: "1px solid rgba(0,0,0,0.08)",
                 boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 2,
+                gap: 6,
               }}
             >
               <div
                 style={{
-                  padding: "6px 14px 6px",
-                  font: "600 11px 'Inter', sans-serif",
+                  padding: "10px 20px 10px",
+                  font: "600 13px 'Inter', sans-serif",
                   letterSpacing: 1.4,
                   textTransform: "uppercase",
                   color: TEXT_MUTED,
@@ -172,10 +165,12 @@ export default function Header({
               <a href="#" className="ks-svc-ring ks-svc-ring--3">
                 <span className="ks-svc-ring__inner">Service 3</span>
               </a>
-              <span style={{ display: "block", height: 1, margin: "8px 6px", background: "rgba(0,0,0,0.07)" }} />
-              <Link href="/profile" className={`ks-menu-row${highlightProfile ? " ks-menu-row--active" : ""}`}>
-                Profile
-              </Link>
+              <span style={{ display: "block", height: 1, margin: "12px 10px", background: "rgba(0,0,0,0.07)" }} />
+              {loggedIn && (
+                <Link href="/profile" className={`ks-menu-row${highlightProfile ? " ks-menu-row--active" : ""}`}>
+                  Profile
+                </Link>
+              )}
               <a href="#" className="ks-menu-row">
                 Timeline
               </a>

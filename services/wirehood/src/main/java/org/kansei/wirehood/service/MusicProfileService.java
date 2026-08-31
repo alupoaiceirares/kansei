@@ -7,6 +7,7 @@ import org.kansei.wirehood.model.UserLibrary;
 import org.kansei.wirehood.repository.FriendshipRepository;
 import org.kansei.wirehood.repository.PlaylistCollaboratorRepository;
 import org.kansei.wirehood.repository.PlaylistRepository;
+import org.kansei.wirehood.repository.TrackFormatPlayCountRepository;
 import org.kansei.wirehood.repository.TrackGenreTagRepository;
 import org.kansei.wirehood.repository.TrackRepository;
 import org.kansei.wirehood.repository.UserLibraryRepository;
@@ -32,6 +33,7 @@ public class MusicProfileService {
     private final PlaylistRepository playlistRepository;
     private final PlaylistCollaboratorRepository playlistCollaboratorRepository;
     private final FriendshipRepository friendshipRepository;
+    private final TrackFormatPlayCountRepository trackFormatPlayCountRepository;
 
     public MusicProfileService(
             UserLibraryRepository userLibraryRepository,
@@ -39,7 +41,8 @@ public class MusicProfileService {
             TrackGenreTagRepository trackGenreTagRepository,
             PlaylistRepository playlistRepository,
             PlaylistCollaboratorRepository playlistCollaboratorRepository,
-            FriendshipRepository friendshipRepository
+            FriendshipRepository friendshipRepository,
+            TrackFormatPlayCountRepository trackFormatPlayCountRepository
     ) {
         this.userLibraryRepository = userLibraryRepository;
         this.trackRepository = trackRepository;
@@ -47,6 +50,7 @@ public class MusicProfileService {
         this.playlistRepository = playlistRepository;
         this.playlistCollaboratorRepository = playlistCollaboratorRepository;
         this.friendshipRepository = friendshipRepository;
+        this.trackFormatPlayCountRepository = trackFormatPlayCountRepository;
     }
 
     public Mono<Long> totalTracksSaved(UUID userId) {
@@ -120,6 +124,10 @@ public class MusicProfileService {
 
     public Mono<Long> friendCount(UUID userId) {
         return friendshipRepository.countAcceptedForUser(userId);
+    }
+
+    public Mono<Long> totalPlays(UUID userId) {
+        return trackFormatPlayCountRepository.sumPlaysForUser(userId);
     }
 
     private Mono<List<UUID>> libraryTrackIds(UUID userId) {

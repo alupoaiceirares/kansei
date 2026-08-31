@@ -83,7 +83,7 @@ function ResetPasswordInner() {
     <div style={{ position: "relative", minHeight: "100vh", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
       <HexLatticeBackground vw={vw} height={LATTICE_HEIGHT} skip={skip} />
 
-      <Header rightVariant="none" />
+      <Header rightVariant="none" showHamburger={false} />
 
       <main style={{ position: "relative", zIndex: 2, flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "72px 24px 96px" }}>
         <div
