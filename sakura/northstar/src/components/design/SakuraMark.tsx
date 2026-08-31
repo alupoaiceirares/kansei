@@ -1,4 +1,4 @@
-import { buildPetalMarks, dash } from "@/lib/design/petals";
+import { buildPetalMarks, dash, r1 } from "@/lib/design/petals";
 import type { Style } from "@/lib/design/styleTypes";
 
 type Props = {
@@ -10,6 +10,8 @@ type Props = {
   /** Color for petal i (0-4), in header-gradient order: blue/red/pink/yellow/green */
   colorForPetal: (i: number) => string;
   spin?: boolean;
+  /** Seconds per rotation when spin is set - defaults to the hero flower's slow 100s. */
+  spinDurationS?: number;
   /** Hero-flower-only: small radial ticks under each petal + a centre dot */
   stamens?: { color: (i: number) => string };
   centerDot?: { size: number; background: string; border: string };
@@ -28,6 +30,7 @@ export default function SakuraMark({
   opacity = 0.75,
   colorForPetal,
   spin = false,
+  spinDurationS = 100,
   stamens,
   centerDot,
   style,
@@ -46,9 +49,9 @@ export default function SakuraMark({
     <div
       style={{
         position: "relative",
-        width: size,
-        height: size,
-        animation: spin ? "kansei-spin 100s linear infinite" : undefined,
+        width: r1(size),
+        height: r1(size),
+        animation: spin ? `kansei-spin ${spinDurationS}s linear infinite` : undefined,
         ...style,
       }}
     >
@@ -63,9 +66,9 @@ export default function SakuraMark({
             position: "absolute",
             top: "50%",
             left: "50%",
-            width: centerDot.size,
-            height: centerDot.size,
-            margin: `${-centerDot.size / 2}px 0 0 ${-centerDot.size / 2}px`,
+            width: r1(centerDot.size),
+            height: r1(centerDot.size),
+            margin: `${r1(-centerDot.size / 2)}px 0 0 ${r1(-centerDot.size / 2)}px`,
             borderRadius: "50%",
             background: centerDot.background,
             border: centerDot.border,

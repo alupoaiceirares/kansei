@@ -12,6 +12,7 @@ type MusicProfile {
     playlistsOwned: Int!
     playlistsCollaborated: Int!
     friendCount: Int!
+    totalPlays: Int!
 }
 
 type GenreBreakdown {

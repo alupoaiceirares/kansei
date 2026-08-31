@@ -59,8 +59,11 @@ public class TrackController {
 
     // Track metadata + every format that's been attempted for it (mp3, mp4, ...), frontend's "what do we have for this track" view
     @GetMapping
-    public Mono<TrackDetailResponse> detail(@PathVariable UUID trackId) {
-        return trackService.getDetail(trackId);
+    public Mono<TrackDetailResponse> detail(
+            @PathVariable UUID trackId,
+            @RequestHeader(value = "X-User-Id", required = false) UUID userId
+    ) {
+        return trackService.getDetail(trackId, userId);
     }
 
     // Streams the thumbnail bytes directly - never exposes the server-side file path

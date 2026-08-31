@@ -23,6 +23,14 @@ const PETAL_POINTS: [number, number][] = [
 
 const DEFAULT_SCALE = 2.2;
 
+// Rounds pixel values to 1 decimal, matching the design source's own .toFixed(1) convention.
+// Without this, React's hydration check compares the server HTML's re-parsed (rounded)
+// style string against the client's full-precision float and flags a false mismatch on
+// every mark - harmless visually, but a console error on every page.
+export function r1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
 /**
  * Traces one petal outline as short dashes + vertex dots (sketch style, not filled), rotated to `angleDeg` around the flower center
  */
@@ -61,10 +69,10 @@ export function buildPetalMarks(
         position: "absolute",
         top: "50%",
         left: "50%",
-        width: dashLen,
-        height: thickness,
-        marginLeft: mx - dashLen / 2,
-        marginTop: my - thickness / 2,
+        width: r1(dashLen),
+        height: r1(thickness),
+        marginLeft: r1(mx - dashLen / 2),
+        marginTop: r1(my - thickness / 2),
         background: color,
         opacity,
         transform: `rotate(${ang.toFixed(1)}deg)`,
@@ -82,10 +90,10 @@ export function buildPetalMarks(
         position: "absolute",
         top: "50%",
         left: "50%",
-        width: size,
-        height: size,
-        marginLeft: x - size / 2,
-        marginTop: y - size / 2,
+        width: r1(size),
+        height: r1(size),
+        marginLeft: r1(x - size / 2),
+        marginTop: r1(y - size / 2),
         borderRadius: "50%",
         background: color,
         opacity: Math.min(1, opacity + 0.05),
@@ -112,11 +120,11 @@ export function dash(
       position: "absolute",
       top: "50%",
       left: "50%",
-      width,
-      height: length,
-      marginLeft: -width / 2,
-      marginTop: -rOuter,
-      borderRadius: width / 2,
+      width: r1(width),
+      height: r1(length),
+      marginLeft: r1(-width / 2),
+      marginTop: r1(-rOuter),
+      borderRadius: r1(width / 2),
       background: color,
       opacity,
     },

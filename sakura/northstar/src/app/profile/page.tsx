@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/design/Header";
 import HexLatticeBackground from "@/components/design/HexLatticeBackground";
 import SakuraMark from "@/components/design/SakuraMark";
+import SakuraSpinner from "@/components/design/SakuraSpinner";
 import Banner from "@/components/design/Banner";
 import PasswordCapableInput, { FIELD_ERROR_COLOR } from "@/components/design/PasswordCapableInput";
 import { useViewportWidth } from "@/lib/design/useViewportWidth";
@@ -208,8 +209,6 @@ export default function ProfilePage() {
     }
   }
 
-  if (!loaded) return null;
-
   return (
     <div style={{ position: "relative", minHeight: "100vh", overflowX: "hidden", display: "flex", flexDirection: "column" }}>
       <HexLatticeBackground vw={vw} height={LATTICE_HEIGHT} />
@@ -218,240 +217,248 @@ export default function ProfilePage() {
 
       <main style={{ position: "relative", zIndex: 2, flex: 1, padding: "66px 40px 120px" }}>
         <div style={{ position: "relative", maxWidth: 1040, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 52 }}>
-            <SakuraMark size={56} scale={0.145} thickness={1.5} dotBase={4} colorForPetal={(i) => PALETTE[i]} />
-            <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 500, fontSize: 40, margin: 0, letterSpacing: 0.3 }}>
-              Your account
-            </h1>
-          </div>
-
-          <div
-            className="ks-profile-grid"
-            style={{ position: "relative", display: "grid", gridTemplateColumns: "250px minmax(0, 1fr)", gap: 72, alignItems: "start" }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                left: -90,
-                right: -90,
-                top: -80,
-                bottom: -90,
-                background: `radial-gradient(ellipse 62% 58% at 50% 50%, ${PAGE_BG} 0%, ${PAGE_BG} 58%, ${PAGE_BG_FAINT} 78%, transparent 100%)`,
-                pointerEvents: "none",
-              }}
-            />
-
-            <nav style={{ position: "relative", zIndex: 1, padding: "4px 0" }}>
-              <span
-                className="ks-profile-nav-line"
-                style={{ position: "absolute", left: 7, top: 14, bottom: 14, width: 1, background: "rgba(0,0,0,0.12)" }}
-              />
-              <div className="ks-profile-nav" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {SECTIONS.map((s) => {
-                  const active = section === s.key;
-                  return (
-                    <button
-                      key={s.key}
-                      onClick={() => setSection(s.key)}
-                      style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", textAlign: "left", padding: "11px 0", border: "none", background: "transparent", cursor: "pointer" }}
-                    >
-                      <span
-                        style={
-                          active
-                            ? {
-                                width: 15,
-                                height: 15,
-                                flexShrink: 0,
-                                borderRadius: "50%",
-                                background: s.color,
-                                boxShadow: `0 0 0 4px color-mix(in oklch, ${s.color} 18%, transparent), 0 0 0 7px ${PAGE_BG}`,
-                              }
-                            : { width: 15, height: 15, flexShrink: 0, borderRadius: "50%", background: "#fff", border: "1.5px solid rgba(0,0,0,0.18)", boxSizing: "border-box" }
-                        }
-                      />
-                      <span style={{ fontWeight: active ? 600 : 400, fontSize: 15, color: active ? "oklch(20% 0.01 60)" : "oklch(48% 0.01 60)" }}>
-                        {s.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </nav>
-
-            <div style={{ position: "relative", zIndex: 1, minWidth: 0 }}>
-              {section === "profile" && (
-                <form onSubmit={handleProfileSubmit} noValidate>
-                  <SectionHeader
-                    title="Edit profile"
-                    color={PALETTE[0]}
-                    body="Your email and username identify you across The Kansei Project. Names are optional and shown only on your public profile."
-                  />
-
-                  <FieldRow label="Email" error={profileFieldErrors.email}>
-                    <PasswordCapableInput
-                      type="email"
-                      autoComplete="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[0]}
-                      error={profileFieldErrors.email}
-                    />
-                  </FieldRow>
-                  <FieldRow label="Username" error={profileFieldErrors.username}>
-                    <PasswordCapableInput
-                      type="text"
-                      autoComplete="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[0]}
-                      error={profileFieldErrors.username}
-                    />
-                  </FieldRow>
-                  <FieldRow label="First name" error={profileFieldErrors.firstName}>
-                    <PasswordCapableInput
-                      type="text"
-                      autoComplete="given-name"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[0]}
-                      error={profileFieldErrors.firstName}
-                    />
-                  </FieldRow>
-                  <FieldRow label="Last name" last error={profileFieldErrors.lastName}>
-                    <PasswordCapableInput
-                      type="text"
-                      autoComplete="family-name"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[0]}
-                      error={profileFieldErrors.lastName}
-                    />
-                  </FieldRow>
-
-                  {profileError && (
-                    <Banner variant="error" style={{ margin: "16px 0 0" }}>
-                      {profileError}
-                    </Banner>
-                  )}
-                  {profileMessage && (
-                    <Banner variant="success" style={{ margin: "16px 0 0" }}>
-                      {profileMessage}
-                    </Banner>
-                  )}
-
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
-                    <button type="submit" disabled={profileSaving} style={{ ...primaryButtonStyle, width: "auto", padding: "13px 30px" }}>
-                      {profileSaving ? "Saving…" : "Save changes"}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {section === "password" && (
-                <form onSubmit={handlePasswordSubmit} noValidate>
-                  <SectionHeader
-                    title="Change password"
-                    color={PALETTE[2]}
-                    body="Use at least 8 characters. You'll stay signed in on this device; other sessions will be signed out."
-                  />
-
-                  <FieldRow label="Current password" error={passwordFieldErrors.currentPassword}>
-                    <PasswordCapableInput
-                      type="password"
-                      autoComplete="current-password"
-                      placeholder="••••••••"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[2]}
-                      error={passwordFieldErrors.currentPassword}
-                    />
-                  </FieldRow>
-                  <FieldRow label="New password" error={passwordFieldErrors.newPassword}>
-                    <PasswordCapableInput
-                      type="password"
-                      autoComplete="new-password"
-                      placeholder="••••••••"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[2]}
-                      error={passwordFieldErrors.newPassword}
-                    />
-                  </FieldRow>
-                  <FieldRow label="Confirm new" last error={passwordFieldErrors.confirmPassword}>
-                    <PasswordCapableInput
-                      type="password"
-                      autoComplete="new-password"
-                      placeholder="••••••••"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[2]}
-                      error={passwordFieldErrors.confirmPassword}
-                    />
-                  </FieldRow>
-
-                  {passwordError && (
-                    <Banner variant="error" style={{ margin: "16px 0 0" }}>
-                      {passwordError}
-                    </Banner>
-                  )}
-                  {passwordMessage && (
-                    <Banner variant="success" style={{ margin: "16px 0 0" }}>
-                      {passwordMessage}
-                    </Banner>
-                  )}
-
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
-                    <button type="submit" disabled={passwordSaving} style={{ ...primaryButtonStyle, width: "auto", padding: "13px 30px" }}>
-                      {passwordSaving ? "Saving…" : "Save password"}
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {section === "deactivate" && (
-                <form onSubmit={handleDeactivateSubmit} noValidate>
-                  <SectionHeader title="Deactivate account" color={PALETTE[1]} />
-
-                  <Banner variant="warning" size="large" style={{ marginBottom: 30, maxWidth: 620 }}>
-                    Deactivating hides your profile and cancels active services. Your data is kept for 30 days,
-                    after which it is permanently deleted. This cannot be undone once the 30 days pass.
-                  </Banner>
-
-                  <FieldRow label="Current password" last error={deactivateFieldErrors.currentPassword}>
-                    <PasswordCapableInput
-                      type="password"
-                      autoComplete="current-password"
-                      placeholder="••••••••"
-                      value={deactivatePassword}
-                      onChange={(e) => setDeactivatePassword(e.target.value)}
-                      baseStyle={inputStyleWhite}
-                      focusColor={PALETTE[1]}
-                      error={deactivateFieldErrors.currentPassword}
-                    />
-                  </FieldRow>
-
-                  {deactivateError && (
-                    <Banner variant="error" style={{ margin: "16px 0 0" }}>
-                      {deactivateError}
-                    </Banner>
-                  )}
-
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
-                    <button type="submit" disabled={deactivating} className="ks-deactivate-btn">
-                      {deactivating ? "Deactivating…" : "Deactivate my account"}
-                    </button>
-                  </div>
-                </form>
-              )}
+          {!loaded ? (
+            <div style={{ display: "flex", justifyContent: "center", padding: "120px 0" }}>
+              <SakuraSpinner size={56} />
             </div>
-          </div>
+          ) : (
+            <>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 52 }}>
+              <SakuraMark size={56} scale={0.145} thickness={1.5} dotBase={4} colorForPetal={(i) => PALETTE[i]} />
+              <h1 style={{ fontFamily: DISPLAY_FONT, fontWeight: 500, fontSize: 40, margin: 0, letterSpacing: 0.3 }}>
+                Your account
+              </h1>
+            </div>
+  
+            <div
+              className="ks-profile-grid"
+              style={{ position: "relative", display: "grid", gridTemplateColumns: "250px minmax(0, 1fr)", gap: 72, alignItems: "start" }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: -90,
+                  right: -90,
+                  top: -80,
+                  bottom: -90,
+                  background: `radial-gradient(ellipse 62% 58% at 50% 50%, ${PAGE_BG} 0%, ${PAGE_BG} 58%, ${PAGE_BG_FAINT} 78%, transparent 100%)`,
+                  pointerEvents: "none",
+                }}
+              />
+  
+              <nav style={{ position: "relative", zIndex: 1, padding: "4px 0" }}>
+                <span
+                  className="ks-profile-nav-line"
+                  style={{ position: "absolute", left: 7, top: 14, bottom: 14, width: 1, background: "rgba(0,0,0,0.12)" }}
+                />
+                <div className="ks-profile-nav" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {SECTIONS.map((s) => {
+                    const active = section === s.key;
+                    return (
+                      <button
+                        key={s.key}
+                        onClick={() => setSection(s.key)}
+                        style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", textAlign: "left", padding: "11px 0", border: "none", background: "transparent", cursor: "pointer" }}
+                      >
+                        <span
+                          style={
+                            active
+                              ? {
+                                  width: 15,
+                                  height: 15,
+                                  flexShrink: 0,
+                                  borderRadius: "50%",
+                                  background: s.color,
+                                  boxShadow: `0 0 0 4px color-mix(in oklch, ${s.color} 18%, transparent), 0 0 0 7px ${PAGE_BG}`,
+                                }
+                              : { width: 15, height: 15, flexShrink: 0, borderRadius: "50%", background: "#fff", border: "1.5px solid rgba(0,0,0,0.18)", boxSizing: "border-box" }
+                          }
+                        />
+                        <span style={{ fontWeight: active ? 600 : 400, fontSize: 15, color: active ? "oklch(20% 0.01 60)" : "oklch(48% 0.01 60)" }}>
+                          {s.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </nav>
+  
+              <div style={{ position: "relative", zIndex: 1, minWidth: 0 }}>
+                {section === "profile" && (
+                  <form onSubmit={handleProfileSubmit} noValidate>
+                    <SectionHeader
+                      title="Edit profile"
+                      color={PALETTE[0]}
+                      body="Your email and username identify you across The Kansei Project. Names are optional and shown only on your public profile."
+                    />
+  
+                    <FieldRow label="Email" error={profileFieldErrors.email}>
+                      <PasswordCapableInput
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[0]}
+                        error={profileFieldErrors.email}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Username" error={profileFieldErrors.username}>
+                      <PasswordCapableInput
+                        type="text"
+                        autoComplete="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[0]}
+                        error={profileFieldErrors.username}
+                      />
+                    </FieldRow>
+                    <FieldRow label="First name" error={profileFieldErrors.firstName}>
+                      <PasswordCapableInput
+                        type="text"
+                        autoComplete="given-name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[0]}
+                        error={profileFieldErrors.firstName}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Last name" last error={profileFieldErrors.lastName}>
+                      <PasswordCapableInput
+                        type="text"
+                        autoComplete="family-name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[0]}
+                        error={profileFieldErrors.lastName}
+                      />
+                    </FieldRow>
+  
+                    {profileError && (
+                      <Banner variant="error" style={{ margin: "16px 0 0" }}>
+                        {profileError}
+                      </Banner>
+                    )}
+                    {profileMessage && (
+                      <Banner variant="success" style={{ margin: "16px 0 0" }}>
+                        {profileMessage}
+                      </Banner>
+                    )}
+  
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
+                      <button type="submit" disabled={profileSaving} style={{ ...primaryButtonStyle, width: "auto", padding: "13px 30px" }}>
+                        {profileSaving ? "Saving…" : "Save changes"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+  
+                {section === "password" && (
+                  <form onSubmit={handlePasswordSubmit} noValidate>
+                    <SectionHeader
+                      title="Change password"
+                      color={PALETTE[2]}
+                      body="Use at least 8 characters. You'll stay signed in on this device; other sessions will be signed out."
+                    />
+  
+                    <FieldRow label="Current password" error={passwordFieldErrors.currentPassword}>
+                      <PasswordCapableInput
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="••••••••"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[2]}
+                        error={passwordFieldErrors.currentPassword}
+                      />
+                    </FieldRow>
+                    <FieldRow label="New password" error={passwordFieldErrors.newPassword}>
+                      <PasswordCapableInput
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[2]}
+                        error={passwordFieldErrors.newPassword}
+                      />
+                    </FieldRow>
+                    <FieldRow label="Confirm new" last error={passwordFieldErrors.confirmPassword}>
+                      <PasswordCapableInput
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[2]}
+                        error={passwordFieldErrors.confirmPassword}
+                      />
+                    </FieldRow>
+  
+                    {passwordError && (
+                      <Banner variant="error" style={{ margin: "16px 0 0" }}>
+                        {passwordError}
+                      </Banner>
+                    )}
+                    {passwordMessage && (
+                      <Banner variant="success" style={{ margin: "16px 0 0" }}>
+                        {passwordMessage}
+                      </Banner>
+                    )}
+  
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
+                      <button type="submit" disabled={passwordSaving} style={{ ...primaryButtonStyle, width: "auto", padding: "13px 30px" }}>
+                        {passwordSaving ? "Saving…" : "Save password"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+  
+                {section === "deactivate" && (
+                  <form onSubmit={handleDeactivateSubmit} noValidate>
+                    <SectionHeader title="Deactivate account" color={PALETTE[1]} />
+  
+                    <Banner variant="warning" size="large" style={{ marginBottom: 30, maxWidth: 620 }}>
+                      Deactivating hides your profile and cancels active services. Your data is kept for 30 days,
+                      after which it is permanently deleted. This cannot be undone once the 30 days pass.
+                    </Banner>
+  
+                    <FieldRow label="Current password" last error={deactivateFieldErrors.currentPassword}>
+                      <PasswordCapableInput
+                        type="password"
+                        autoComplete="current-password"
+                        placeholder="••••••••"
+                        value={deactivatePassword}
+                        onChange={(e) => setDeactivatePassword(e.target.value)}
+                        baseStyle={inputStyleWhite}
+                        focusColor={PALETTE[1]}
+                        error={deactivateFieldErrors.currentPassword}
+                      />
+                    </FieldRow>
+  
+                    {deactivateError && (
+                      <Banner variant="error" style={{ margin: "16px 0 0" }}>
+                        {deactivateError}
+                      </Banner>
+                    )}
+  
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 32 }}>
+                      <button type="submit" disabled={deactivating} className="ks-deactivate-btn">
+                        {deactivating ? "Deactivating…" : "Deactivate my account"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+            </>
+          )}
         </div>
       </main>
     </div>
