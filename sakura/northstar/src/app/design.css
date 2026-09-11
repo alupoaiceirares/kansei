@@ -42,6 +42,62 @@
   }
 }
 
+/* Wirehood wordmark draw-in (timeline's live Wirehood entry) - see components/design/WirehoodMark.tsx */
+@keyframes whm-band {
+  0%,
+  30% {
+    stroke-dashoffset: 1;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes whm-cable {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes whm-dot {
+  0%,
+  45% {
+    opacity: 0;
+  }
+  75%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes whm-jack {
+  0%,
+  60% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Timeline's live Wirehood entry - dark gradient panel the wordmark sits on */
+.ks-timeline-app-panel {
+  display: flex;
+  justify-content: center;
+  padding: 8px 14px;
+  margin: 0 0 14px;
+  border-radius: 13px;
+  background:
+    radial-gradient(ellipse 60% 80% at 14% 0%, rgba(18, 183, 107, 0.18), transparent 70%),
+    radial-gradient(ellipse 55% 80% at 90% 100%, rgba(226, 58, 58, 0.16), transparent 70%),
+    #0a0c0b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Form inputs - focus color defaults to the brand pink, overridden per profile section via
    the --focus-color custom property. !important: the input's resting border-color is set
    inline (inputStyle/inputStyleWhite), and an inline style beats a plain :focus rule on the

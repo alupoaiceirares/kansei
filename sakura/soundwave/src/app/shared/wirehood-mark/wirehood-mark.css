@@ -1,0 +1,109 @@
+@keyframes whm-band {
+  0%,
+  30% {
+    stroke-dashoffset: 1;
+  }
+  70%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes whm-cable {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55%,
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes whm-dot {
+  0%,
+  45% {
+    opacity: 0;
+  }
+  75%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes whm-jack {
+  0%,
+  60% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.wh-mark-box {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.wh-mark-scale {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 316px;
+  height: 90px;
+  transform-origin: top left;
+}
+
+.wh-mark-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.wh-mark-word {
+  position: absolute;
+  top: 25px;
+  left: 0;
+  width: 316px;
+  text-align: center;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font: 600 40px/1 'Archivo', sans-serif;
+  font-stretch: 112%;
+  letter-spacing: 0.65px;
+  color: #f2f0ec;
+}
+
+.wh-mark-oo {
+  display: inline-block;
+}
+
+.wh-mark-glyph {
+  display: inline-block;
+  width: 0;
+  height: 1ex;
+  vertical-align: baseline;
+}
+
+.wh-mark-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.wh-band {
+  animation: whm-band 1.3s ease-out 1 forwards;
+}
+
+.wh-cable {
+  animation: whm-cable 1.3s ease-out 1 forwards;
+}
+
+.wh-dot {
+  animation: whm-dot 1.3s ease-out 1 forwards;
+}
+
+.wh-jack {
+  animation: whm-jack 1.3s ease-out 1 forwards;
+}

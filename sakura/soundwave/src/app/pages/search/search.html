@@ -1,0 +1,202 @@
+<div class="wh-search-page">
+  <wh-waves></wh-waves>
+
+  <wh-header
+    [pendingDownloads]="pendingDownloads()"
+    [incomingRequests]="incomingRequests()"
+    [isAdmin]="isAdmin()"
+    [queue]="queue()"
+    (retryDownload)="retryDownload($event)"
+  ></wh-header>
+
+  <main class="wh-search-main">
+    <h1 class="wh-search-h1">Search &amp; download</h1>
+    <p class="wh-search-sub">Search by name or paste a YouTube link. Preview before you pull anything down.</p>
+
+    <form class="wh-search-form" (submit)="$event.preventDefault(); submitSearch()">
+      <div class="wh-search-field">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M16.5 16.5L21 21"></path>
+        </svg>
+        <input type="text" [value]="searchQuery()" (input)="searchQuery.set($any($event.target).value)" />
+      </div>
+      <button type="submit" class="wh-search-btn">Search</button>
+    </form>
+
+    <div class="wh-search-meta-row">
+      <span class="wh-search-count">{{ results.length }} results</span>
+      <span class="wh-search-note">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 11v5M12 8h.01"></path>
+        </svg>
+        Preview streams from YouTube — nothing is stored until you download
+      </span>
+    </div>
+
+    <div class="wh-search-results">
+      @for (r of results; track r.title) {
+        <div class="wh-search-row">
+          <div class="wh-search-thumb">
+            <span>w</span>
+            <span class="wh-search-duration">{{ r.duration }}</span>
+          </div>
+          <div class="wh-search-row-meta">
+            <div class="wh-search-row-title">{{ r.title }}</div>
+            <div class="wh-search-row-sub">{{ r.channel }} · {{ r.views }}</div>
+            @if (r.inArchive) {
+              <span class="wh-search-archive-badge">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                  <path d="M5 13l4.5 4.5L19 7"></path>
+                </svg>
+                Already in the archive
+              </span>
+            }
+          </div>
+          <div class="wh-search-row-actions">
+            <button type="button" class="wh-search-preview-btn" (click)="openPreview(r)">
+              <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
+              Preview
+            </button>
+            <button type="button" class="wh-search-download-btn" (click)="openConfirm(r)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <path d="M12 4v11"></path>
+                <path d="M7 11l5 5 5-5"></path>
+                <path d="M5 20h14"></path>
+              </svg>
+              Download
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+
+  @if (previewOpen() && activeResult) {
+    <div class="wh-modal-scrim" (click)="closeAll()">
+      <div class="wh-preview-modal" (click)="$event.stopPropagation()">
+        <div class="wh-preview-frame">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="rgba(242,240,236,0.3)" stroke-width="1.4">
+            <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+            <path d="M10 9l5 3-5 3z" fill="rgba(242,240,236,0.3)" stroke="none"></path>
+          </svg>
+          <span class="wh-preview-frame-label">Embedded YouTube player</span>
+        </div>
+        <div class="wh-preview-footer">
+          <div class="wh-preview-footer-meta">
+            <div class="wh-preview-title">{{ activeResult.title }}</div>
+            <div class="wh-preview-sub">{{ activeResult.channel }} · {{ activeResult.duration }}</div>
+          </div>
+          <button type="button" class="wh-preview-close" (click)="closeAll()">Close</button>
+          <button type="button" class="wh-search-download-btn" (click)="openConfirm(activeResult)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+              <path d="M12 4v11"></path>
+              <path d="M7 11l5 5 5-5"></path>
+              <path d="M5 20h14"></path>
+            </svg>
+            Download
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (confirmOpen()) {
+    <div class="wh-modal-scrim wh-modal-scrim-scroll" (click)="closeAll()">
+      <div class="wh-confirm-modal" (click)="$event.stopPropagation()">
+        <h2 class="wh-confirm-h2">Confirm download</h2>
+        <p class="wh-confirm-sub">Parsed from the title — edit anything that looks wrong before confirming.</p>
+
+        <div class="wh-confirm-fields">
+          <label class="wh-confirm-label">
+            <span class="wh-confirm-label-text">Artist</span>
+            <input type="text" [value]="confirmArtist()" (input)="confirmArtist.set($any($event.target).value)" class="wh-confirm-input" />
+          </label>
+          <label class="wh-confirm-label">
+            <span class="wh-confirm-label-text">Title</span>
+            <input type="text" [value]="confirmTitle()" (input)="confirmTitle.set($any($event.target).value)" class="wh-confirm-input" />
+          </label>
+          <label class="wh-confirm-label">
+            <span class="wh-confirm-label-text">Extra info <span class="wh-confirm-label-optional">optional</span></span>
+            <input
+              type="text"
+              placeholder="Live, remix, album name…"
+              [value]="confirmExtra()"
+              (input)="confirmExtra.set($any($event.target).value)"
+              class="wh-confirm-input"
+            />
+          </label>
+        </div>
+
+        <div class="wh-confirm-section">
+          <span class="wh-confirm-label-text">Format</span>
+          <div class="wh-confirm-format-grid">
+            <button
+              type="button"
+              class="wh-confirm-format-btn"
+              [class.wh-confirm-format-btn-active]="format() === 'mp3'"
+              (click)="pickFormat('mp3')"
+            >
+              <div class="wh-confirm-format-name">MP3</div>
+              <div class="wh-confirm-format-desc">Audio · ~7 MB</div>
+            </button>
+            <button
+              type="button"
+              class="wh-confirm-format-btn"
+              [class.wh-confirm-format-btn-active]="format() === 'mp4'"
+              (click)="pickFormat('mp4')"
+            >
+              <div class="wh-confirm-format-name">MP4</div>
+              <div class="wh-confirm-format-desc">Video · ~48 MB</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="wh-confirm-section">
+          <span class="wh-confirm-label-text">Tag genres</span>
+          <div class="wh-confirm-genres">
+            @for (g of genreOptions; track g) {
+              <button
+                type="button"
+                class="wh-confirm-genre-chip"
+                [class.wh-confirm-genre-chip-active]="selectedGenres().includes(g)"
+                (click)="toggleGenre(g)"
+              >
+                {{ g }}
+              </button>
+            }
+            <button type="button" class="wh-confirm-genre-new">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              New genre
+            </button>
+          </div>
+        </div>
+
+        <div class="wh-confirm-actions">
+          <button type="button" class="wh-confirm-cancel" (click)="closeAll()">Cancel</button>
+          <button type="button" class="wh-confirm-submit" (click)="confirmDownload()">Download {{ format() === 'mp3' ? 'MP3' : 'MP4' }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (toastOpen()) {
+    <div class="wh-toast">
+      <span class="wh-toast-icon">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0A0C0B" stroke-width="3.4" stroke-linecap="round">
+          <path d="M5 13l4.5 4.5L19 7"></path>
+        </svg>
+      </span>
+      <div>
+        <div class="wh-toast-title">Queued — {{ toastTitle() }}</div>
+        <div class="wh-toast-sub">You will get a toast here when it flips to ready</div>
+      </div>
+      <a routerLink="/library" class="wh-toast-link">View</a>
+    </div>
+  }
+
+  <wh-mini-player [nowPlaying]="nowPlaying" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
+</div>

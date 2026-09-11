@@ -1,0 +1,53 @@
+<div class="wh-mark-box" [style.width]="boxW()" [style.height]="boxH()" (mouseenter)="onEnter()">
+  <div class="wh-mark-scale" [style.transform]="'scale(' + scale + ')'">
+    <div #wrapEl class="wh-mark-wrap">
+      <div class="wh-mark-word">
+        <span #wordEl>wireh</span><span #ooEl class="wh-mark-oo">oo</span><span>d</span
+        ><span #markEl class="wh-mark-glyph"></span>
+      </div>
+
+      @if (svgVisible()) {
+        <svg width="316" height="90" viewBox="0 0 316 90" fill="none" class="wh-mark-svg">
+          <path
+            [attr.d]="bandD()"
+            pathLength="1"
+            stroke="#12B76B"
+            stroke-width="4.5"
+            stroke-linecap="round"
+            fill="none"
+            stroke-dasharray="1"
+            class="wh-band"
+          ></path>
+          <path
+            [attr.d]="cableLeftD()"
+            pathLength="1"
+            stroke="#12B76B"
+            stroke-width="4.5"
+            stroke-linecap="round"
+            fill="none"
+            stroke-dasharray="1"
+            class="wh-cable"
+          ></path>
+          <path
+            [attr.d]="cableRightD()"
+            pathLength="1"
+            stroke="#12B76B"
+            stroke-width="4.5"
+            stroke-linecap="round"
+            fill="none"
+            stroke-dasharray="1"
+            class="wh-cable"
+          ></path>
+          <circle [attr.cx]="leftRingX()" [attr.cy]="ringCy()" r="2.9" fill="#12B76B" class="wh-dot"></circle>
+          <circle [attr.cx]="rightRingX()" [attr.cy]="ringCy()" r="2.9" fill="#E23A3A" class="wh-dot"></circle>
+          <g class="wh-jack">
+            <rect [attr.x]="jackCollarX" [attr.y]="jackCollarY()" width="4.5" height="9" rx="1.6" fill="#E23A3A"></rect>
+            <rect [attr.x]="jackShaftX" [attr.y]="jackShaftY()" width="5.2" height="5.2" rx="1.3" fill="#E23A3A"></rect>
+            <rect [attr.x]="jackBandX" [attr.y]="jackShaftY()" width="3.2" height="5.2" rx="1.3" fill="#E23A3A"></rect>
+            <rect [attr.x]="jackTipX" [attr.y]="jackTipY()" width="4.5" height="4.5" rx="2.3" fill="#E23A3A"></rect>
+          </g>
+        </svg>
+      }
+    </div>
+  </div>
+</div>

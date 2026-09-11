@@ -1,0 +1,50 @@
+<div class="wh-optin-page">
+  <div class="wh-optin-scrim"></div>
+
+  <div class="wh-optin-modal">
+    <div class="wh-optin-logo">
+      <wh-mark [scale]="0.86"></wh-mark>
+    </div>
+
+    <h1 class="wh-optin-title">One archive, everyone building it</h1>
+    <p class="wh-optin-lede">
+      Wirehood is search, download and playback for music and video, with a social layer on top — playlists you can
+      share, friends, and stats on what you actually listen to.
+    </p>
+
+    <div class="wh-optin-callouts">
+      <div class="wh-optin-callout wh-optin-callout-red">
+        <span class="wh-optin-dot wh-optin-dot-red"></span>
+        <div>
+          <div class="wh-optin-callout-title">The archive is shared, not private</div>
+          <div class="wh-optin-callout-body">
+            Anything you download becomes available to every wirehood user. Files are deduplicated — you are adding
+            to a platform-wide library, not keeping a personal copy.
+          </div>
+        </div>
+      </div>
+      <div class="wh-optin-callout wh-optin-callout-green">
+        <span class="wh-optin-dot wh-optin-dot-green"></span>
+        <div>
+          <div class="wh-optin-callout-title">Your Kansei account carries over</div>
+          <div class="wh-optin-callout-body">
+            Nothing to fill in. Joining creates your wirehood profile and drops you straight on the home page.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @if (error()) {
+      <p class="wh-optin-error">{{ error() }}</p>
+    }
+
+    <div class="wh-optin-actions">
+      <button type="button" class="wh-optin-join" [disabled]="joining()" (click)="join()">
+        {{ joining() ? 'Joining…' : 'Join Wirehood' }}
+      </button>
+      <a routerLink="/landing" class="wh-optin-later">Not now</a>
+    </div>
+
+    <p class="wh-optin-footnote">You can keep using Kansei either way.</p>
+  </div>
+</div>

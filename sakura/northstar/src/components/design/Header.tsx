@@ -59,6 +59,11 @@ export default function Header({
     router.push("/");
   }
 
+  // Not logged in yet -> send through login first; the real handoff (#token=) only makes sense with a session
+  const wirehoodHref = loggedIn
+    ? `${process.env.NEXT_PUBLIC_SOUNDWAVE_URL}/landing#token=${encodeURIComponent(getToken() ?? "")}`
+    : "/login";
+
   const showLogin = rightVariant === "both" || rightVariant === "loginOnly" || (rightVariant === "auto" && !loggedIn);
   const showRegister = rightVariant === "both" || rightVariant === "registerOnly" || (rightVariant === "auto" && !loggedIn);
   const showSignOut = rightVariant === "auto" && loggedIn;
@@ -156,8 +161,16 @@ export default function Header({
               >
                 Services
               </div>
-              <a href="#" className="ks-svc-ring ks-svc-ring--1">
-                <span className="ks-svc-ring__inner">Service 1</span>
+              <a href={wirehoodHref} className="ks-svc-ring ks-svc-ring--1">
+                <span
+                  className="ks-svc-ring__inner"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
+                >
+                  <span>Wirehood</span>
+                  <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "oklch(48% 0.18 25)" }}>
+                    Music
+                  </span>
+                </span>
               </a>
               <a href="#" className="ks-svc-ring ks-svc-ring--2">
                 <span className="ks-svc-ring__inner">Service 2</span>

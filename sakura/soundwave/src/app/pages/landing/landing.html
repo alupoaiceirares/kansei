@@ -1,0 +1,115 @@
+<div class="wh-landing">
+  <header class="wh-landing-header">
+    <a routerLink="/landing" class="wh-landing-logo">
+      <wh-mark [scale]="1"></wh-mark>
+    </a>
+
+    <div class="wh-landing-right">
+      <nav class="wh-landing-nav">
+        <a routerLink="/playlists" class="wh-landing-pill">Playlists</a>
+        <a routerLink="/friends" class="wh-landing-pill">Community</a>
+        <a routerLink="/search" class="wh-landing-pill">Search</a>
+      </nav>
+
+      <div class="wh-landing-divider"></div>
+
+      <button type="button" class="wh-landing-signout" (click)="signOut()">Sign Out</button>
+
+      <button type="button" aria-label="Menu" class="wh-landing-burger" (click)="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+
+    @if (menuOpen()) {
+      <div class="wh-landing-menu">
+        <a routerLink="/playlists" class="wh-landing-menu-item">Playlists</a>
+        <a routerLink="/friends" class="wh-landing-menu-item">Community</a>
+        <a routerLink="/search" class="wh-landing-menu-item">Search</a>
+      </div>
+    }
+  </header>
+
+  <div class="wh-landing-hero">
+    <wh-waves [bright]="true" [scoped]="true"></wh-waves>
+
+    <div class="wh-landing-content">
+      <div class="wh-landing-pitch">
+        <h1 class="wh-landing-h1">
+          <span class="wh-landing-h1-line">One archive,</span>
+          <span class="wh-landing-h1-line"><span class="wh-landing-h1-accent">everyone</span> building it</span>
+        </h1>
+        <p class="wh-landing-lede">
+          Search it, pull it down, keep it. Music and video from one shared archive, playlists, friends, and stats
+          on what you actually listen to.
+        </p>
+        <button type="button" class="wh-landing-cta" (click)="openOptIn()">Join Wirehood</button>
+      </div>
+
+      <div class="wh-landing-preview">
+        <div class="wh-landing-preview-lock-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+          </svg>
+          <span>Preview — join to unlock</span>
+        </div>
+
+        <div class="wh-landing-preview-panel" inert>
+          <div class="wh-landing-preview-search">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M16.5 16.5L21 21"></path>
+            </svg>
+            <input type="text" placeholder="Track, artist, or paste a YouTube link" disabled />
+            <button type="button" disabled>Search</button>
+          </div>
+
+          <div class="wh-landing-preview-genres">
+            @for (g of previewGenres; track g) {
+              <span class="wh-landing-preview-chip">{{ g }}</span>
+            }
+          </div>
+
+          <div class="wh-landing-preview-sotd">
+            <span class="wh-landing-preview-sotd-label">Song of the Day</span>
+            <div class="wh-landing-preview-sotd-body">
+              <div class="wh-landing-preview-sotd-art"><span>w</span></div>
+              <div class="wh-landing-preview-sotd-meta">
+                <div class="wh-landing-preview-sotd-title">Slow Static Parade</div>
+                <div class="wh-landing-preview-sotd-sub">Halden Mure · 4:07</div>
+              </div>
+              <div class="wh-landing-preview-sotd-actions">
+                <button type="button" disabled>Play</button>
+                <button type="button" disabled>Download</button>
+                <button type="button" disabled>Favorite</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="wh-landing-preview-cta" (click)="openOptIn()">Join Wirehood to unlock →</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="wh-landing-footer">
+    <div class="wh-landing-footer-brand">
+      <span class="wh-landing-wordmark">wirehood</span>
+      <span class="wh-landing-footer-divider"></span>
+      <span class="wh-landing-footer-tag">A Kansei service</span>
+    </div>
+    <nav class="wh-landing-footer-nav">
+      <a href="#">About</a>
+      <a href="#">Support</a>
+      <a href="#">Terms</a>
+      <a href="/" class="wh-landing-back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M19 12H5M10 7l-5 5 5 5"></path>
+        </svg>
+        Back to Kansei
+      </a>
+    </nav>
+  </footer>
+</div>

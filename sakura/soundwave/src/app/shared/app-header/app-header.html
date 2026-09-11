@@ -1,0 +1,121 @@
+<header class="wh-header">
+  <a routerLink="/home" class="wh-header-logo">
+    <wh-mark [scale]="0.8"></wh-mark>
+  </a>
+
+  <div class="wh-header-right">
+    @if (adminHeader) {
+      <nav class="wh-header-nav">
+        <a routerLink="/admin/thumbnails" routerLinkActive="wh-pill-active" class="wh-pill">Thumbnails</a>
+        <a routerLink="/admin/genres" routerLinkActive="wh-pill-active" class="wh-pill">Genres</a>
+      </nav>
+      <span class="wh-header-admin-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 3l8 4v6c0 4.4-3.4 7.4-8 8-4.6-.6-8-3.6-8-8V7z"></path>
+        </svg>
+        Admin
+      </span>
+    } @else {
+      <nav class="wh-header-nav">
+        <a routerLink="/home" routerLinkActive="wh-pill-active" class="wh-pill">Home</a>
+        <a routerLink="/search" routerLinkActive="wh-pill-active" class="wh-pill">Search</a>
+        <a routerLink="/library" routerLinkActive="wh-pill-active" class="wh-pill">Library</a>
+      </nav>
+    }
+
+    <div class="wh-header-divider"></div>
+
+    @if (!adminHeader) {
+      <button type="button" title="Downloads" class="wh-header-icon-btn" (click)="toggleTray()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 4v11"></path>
+          <path d="M7 11l5 5 5-5"></path>
+          <path d="M5 20h14"></path>
+        </svg>
+        @if (pendingDownloads > 0) {
+          <span class="wh-header-badge">{{ pendingDownloads }}</span>
+        }
+      </button>
+    }
+
+    <button class="wh-header-signout" (click)="signOut()">Sign Out</button>
+
+    <button type="button" aria-label="Menu" class="wh-header-burger" (click)="toggleMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+
+  @if (menuOpen()) {
+    <div class="wh-header-menu">
+      @for (item of menuItems; track item.route + item.label) {
+        <a [routerLink]="item.route" (click)="closeMenu()" class="wh-header-menu-item">
+          <span>{{ item.label }}</span>
+          @if (item.badge) {
+            <span class="wh-header-menu-badge" [style.background]="item.badgeColor ?? '#12B76B'">{{ item.badge }}</span>
+          }
+        </a>
+      }
+
+      @if (isAdmin) {
+        <div class="wh-header-menu-admin">
+          <div class="wh-header-menu-admin-label">Admin</div>
+          <a routerLink="/admin/thumbnails" (click)="closeMenu()" class="wh-header-menu-item wh-header-menu-item-admin">
+            <span>Thumbnail Queue</span>
+            @if (adminThumbnailCount > 0) {
+              <span class="wh-header-menu-badge" style="background:#E23A3A">{{ adminThumbnailCount }}</span>
+            }
+          </a>
+          <a routerLink="/admin/genres" (click)="closeMenu()" class="wh-header-menu-item wh-header-menu-item-admin">
+            <span>Genres</span>
+            @if (adminGenreCount > 0) {
+              <span class="wh-header-menu-badge" style="background:#E23A3A">{{ adminGenreCount }}</span>
+            }
+          </a>
+        </div>
+      }
+    </div>
+  }
+
+  @if (trayOpen()) {
+    <div class="wh-header-tray">
+      <div class="wh-header-tray-head">
+        <span class="wh-header-tray-label">Downloads</span>
+        <span class="wh-header-tray-live"><span class="wh-header-tray-live-dot"></span>Live</span>
+      </div>
+      <div class="wh-header-tray-list">
+        @for (q of queue; track q.id) {
+          <div class="wh-header-tray-item" [class]="'wh-header-tray-item-' + q.status">
+            <div class="wh-header-tray-icon">
+              @switch (q.status) {
+                @case ('pending') {
+                  <span class="wh-header-tray-spinner"></span>
+                }
+                @case ('failed') {
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#E23A3A" stroke-width="2.2" stroke-linecap="round">
+                    <path d="M7 7l10 10M17 7L7 17"></path>
+                  </svg>
+                }
+                @case ('ready') {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#12B76B" stroke-width="2.2" stroke-linecap="round">
+                    <path d="M5 13l4.5 4.5L19 7"></path>
+                  </svg>
+                }
+              }
+            </div>
+            <div class="wh-header-tray-meta">
+              <div class="wh-header-tray-title">{{ q.title }}</div>
+              <div class="wh-header-tray-status" [class]="'wh-header-tray-status-' + q.status">{{ q.statusText }}</div>
+            </div>
+            @if (q.status === 'failed') {
+              <button type="button" class="wh-header-tray-retry" (click)="retryDownload.emit(q.id)">Retry</button>
+            }
+          </div>
+        } @empty {
+          <div class="wh-header-tray-empty">No active downloads</div>
+        }
+      </div>
+    </div>
+  }
+</header>

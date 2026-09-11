@@ -1,0 +1,77 @@
+<div class="wh-acct-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+
+  <main class="wh-acct-main">
+    <h1 class="wh-acct-h1">Account</h1>
+    <p class="wh-acct-sub">Wirehood-specific settings. Your name, email and password live on your Kansei profile.</p>
+
+    <section class="wh-acct-summary">
+      <div class="wh-acct-avatar">Y</div>
+      <div class="wh-acct-summary-body">
+        <div class="wh-acct-summary-title">Your account</div>
+        <div class="wh-acct-summary-sub">Joined wirehood 12 March 2026 · 148 tracks contributed</div>
+      </div>
+      <a href="#" class="wh-acct-kansei-link">Kansei profile</a>
+    </section>
+
+    <section class="wh-acct-panel">
+      <div class="wh-acct-export-row">
+        <div class="wh-acct-export-text">
+          <h2 class="wh-acct-h2">Export your data</h2>
+          <p class="wh-acct-export-desc">
+            A JSON file with your playlists, library entries, favorites and play counts. Files themselves stay in the shared archive.
+          </p>
+        </div>
+        <button type="button" class="wh-acct-export-btn" (click)="startExport()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 4v11"></path>
+            <path d="M7 11l5 5 5-5"></path>
+            <path d="M5 20h14"></path>
+          </svg>
+          {{ exported() ? 'Download again' : 'Export data' }}
+        </button>
+      </div>
+      @if (exported()) {
+        <div class="wh-acct-export-ready">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12B76B" stroke-width="2.4" stroke-linecap="round">
+            <path d="M5 13l4.5 4.5L19 7"></path>
+          </svg>
+          <span>wirehood-export-2026-09-10.json is ready</span>
+        </div>
+      }
+    </section>
+
+    <section class="wh-acct-panel">
+      <h2 class="wh-acct-h2" style="margin-bottom: 16px">Preferences</h2>
+      <div class="wh-acct-prefs">
+        @for (p of prefDefs; track p.key) {
+          <div class="wh-acct-pref-row">
+            <div class="wh-acct-pref-text">
+              <div class="wh-acct-pref-label">{{ p.label }}</div>
+              <div class="wh-acct-pref-desc">{{ p.desc }}</div>
+            </div>
+            <button
+              type="button"
+              aria-label="Toggle"
+              class="wh-acct-toggle"
+              [class.wh-acct-toggle-on]="prefs()[p.key]"
+              (click)="togglePref(p.key)"
+            >
+              <span class="wh-acct-toggle-knob"></span>
+            </button>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="wh-acct-leave">
+      <h2 class="wh-acct-h2">Leaving wirehood</h2>
+      <p class="wh-acct-leave-desc">
+        There is no self-service way to leave wirehood yet. Contributions are part of a shared archive, so accounts are disabled by an
+        admin on request. Email support from your Kansei profile and we will handle it.
+      </p>
+    </section>
+  </main>
+</div>

@@ -1,0 +1,140 @@
+.wh-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 11px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(12, 14, 13, 0.93);
+  backdrop-filter: blur(18px);
+}
+
+.wh-player-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+  flex: 1 1 180px;
+}
+
+.wh-player-art {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(145deg, rgba(18, 183, 107, 0.18), rgba(226, 58, 58, 0.14));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 17px 'Archivo', sans-serif;
+  color: rgba(242, 240, 236, 0.2);
+}
+
+.wh-player-meta {
+  min-width: 0;
+}
+
+.wh-player-title {
+  font: 600 13.5px Inter, sans-serif;
+  color: #f2f0ec;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wh-player-idle {
+  color: rgba(242, 240, 236, 0.4);
+  font-weight: 500;
+}
+
+.wh-player-artist {
+  font: 400 12px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wh-player-transport {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wh-player-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: rgba(242, 240, 236, 0.65);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.wh-player-btn:hover {
+  color: #f2f0ec;
+}
+
+.wh-player-btn-main {
+  width: 40px;
+  height: 40px;
+  background: #f2f0ec;
+  color: #0a0c0b;
+  transition: background 0.15s ease;
+}
+
+.wh-player-btn-main:hover {
+  background: #ffffff;
+  color: #0a0c0b;
+}
+
+.wh-player-scrub {
+  flex: 2 1 220px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.wh-player-time {
+  font: 400 11.5px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.52);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.wh-player-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.wh-player-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #12b76b, #e23a3a);
+}
+
+.wh-player-bar-fill-volume {
+  background: rgba(242, 240, 236, 0.55);
+}
+
+.wh-player-volume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 120px;
+  flex-shrink: 0;
+  color: rgba(242, 240, 236, 0.55);
+}

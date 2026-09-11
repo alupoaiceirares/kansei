@@ -1,0 +1,53 @@
+<div class="wh-fav-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+
+  <main class="wh-fav-main">
+    <div class="wh-fav-head">
+      <h1 class="wh-fav-h1">Favorites</h1>
+      <div class="wh-fav-filters">
+        @for (f of filterOptions; track f) {
+          <button type="button" class="wh-fav-filter-chip" [class.wh-fav-filter-chip-active]="filter() === f" (click)="pickFilter(f)">
+            {{ f }}
+          </button>
+        }
+      </div>
+    </div>
+    <p class="wh-fav-sub">Hearted per format — a track can be favorited as audio, as video, or both. {{ countText() }}</p>
+
+    <div class="wh-fav-grid">
+      @for (t of items(); track t.title + t.format) {
+        <div class="wh-fav-card">
+          <a [routerLink]="['/track', t.title]" class="wh-fav-card-art">
+            <span class="wh-fav-card-art-glyph">w</span>
+            <span class="wh-fav-card-format" [style.color]="formatColor(t.format)">{{ t.format }}</span>
+            <span class="wh-fav-card-heart">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#E23A3A"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path></svg>
+            </span>
+          </a>
+          <div class="wh-fav-card-body">
+            <a [routerLink]="['/track', t.title]" class="wh-fav-card-title">{{ t.title }}</a>
+            <div class="wh-fav-card-artist">{{ t.artist }}</div>
+            <div class="wh-fav-card-actions">
+              <button aria-label="Play" class="wh-fav-card-play">
+                <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor" style="margin-left: 1px"><path d="M1 1l10 6-10 6z"></path></svg>
+              </button>
+              <button aria-label="Download" class="wh-fav-card-download">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 4v11"></path>
+                  <path d="M7 11l5 5 5-5"></path>
+                  <path d="M5 20h14"></path>
+                </svg>
+              </button>
+              <button aria-label="Unfavorite" class="wh-fav-card-unfav">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path></svg>
+              </button>
+            </div>
+            <div class="wh-fav-card-footer">Hearted {{ t.when }}</div>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>
