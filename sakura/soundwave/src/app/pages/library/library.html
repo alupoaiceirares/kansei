@@ -1,0 +1,104 @@
+<div class="wh-library-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+
+  <main class="wh-library-main">
+    <section class="wh-library-collections">
+      <div class="wh-library-section-head">
+        <h2 class="wh-library-h2">Collections</h2>
+        <a routerLink="/playlists" class="wh-library-manage-link">Manage playlists →</a>
+      </div>
+      <div class="wh-library-collections-grid">
+        <a routerLink="/favorites" class="wh-library-fav-card">
+          <div class="wh-library-fav-icon">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="#E23A3A"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path></svg>
+          </div>
+          <div class="wh-library-fav-meta">
+            <div class="wh-library-fav-title">Favorites</div>
+            <div class="wh-library-fav-sub">24 formats hearted</div>
+          </div>
+        </a>
+        @for (c of collections; track c.name) {
+          <a routerLink="/playlists" class="wh-library-collection-card">
+            <div class="wh-library-collection-icon"><span>w</span></div>
+            <div class="wh-library-fav-meta">
+              <div class="wh-library-collection-name">{{ c.name }}</div>
+              <div class="wh-library-fav-sub">{{ c.meta }}</div>
+            </div>
+          </a>
+        }
+      </div>
+    </section>
+
+    <section>
+      <div class="wh-library-tracks-head">
+        <h2 class="wh-library-h2">Downloaded <span class="wh-library-count">· {{ tracks().length }} tracks</span></h2>
+        <div class="wh-library-controls">
+          @for (f of filterOptions; track f) {
+            <button
+              type="button"
+              class="wh-library-filter-chip"
+              [class.wh-library-filter-chip-active]="filter() === f"
+              (click)="pickFilter(f)"
+            >
+              {{ f }}
+            </button>
+          }
+          <div class="wh-library-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M16.5 16.5L21 21"></path>
+            </svg>
+            <input type="text" placeholder="Filter library" [value]="filterText()" (input)="filterText.set($any($event.target).value)" />
+          </div>
+        </div>
+      </div>
+
+      <div class="wh-library-grid">
+        @for (t of tracks(); track t.title) {
+          <div class="wh-library-card">
+            <a [routerLink]="['/track', t.title]" class="wh-library-card-art">
+              <span class="wh-library-card-art-glyph">w</span>
+              @if (t.faved) {
+                <span class="wh-library-card-fav">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#E23A3A"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path></svg>
+                </span>
+              }
+            </a>
+            <div class="wh-library-card-body">
+              <a [routerLink]="['/track', t.title]" class="wh-library-card-title">{{ t.title }}</a>
+              <div class="wh-library-card-artist">{{ t.artist }}</div>
+              <div class="wh-library-card-actions">
+                <button aria-label="Play" class="wh-library-card-play">
+                  <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor" style="margin-left: 1px"><path d="M1 1l10 6-10 6z"></path></svg>
+                </button>
+                <button aria-label="Download" class="wh-library-card-download">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 4v11"></path>
+                    <path d="M7 11l5 5 5-5"></path>
+                    <path d="M5 20h14"></path>
+                  </svg>
+                </button>
+                <div class="wh-library-card-formats">
+                  @for (f of t.formats; track f) {
+                    <span>{{ f }}</span>
+                  }
+                </div>
+              </div>
+              <div class="wh-library-card-footer">{{ t.added }} · {{ t.plays }} plays</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="wh-library-pagination">
+        <button type="button" class="wh-library-page-btn" (click)="prevPage()">Previous</button>
+        <span class="wh-library-page-count">{{ page() }} / {{ totalPages }}</span>
+        <button type="button" class="wh-library-page-btn wh-library-page-btn-next" (click)="nextPage()">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <wh-mini-player [nowPlaying]="nowPlaying" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
+</div>

@@ -1,0 +1,65 @@
+<div class="wh-sotd-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+
+  <main class="wh-sotd-main">
+    <div class="wh-sotd-eyebrow">
+      <span class="wh-sotd-eyebrow-label">Song of the day</span>
+      <span class="wh-sotd-eyebrow-line"></span>
+      <span class="wh-sotd-eyebrow-date">{{ today.date }}</span>
+    </div>
+
+    <section class="wh-sotd-hero">
+      <div class="wh-sotd-hero-art"><span>w</span></div>
+      <div class="wh-sotd-hero-body">
+        <h1 class="wh-sotd-title">{{ today.title }}</h1>
+        <div class="wh-sotd-artist">{{ today.artist }}</div>
+        <div class="wh-sotd-meta">
+          <span>{{ today.duration }}</span><span>·</span><span>{{ today.genre }}</span><span>·</span><span>{{ today.plays }}</span>
+        </div>
+        <p class="wh-sotd-desc">{{ today.description }}</p>
+        <div class="wh-sotd-actions">
+          <button type="button" class="wh-sotd-play">
+            <svg width="12" height="12" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
+            Play
+          </button>
+          <button type="button" class="wh-sotd-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 4v11"></path>
+              <path d="M7 11l5 5 5-5"></path>
+              <path d="M5 20h14"></path>
+            </svg>
+            Download
+          </button>
+          <button type="button" class="wh-sotd-fav" [class.wh-sotd-fav-active]="faved()" (click)="toggleFav()">
+            <svg width="14" height="14" viewBox="0 0 24 24" [attr.fill]="faved() ? '#E23A3A' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path>
+            </svg>
+            {{ faved() ? 'Favorited' : 'Favorite' }}
+          </button>
+          <a routerLink="/track" class="wh-sotd-comments">Comments</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="wh-sotd-past-head">
+      <h2 class="wh-sotd-h2">Past picks</h2>
+      <span class="wh-sotd-past-sub">Last 7 days</span>
+    </div>
+
+    <div class="wh-sotd-past-list">
+      @for (p of past; track p.date) {
+        <a [routerLink]="['/track', p.title]" class="wh-sotd-past-row">
+          <span class="wh-sotd-past-date">{{ p.date }}</span>
+          <div class="wh-sotd-past-art"><span>w</span></div>
+          <div class="wh-sotd-past-body">
+            <div class="wh-sotd-past-title">{{ p.title }}</div>
+            <div class="wh-sotd-past-artist">{{ p.artist }}</div>
+          </div>
+          <span class="wh-sotd-past-plays">{{ p.plays }} plays</span>
+        </a>
+      }
+    </div>
+  </main>
+</div>

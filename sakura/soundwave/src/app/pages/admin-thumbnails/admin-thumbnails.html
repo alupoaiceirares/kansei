@@ -1,0 +1,81 @@
+<div class="wh-adm-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [adminHeader]="true"></wh-header>
+
+  <main class="wh-adm-main">
+    <div class="wh-adm-head">
+      <div>
+        <h1 class="wh-adm-h1">Thumbnail queue</h1>
+        <p class="wh-adm-sub">User-submitted artwork across the whole archive. {{ pendingText() }}</p>
+      </div>
+      <div class="wh-adm-filters">
+        @for (f of filterOptions; track f) {
+          <button type="button" class="wh-adm-filter-chip" [class.wh-adm-filter-chip-active]="filter() === f" (click)="pickFilter(f)">
+            <span>{{ f }}</span>
+            <span class="wh-adm-filter-count">{{ counts()[f] }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="wh-adm-list">
+      @for (s of submissions(); track s.id) {
+        <div class="wh-adm-row" [style.borderColor]="s.border" [style.background]="s.bg">
+          <div class="wh-adm-thumbs">
+            <div class="wh-adm-thumb wh-adm-thumb-current">
+              <span class="wh-adm-thumb-glyph">w</span>
+              <span class="wh-adm-thumb-label">Current</span>
+            </div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="wh-adm-arrow">
+              <path d="M5 12h14M14 7l5 5-5 5"></path>
+            </svg>
+            <div class="wh-adm-thumb wh-adm-thumb-proposed">
+              <span class="wh-adm-thumb-glyph wh-adm-thumb-glyph-proposed">w</span>
+              <span class="wh-adm-thumb-label wh-adm-thumb-label-proposed">Proposed</span>
+            </div>
+          </div>
+
+          <div class="wh-adm-row-body">
+            <a [routerLink]="['/track', s.track]" class="wh-adm-row-title">{{ s.track }}</a>
+            <div class="wh-adm-row-artist">{{ s.artist }}</div>
+            <div class="wh-adm-row-meta">
+              <span class="wh-adm-row-submitted">Submitted by {{ s.by }} · {{ s.when }}</span>
+              @if (s.decided) {
+                <span class="wh-adm-status" [style.background]="s.statusBg" [style.color]="s.statusColor">{{ s.status }}</span>
+              }
+            </div>
+          </div>
+
+          @if (s.pending) {
+            <div class="wh-adm-row-actions">
+              <button type="button" class="wh-adm-approve" (click)="decide(s.id, 'Approved')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+                  <path d="M5 13l4.5 4.5L19 7"></path>
+                </svg>
+                Approve
+              </button>
+              <button type="button" class="wh-adm-reject" (click)="decide(s.id, 'Rejected')">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+                  <path d="M7 7l10 10M17 7L7 17"></path>
+                </svg>
+                Reject
+              </button>
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="wh-adm-empty">
+          <div class="wh-adm-empty-title">Nothing in this view</div>
+          <p class="wh-adm-empty-body">Switch filters to see decided submissions.</p>
+        </div>
+      }
+    </div>
+
+    <div class="wh-adm-pagination">
+      <button type="button" class="wh-adm-page-btn">Previous</button>
+      <span class="wh-adm-page-count">1 / 3</span>
+      <button type="button" class="wh-adm-page-btn wh-adm-page-btn-next">Next</button>
+    </div>
+  </main>
+</div>

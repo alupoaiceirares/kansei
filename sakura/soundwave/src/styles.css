@@ -1,1 +1,62 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles + Wirehood design tokens — see "Wirehood FE" handoff doc for source values */
+
+:root {
+  --wh-green: #12b76b;
+  --wh-green-bright: #3ad38b;
+  --wh-red: #e23a3a;
+  --wh-red-bg-dot: #f0122f;
+  --wh-red-light: #f2565a;
+  --wh-bone: #f2f0ec;
+  --wh-bg: #0a0c0b;
+  --wh-bg-card: #0d100f;
+
+  --wh-text: #f2f0ec;
+  --wh-text-secondary: rgba(242, 240, 236, 0.62);
+  --wh-text-tertiary: rgba(242, 240, 236, 0.52);
+  --wh-text-faint: rgba(242, 240, 236, 0.38);
+
+  --wh-border: rgba(255, 255, 255, 0.1);
+  --wh-border-soft: rgba(255, 255, 255, 0.07);
+
+  --wh-font-heading: 'Archivo', sans-serif;
+  --wh-font-body: 'Inter', sans-serif;
+
+  --wh-radius: 11px;
+  --wh-radius-sm: 8px;
+  --wh-radius-pill: 999px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--wh-bg);
+  color: var(--wh-text);
+  font-family: var(--wh-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--wh-green);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--wh-green-bright);
+}
+
+input,
+button {
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: rgba(242, 240, 236, 0.34);
+}

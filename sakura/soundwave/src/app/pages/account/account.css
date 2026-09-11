@@ -1,0 +1,230 @@
+.wh-acct-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 70% 30% at 18% 0%, rgba(18, 183, 107, 0.07), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 88% 4%, rgba(226, 58, 58, 0.055), transparent 70%),
+    #0a0c0b;
+  font-family: Inter, sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-acct-main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 44px 32px 100px;
+}
+
+.wh-acct-h1 {
+  margin: 0 0 6px;
+  font: 700 27px 'Archivo', sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-acct-sub {
+  margin: 0 0 32px;
+  font: 400 14.5px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.55);
+}
+
+.wh-acct-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 16, 15, 0.78);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.wh-acct-avatar {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(18, 183, 107, 0.14);
+  border: 1px solid rgba(18, 183, 107, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 22px 'Archivo', sans-serif;
+  color: #12b76b;
+}
+
+.wh-acct-summary-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.wh-acct-summary-title {
+  font: 600 16.5px Inter, sans-serif;
+  color: #f2f0ec;
+  margin-bottom: 3px;
+}
+
+.wh-acct-summary-sub {
+  font: 400 13.5px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.55);
+}
+
+.wh-acct-kansei-link {
+  padding: 10px 17px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  color: #f2f0ec !important;
+  font: 600 13px Inter, sans-serif;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.wh-acct-kansei-link:hover {
+  border-color: #12b76b;
+}
+
+.wh-acct-panel {
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 16, 15, 0.78);
+  margin-bottom: 16px;
+}
+
+.wh-acct-export-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.wh-acct-export-text {
+  flex: 1;
+  min-width: 240px;
+}
+
+.wh-acct-h2 {
+  margin: 0 0 6px;
+  font: 600 16px 'Archivo', sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-acct-export-desc {
+  margin: 0;
+  font: 400 13.5px/1.6 Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.58);
+  text-wrap: pretty;
+}
+
+.wh-acct-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 19px;
+  border-radius: 10px;
+  border: none;
+  background: #f2f0ec;
+  color: #0a0c0b;
+  font: 600 13.5px Inter, sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.wh-acct-export-btn:hover {
+  background: #ffffff;
+}
+
+.wh-acct-export-ready {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(18, 183, 107, 0.3);
+  background: rgba(18, 183, 107, 0.07);
+  font: 500 13px Inter, sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-acct-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wh-acct-pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wh-acct-pref-text {
+  min-width: 0;
+}
+
+.wh-acct-pref-label {
+  font: 500 14px Inter, sans-serif;
+  color: #f2f0ec;
+  margin-bottom: 3px;
+}
+
+.wh-acct-pref-desc {
+  font: 400 12.5px/1.5 Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.52);
+}
+
+.wh-acct-toggle {
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.18s ease;
+}
+
+.wh-acct-toggle-on {
+  background: #12b76b;
+}
+
+.wh-acct-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #f2f0ec;
+  transition: left 0.18s ease;
+}
+
+.wh-acct-toggle-on .wh-acct-toggle-knob {
+  left: 21px;
+}
+
+.wh-acct-leave {
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 58, 58, 0.24);
+  background: linear-gradient(rgba(226, 58, 58, 0.07), rgba(226, 58, 58, 0.07)), #0d100f;
+}
+
+.wh-acct-leave-desc {
+  margin: 0;
+  font: 400 13.5px/1.6 Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.6);
+  text-wrap: pretty;
+}

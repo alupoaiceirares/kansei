@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useSyncExternalStore } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/design/Header";
 import HexLatticeBackground from "@/components/design/HexLatticeBackground";
 import SakuraMark from "@/components/design/SakuraMark";
+import WirehoodMark from "@/components/design/WirehoodMark";
+import { getToken, subscribeToken } from "@/lib/auth";
 import { useViewportWidth } from "@/lib/design/useViewportWidth";
 import {
   FOOTER_BG,
@@ -26,11 +28,19 @@ const TIMELINE_TOP = 1400;
 const TIMELINE_BOTTOM = 2560;
 const TIMELINE_HALF_W = 360;
 
-const TIMELINE_COPY: [string, string][] = [
-  ["Service 1", "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Placeholder description of what this service does."],
-  ["Service 2", "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Placeholder description."],
-  ["Service 3", "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. Placeholder description."],
-  ["Service 4", "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. Placeholder description."],
+const SOUNDWAVE_URL = process.env.NEXT_PUBLIC_SOUNDWAVE_URL;
+
+type TimelineEntry = { title: string; text: string; isApp?: boolean };
+
+const TIMELINE_COPY: TimelineEntry[] = [
+  {
+    title: "Wirehood",
+    text: "Search, download and play music and video from one archive the whole community builds — plus shared playlists, friends and listening stats.",
+    isApp: true,
+  },
+  { title: "Service 2", text: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Placeholder description." },
+  { title: "Service 3", text: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. Placeholder description." },
+  { title: "Service 4", text: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. Placeholder description." },
 ];
 
 const socialStyle = {
@@ -52,6 +62,13 @@ function LandingInner() {
   const searchParams = useSearchParams();
   const { vw, isMobile } = useViewportWidth();
   const confirmed = searchParams.get("confirmed") === "1";
+  const token = useSyncExternalStore(
+    subscribeToken,
+    () => getToken(),
+    () => null,
+  );
+  // Not logged in yet -> send through login first; the real handoff (#token=) only makes sense with a session
+  const wirehoodHref = token ? `${SOUNDWAVE_URL}/landing#token=${encodeURIComponent(token)}` : "/login";
 
   function closeConfirm() {
     router.replace("/");
@@ -208,7 +225,7 @@ function LandingInner() {
             transform: "translateX(-1px)",
           }}
         />
-        {TIMELINE_COPY.map(([title, text], i) => {
+        {TIMELINE_COPY.map(({ title, text, isApp }, i) => {
           const isLeft = i % 2 === 0;
           const color = PALETTE[i % PALETTE.length];
           const tintStyle = {
@@ -218,7 +235,22 @@ function LandingInner() {
             padding: "26px 30px",
             display: "inline-block",
           } as const;
-          const cardBody = (
+          const cardBody = isApp ? (
+            <a href={wirehoodHref} style={{ display: "block", textAlign: "left" }}>
+              <div style={tintStyle}>
+                <div className="ks-timeline-app-panel">
+                  <WirehoodMark scale={0.6} />
+                </div>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: "oklch(45% 0.01 60)", margin: "0 0 12px" }}>{text}</p>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontWeight: 600, fontSize: 13.5, color: "oklch(42% 0.14 152)" }}>
+                  Open {title}
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+                    <path d="M5 12h14M14 7l5 5-5 5" />
+                  </svg>
+                </span>
+              </div>
+            </a>
+          ) : (
             <div style={tintStyle}>
               <h3 style={{ fontWeight: 600, fontSize: 18, margin: "0 0 8px", color: "oklch(22% 0.01 60)" }}>{title}</h3>
               <p style={{ fontSize: 14, lineHeight: 1.6, color: "oklch(45% 0.01 60)", margin: 0 }}>{text}</p>
