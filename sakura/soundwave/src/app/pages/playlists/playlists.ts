@@ -4,6 +4,7 @@ import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { WirehoodApi, Playlist, PlaylistDetail, LibraryItem } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
+import { PlaybackService } from '../../core/playback';
 
 type PlaylistTag = 'Shared' | 'Private' | 'Collab';
 
@@ -34,6 +35,7 @@ function tagFor(p: Playlist, myUserId: string | null): PlaylistTag {
 export class PlaylistsPage {
   private api = inject(WirehoodApi);
   private auth = inject(AuthService);
+  private playback = inject(PlaybackService);
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();
@@ -153,6 +155,15 @@ export class PlaylistsPage {
     const pl = this.activePlaylist();
     if (!pl) return;
     this.api.deletePlaylist(pl.id).subscribe({ next: () => this.backToList() });
+  }
+
+  protected playAll(): void {
+    const pl = this.activePlaylist();
+    if (!pl || pl.tracks.length === 0) return;
+    this.playback.playQueue(
+      pl.tracks.map((t) => ({ trackId: t.trackId, title: t.title, artist: t.artist })),
+      0,
+    );
   }
 
   protected removeTrack(trackId: string): void {

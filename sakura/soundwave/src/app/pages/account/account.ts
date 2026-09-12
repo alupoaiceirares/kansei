@@ -3,6 +3,7 @@ import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { AuthService } from '../../core/auth';
 import { WirehoodApi } from '../../core/wirehood-api';
+import { saveBlob } from '../../shared/format';
 
 interface Preference {
   key: 'toasts' | 'autoplay' | 'publicProfile';
@@ -42,12 +43,7 @@ export class AccountPage {
     this.exportError.set(false);
     this.api.exportData().subscribe({
       next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'wirehood-export.json';
-        link.click();
-        URL.revokeObjectURL(url);
+        saveBlob(blob, 'wirehood-export.json');
         this.exported.set(true);
       },
       error: () => this.exportError.set(true),

@@ -1,7 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
-import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { WirehoodApi, SearchResult, Genre } from '../../core/wirehood-api';
 import { DownloadsService } from '../../core/downloads';
@@ -14,7 +13,7 @@ type Format = 'mp3' | 'mp4';
 @Component({
   selector: 'wh-search',
   standalone: true,
-  imports: [RouterLink, AppHeaderComponent, MiniPlayerComponent, WirehoodWavesComponent],
+  imports: [RouterLink, AppHeaderComponent, WirehoodWavesComponent],
   templateUrl: './search.html',
   styleUrl: './search.css',
 })
@@ -28,8 +27,6 @@ export class SearchPage {
 
   protected searchQuery = signal('');
   protected searching = signal(false);
-  protected playing = signal(false);
-  protected nowPlaying = signal<NowPlayingTrack | null>(null);
 
   protected previewOpen = signal(false);
   protected confirmOpen = signal(false);
@@ -64,10 +61,6 @@ export class SearchPage {
       this.searchQuery.set(query);
       this.runSearch(query);
     }
-  }
-
-  protected togglePlay(): void {
-    this.playing.update((v) => !v);
   }
 
   protected submitSearch(): void {

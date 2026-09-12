@@ -14,27 +14,38 @@
   </div>
 
   <div class="wh-player-transport">
-    <button aria-label="Previous" class="wh-player-btn" (click)="previous.emit()">
+    <button aria-label="Previous" class="wh-player-btn" [disabled]="!hasPrevious" (click)="previous.emit()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6z"></path><path d="M20 5v14l-11-7z"></path></svg>
     </button>
-    <button aria-label="Play" class="wh-player-btn wh-player-btn-main" (click)="togglePlay.emit()">
-      @if (playing) {
+    <button aria-label="Play" class="wh-player-btn wh-player-btn-main" [disabled]="!nowPlaying" (click)="togglePlay.emit()">
+      @if (loading) {
+        <span class="wh-player-spinner"></span>
+      } @else if (playing) {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"></path></svg>
       } @else {
         <svg width="13" height="13" viewBox="0 0 12 14" fill="currentColor" style="margin-left: 2px"><path d="M1 1l10 6-10 6z"></path></svg>
       }
     </button>
-    <button aria-label="Next" class="wh-player-btn" (click)="next.emit()">
+    <button aria-label="Next" class="wh-player-btn" [disabled]="!hasNext" (click)="next.emit()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2z"></path><path d="M4 5v14l11-7z"></path></svg>
     </button>
   </div>
 
   <div class="wh-player-scrub">
-    <span class="wh-player-time">1:12</span>
+    <span class="wh-player-time">{{ formatTime(currentTime) }}</span>
     <div class="wh-player-bar">
-      <div class="wh-player-bar-fill" style="width: 34%"></div>
+      <div class="wh-player-bar-fill" [style.width.%]="progressPermille / 10"></div>
+      <input
+        type="range"
+        class="wh-player-range"
+        min="0"
+        max="1000"
+        [value]="progressPermille"
+        [disabled]="!nowPlaying"
+        (input)="onSeek($any($event.target).value)"
+      />
     </div>
-    <span class="wh-player-time">3:31</span>
+    <span class="wh-player-time">{{ formatTime(duration) }}</span>
   </div>
 
   <div class="wh-player-volume">
@@ -43,7 +54,8 @@
       <path d="M16 9a4 4 0 0 1 0 6"></path>
     </svg>
     <div class="wh-player-bar">
-      <div class="wh-player-bar-fill wh-player-bar-fill-volume" style="width: 70%"></div>
+      <div class="wh-player-bar-fill wh-player-bar-fill-volume" [style.width.%]="volume * 100"></div>
+      <input type="range" class="wh-player-range" min="0" max="100" [value]="volume * 100" (input)="onVolume($any($event.target).value)" />
     </div>
   </div>
 </div>

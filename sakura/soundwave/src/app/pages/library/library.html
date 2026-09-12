@@ -70,10 +70,10 @@
               <a [routerLink]="['/track', t.trackId]" class="wh-library-card-title">{{ t.title }}</a>
               <div class="wh-library-card-artist">{{ t.artist }}</div>
               <div class="wh-library-card-actions">
-                <button aria-label="Play" class="wh-library-card-play">
+                <button aria-label="Play" class="wh-library-card-play" [disabled]="!t.formats.includes('MP3')" (click)="playTrack(t)">
                   <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor" style="margin-left: 1px"><path d="M1 1l10 6-10 6z"></path></svg>
                 </button>
-                <button aria-label="Download" class="wh-library-card-download">
+                <button aria-label="Download" class="wh-library-card-download" (click)="downloadTrack(t)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <path d="M12 4v11"></path>
                     <path d="M7 11l5 5 5-5"></path>
@@ -101,6 +101,4 @@
       </div>
     </section>
   </main>
-
-  <wh-mini-player [nowPlaying]="nowPlaying()" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
 </div>

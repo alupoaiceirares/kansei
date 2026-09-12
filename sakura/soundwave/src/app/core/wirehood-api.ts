@@ -24,7 +24,7 @@ export interface LibraryItem {
   extraInfo: string;
   durationSeconds: number;
   hasThumbnail: boolean;
-  formats: string[];
+  formats: TrackFormat[];
   addedAt: string;
 }
 
@@ -380,6 +380,13 @@ export class WirehoodApi {
 
   adminRejectThumbnail(submissionId: string) {
     return this.http.post(`${CONTROL_TOWER_URL}/wirehood/admin/thumbnail-submissions/${submissionId}/reject`, {});
+  }
+
+  downloadFile(trackId: string, format: string) {
+    return this.http.get(`${CONTROL_TOWER_URL}/wirehood/library/${trackId}/download`, {
+      params: new HttpParams().set('format', format),
+      responseType: 'blob',
+    });
   }
 
   musicProfile() {

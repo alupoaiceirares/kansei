@@ -1,1 +1,19 @@
 <router-outlet />
+
+@if (playback.nowPlaying()) {
+  <wh-mini-player
+    [nowPlaying]="playback.nowPlaying()"
+    [playing]="playback.playing()"
+    [loading]="playback.loading()"
+    [currentTime]="playback.currentTime()"
+    [duration]="playback.duration()"
+    [volume]="playback.volume()"
+    [hasPrevious]="playback.hasPrevious()"
+    [hasNext]="playback.hasNext()"
+    (togglePlay)="playback.toggle()"
+    (previous)="playback.previous()"
+    (next)="playback.next()"
+    (seek)="playback.seekTo($event)"
+    (volumeChange)="playback.setVolume($event)"
+  ></wh-mini-player>
+}

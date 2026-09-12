@@ -4,7 +4,8 @@ import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { WirehoodApi, FavoriteItem } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
-import { formatRelativeTime } from '../../shared/format';
+import { PlaybackService } from '../../core/playback';
+import { formatRelativeTime, saveBlob } from '../../shared/format';
 
 type FormatFilter = 'All' | 'MP3' | 'MP4';
 
@@ -19,6 +20,7 @@ type FormatFilter = 'All' | 'MP3' | 'MP4';
 export class FavoritesPage {
   private api = inject(WirehoodApi);
   private auth = inject(AuthService);
+  private playback = inject(PlaybackService);
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();
@@ -65,5 +67,20 @@ export class FavoritesPage {
     this.api.unfavoriteFormat(trackFormatId).subscribe({
       next: () => this.all.update((items) => items.filter((i) => i.trackFormatId !== trackFormatId)),
     });
+  }
+
+  protected playItem(item: FavoriteItem): void {
+    if (item.format.toLowerCase() !== 'mp3') return;
+    const playable = this.items().filter((x) => x.format.toLowerCase() === 'mp3');
+    const index = playable.findIndex((x) => x.trackFormatId === item.trackFormatId);
+    if (index === -1) return;
+    this.playback.playQueue(
+      playable.map((x) => ({ trackId: x.trackId, title: x.title, artist: x.artist })),
+      index,
+    );
+  }
+
+  protected downloadItem(item: FavoriteItem): void {
+    this.api.downloadFile(item.trackId, item.format).subscribe({ next: (blob) => saveBlob(blob, `${item.artist} - ${item.title}.${item.format}`) });
   }
 }
