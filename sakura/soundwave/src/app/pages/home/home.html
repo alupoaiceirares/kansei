@@ -62,15 +62,21 @@
               <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
               <span>Play</span>
             </button>
-            <button type="button" class="wh-home-sotd-icon" title="Download">
+            <button type="button" class="wh-home-sotd-icon" title="Download" (click)="downloadSotd()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M12 4v11"></path>
                 <path d="M7 11l5 5 5-5"></path>
                 <path d="M5 20h14"></path>
               </svg>
             </button>
-            <button type="button" class="wh-home-sotd-icon wh-home-sotd-icon-fav" title="Favorite">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <button
+              type="button"
+              class="wh-home-sotd-icon wh-home-sotd-icon-fav"
+              [class.wh-home-sotd-icon-fav-active]="sotdFaved()"
+              title="Favorite"
+              (click)="toggleFavSotd()"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" [attr.fill]="sotdFaved() ? '#E23A3A' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path>
               </svg>
             </button>
@@ -109,6 +115,4 @@
       </section>
     }
   </main>
-
-  <wh-mini-player [nowPlaying]="nowPlaying()" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
 </div>

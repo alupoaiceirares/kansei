@@ -1,12 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
-import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
-import { WirehoodApi, LibraryItem, SongOfDay } from '../../core/wirehood-api';
+import { WirehoodApi, LibraryItem, SongOfDay, TrackDetail } from '../../core/wirehood-api';
 import { FriendsService } from '../../core/friends';
 import { AuthService } from '../../core/auth';
-import { formatDuration, formatRelativeTime } from '../../shared/format';
+import { PlaybackService } from '../../core/playback';
+import { formatDuration, formatRelativeTime, saveBlob } from '../../shared/format';
 
 interface RecentTrack {
   trackId: string;
@@ -20,7 +20,7 @@ interface RecentTrack {
 @Component({
   selector: 'wh-home',
   standalone: true,
-  imports: [RouterLink, AppHeaderComponent, MiniPlayerComponent, WirehoodWavesComponent],
+  imports: [RouterLink, AppHeaderComponent, WirehoodWavesComponent],
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
@@ -28,6 +28,7 @@ export class HomePage {
   protected formatDuration = formatDuration;
   protected friends = inject(FriendsService);
   private auth = inject(AuthService);
+  private playback = inject(PlaybackService);
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();
@@ -35,12 +36,11 @@ export class HomePage {
 
   protected isEmpty = signal(false);
   protected loaded = signal(false);
-  protected playing = signal(false);
   protected searchQuery = signal('');
 
   protected genres = signal<string[]>([]);
   protected sotd = signal<SongOfDay | null>(null);
-  protected nowPlaying = signal<NowPlayingTrack | null>(null);
+  protected sotdTrack = signal<TrackDetail | null>(null);
   protected recent = signal<RecentTrack[]>([]);
 
   constructor(
@@ -54,7 +54,10 @@ export class HomePage {
 
     // 404 just means no pick exists yet (empty dev DB, or the daily job hasn't run) - not an error state
     this.api.songOfTheDay().subscribe({
-      next: (sotd) => this.sotd.set(sotd),
+      next: (sotd) => {
+        this.sotd.set(sotd);
+        this.api.track(sotd.trackId).subscribe({ next: (track) => this.sotdTrack.set(track) });
+      },
       error: () => this.sotd.set(null),
     });
 
@@ -83,15 +86,30 @@ export class HomePage {
     return this.loaded() && !this.isEmpty();
   }
 
-  protected togglePlay(): void {
-    this.playing.update((v) => !v);
-  }
+  private sotdAudioFormat = computed(() => this.sotdTrack()?.formats.find((f) => f.format.toLowerCase() === 'mp3') ?? null);
+
+  protected sotdFaved = computed(() => !!this.sotdAudioFormat()?.favorited);
 
   protected playSotd(): void {
     const sotd = this.sotd();
     if (!sotd) return;
-    this.nowPlaying.set({ title: sotd.title, artist: sotd.artist });
-    this.playing.set(true);
+    this.playback.playSingle({ trackId: sotd.trackId, title: sotd.title, artist: sotd.artist });
+  }
+
+  protected downloadSotd(): void {
+    const sotd = this.sotd();
+    if (!sotd) return;
+    this.api.downloadFile(sotd.trackId, 'mp3').subscribe({ next: (blob) => saveBlob(blob, `${sotd.artist} - ${sotd.title}.mp3`) });
+  }
+
+  protected toggleFavSotd(): void {
+    const format = this.sotdAudioFormat();
+    if (!format) return;
+    const call = format.favorited ? this.api.unfavoriteFormat(format.id) : this.api.favoriteFormat(format.id);
+    call.subscribe({
+      next: () =>
+        this.sotdTrack.update((t) => (t ? { ...t, formats: t.formats.map((f) => (f.id === format.id ? { ...f, favorited: !f.favorited } : f)) } : t)),
+    });
   }
 
   protected submitSearch(): void {
@@ -104,7 +122,7 @@ function toRecentTrack(item: LibraryItem): RecentTrack {
     trackId: item.trackId,
     title: item.title,
     artist: item.artist,
-    formats: item.formats.map((f) => f.toUpperCase()),
+    formats: item.formats.map((f) => f.format.toUpperCase()),
     added: formatRelativeTime(item.addedAt),
   };
 }

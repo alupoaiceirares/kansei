@@ -2,23 +2,24 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
-import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { WirehoodApi, SongOfDay, TrackDetail } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
-import { formatDuration } from '../../shared/format';
+import { PlaybackService } from '../../core/playback';
+import { formatDuration, saveBlob } from '../../shared/format';
 
 /** Today's shared pick, real from wirehood. Past picks have no history endpoint yet, see TODO.MD. */
 @Component({
   selector: 'wh-song-of-the-day',
   standalone: true,
-  imports: [RouterLink, DatePipe, AppHeaderComponent, MiniPlayerComponent, WirehoodWavesComponent],
+  imports: [RouterLink, DatePipe, AppHeaderComponent, WirehoodWavesComponent],
   templateUrl: './song-of-the-day.html',
   styleUrl: './song-of-the-day.css',
 })
 export class SongOfTheDayPage {
   private api = inject(WirehoodApi);
   private auth = inject(AuthService);
+  private playback = inject(PlaybackService);
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();
@@ -26,8 +27,6 @@ export class SongOfTheDayPage {
 
   protected sotd = signal<SongOfDay | null>(null);
   protected track = signal<TrackDetail | null>(null);
-  protected nowPlaying = signal<NowPlayingTrack | null>(null);
-  protected playing = signal(false);
 
   constructor() {
     this.api.songOfTheDay().subscribe({
@@ -47,15 +46,17 @@ export class SongOfTheDayPage {
   protected audioFormat = computed(() => this.track()?.formats.find((f) => f.format.toLowerCase() === 'mp3') ?? null);
   protected videoFormat = computed(() => this.track()?.formats.find((f) => f.format.toLowerCase() === 'mp4') ?? null);
 
-  protected togglePlay(): void {
-    this.playing.update((v) => !v);
-  }
-
   protected play(): void {
     const sotd = this.sotd();
     if (!sotd) return;
-    this.nowPlaying.set({ title: sotd.title, artist: sotd.artist });
-    this.playing.set(true);
+    this.playback.playSingle({ trackId: sotd.trackId, title: sotd.title, artist: sotd.artist });
+  }
+
+  protected download(): void {
+    const sotd = this.sotd();
+    const format = this.audioFormat() ?? this.videoFormat();
+    if (!sotd || !format) return;
+    this.api.downloadFile(sotd.trackId, format.format).subscribe({ next: (blob) => saveBlob(blob, `${sotd.artist} - ${sotd.title}.${format.format}`) });
   }
 
   protected toggleFav(): void {

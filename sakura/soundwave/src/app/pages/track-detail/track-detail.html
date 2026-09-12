@@ -73,7 +73,7 @@
                   <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
                   Play
                 </button>
-                <button type="button" class="wh-td-format-download" title="Download">
+                <button type="button" class="wh-td-format-download" title="Download" (click)="downloadFormat(fm)">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <path d="M12 4v11"></path>
                     <path d="M7 11l5 5 5-5"></path>
@@ -241,27 +241,21 @@
         <span class="wh-td-video-badge">MP4</span>
       </div>
       <div class="wh-td-video-frame-wrap">
-        <div class="wh-td-video-frame">
-          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(242,240,236,0.28)" stroke-width="1.3">
-            <rect x="2" y="4" width="20" height="16" rx="3"></rect>
-            <path d="M10 9l5 3-5 3z" fill="rgba(242,240,236,0.28)" stroke="none"></path>
-          </svg>
-          <span class="wh-td-video-frame-label">Video player · streams from the archive</span>
-        </div>
+        @if (videoUrl(); as src) {
+          <video class="wh-td-video-el" [src]="src" controls autoplay></video>
+        } @else {
+          <div class="wh-td-video-frame">
+            <span class="wh-td-video-frame-label">{{ videoLoading() ? 'Loading video…' : 'Video unavailable' }}</span>
+          </div>
+        }
       </div>
       <div class="wh-td-video-transport">
-        <button type="button" class="wh-td-video-play">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"></path></svg>
-        </button>
-        <span class="wh-td-video-time">0:00</span>
-        <div class="wh-td-video-bar">
-          <div class="wh-td-video-bar-fill" style="width: 0%"></div>
-        </div>
-        <span class="wh-td-video-time">{{ formatDuration(track.durationSeconds) }}</span>
-        <button type="button" class="wh-td-video-download">Download MP4</button>
+        @for (fm of track.formats; track fm.id) {
+          @if (fm.format.toLowerCase() === 'mp4') {
+            <button type="button" class="wh-td-video-download" (click)="downloadFormat(fm)">Download MP4</button>
+          }
+        }
       </div>
     </div>
   }
-
-  <wh-mini-player [nowPlaying]="nowPlaying()" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
 </div>

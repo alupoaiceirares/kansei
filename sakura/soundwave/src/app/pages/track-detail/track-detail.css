@@ -727,9 +727,18 @@
   color: rgba(242, 240, 236, 0.38);
 }
 
+.wh-td-video-el {
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  background: #000;
+}
+
 .wh-td-video-transport {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 18px;
   padding: 14px 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);

@@ -83,13 +83,19 @@
               <h1 class="wh-pl-detail-title">{{ pl.name }}</h1>
             }
             <p class="wh-pl-detail-sub">{{ pl.tracks.length }} tracks</p>
-            @if (isOwner()) {
-              <div class="wh-pl-detail-actions">
+            <div class="wh-pl-detail-actions">
+              @if (pl.tracks.length > 0) {
+                <button type="button" class="wh-pl-play-all" (click)="playAll()">
+                  <svg width="12" height="12" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
+                  Play all
+                </button>
+              }
+              @if (isOwner()) {
                 <button type="button" class="wh-pl-outline-btn" (click)="startAddTracks()">Add tracks</button>
                 <button type="button" class="wh-pl-outline-btn" (click)="startRename()">Rename</button>
                 <button type="button" class="wh-pl-delete-btn" (click)="deletePlaylist()">Delete</button>
-              </div>
-            }
+              }
+            </div>
           </div>
         </div>
 

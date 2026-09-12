@@ -30,10 +30,10 @@
             <a [routerLink]="['/track', t.trackId]" class="wh-fav-card-title">{{ t.title }}</a>
             <div class="wh-fav-card-artist">{{ t.artist }}</div>
             <div class="wh-fav-card-actions">
-              <button aria-label="Play" class="wh-fav-card-play">
+              <button aria-label="Play" class="wh-fav-card-play" [disabled]="t.format.toLowerCase() !== 'mp3'" (click)="playItem(t)">
                 <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor" style="margin-left: 1px"><path d="M1 1l10 6-10 6z"></path></svg>
               </button>
-              <button aria-label="Download" class="wh-fav-card-download">
+              <button aria-label="Download" class="wh-fav-card-download" (click)="downloadItem(t)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                   <path d="M12 4v11"></path>
                   <path d="M7 11l5 5 5-5"></path>

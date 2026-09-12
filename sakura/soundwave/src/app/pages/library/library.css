@@ -306,6 +306,11 @@
   background: #ffffff;
 }
 
+.wh-library-card-play:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .wh-library-card-download {
   width: 32px;
   height: 32px;

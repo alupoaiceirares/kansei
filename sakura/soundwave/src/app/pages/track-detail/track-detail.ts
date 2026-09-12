@@ -1,12 +1,12 @@
-import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnDestroy, ViewChild, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
-import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { WirehoodApi, CommentResponse, GenreTag, TrackDetail } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
-import { formatDuration } from '../../shared/format';
+import { PlaybackService } from '../../core/playback';
+import { formatDuration, saveBlob } from '../../shared/format';
 
 interface CommentNode extends CommentResponse {
   depth: number;
@@ -37,14 +37,15 @@ function buildTree(items: CommentResponse[]): CommentNode[] {
 @Component({
   selector: 'wh-track-detail',
   standalone: true,
-  imports: [RouterLink, DatePipe, AppHeaderComponent, MiniPlayerComponent, WirehoodWavesComponent],
+  imports: [RouterLink, DatePipe, AppHeaderComponent, WirehoodWavesComponent],
   templateUrl: './track-detail.html',
   styleUrl: './track-detail.css',
 })
-export class TrackDetailPage {
+export class TrackDetailPage implements OnDestroy {
   private api = inject(WirehoodApi);
   protected auth = inject(AuthService);
   private router = inject(Router);
+  protected playback = inject(PlaybackService);
 
   protected formatDuration = formatDuration;
   protected trackId: string;
@@ -54,8 +55,9 @@ export class TrackDetailPage {
   protected votedGenreIds = signal<Set<string>>(new Set());
   protected comments = signal<CommentNode[]>([]);
 
-  protected playing = signal(false);
   protected videoOpen = signal(false);
+  protected videoUrl = signal<string | null>(null);
+  protected videoLoading = signal(false);
   protected confirmDelete = signal(false);
   protected editingMetadata = signal(false);
   protected editTitle = signal('');
@@ -68,14 +70,16 @@ export class TrackDetailPage {
   protected editingCommentId = signal<string | null>(null);
   protected editCommentDraft = signal('');
 
-  protected nowPlaying = signal<NowPlayingTrack | null>(null);
-
   @ViewChild('thumbnailInput') private thumbnailInput?: ElementRef<HTMLInputElement>;
 
   constructor(route: ActivatedRoute) {
     this.trackId = route.snapshot.paramMap.get('id') ?? '';
     this.reload();
     this.loadComments();
+  }
+
+  ngOnDestroy(): void {
+    this.releaseVideo();
   }
 
   protected isAdmin(): boolean {
@@ -102,23 +106,49 @@ export class TrackDetailPage {
     return comment.userId === this.auth.getUserId();
   }
 
-  protected togglePlay(): void {
-    this.playing.update((v) => !v);
-  }
-
   protected playFormat(format: TrackDetail['formats'][number]): void {
     const track = this.track();
     if (!track) return;
     if (format.format.toLowerCase() === 'mp4') {
-      this.videoOpen.set(true);
+      this.openVideo();
     } else {
-      this.nowPlaying.set({ title: track.title, artist: track.artist });
-      this.playing.set(true);
+      this.playback.playSingle({ trackId: track.id, title: track.title, artist: track.artist });
     }
+  }
+
+  private openVideo(): void {
+    this.videoOpen.set(true);
+    this.videoLoading.set(true);
+    this.api.downloadFile(this.trackId, 'mp4').subscribe({
+      next: (blob) => {
+        this.releaseVideo();
+        this.videoUrl.set(URL.createObjectURL(blob));
+        this.videoLoading.set(false);
+      },
+      error: () => {
+        this.videoLoading.set(false);
+        this.videoOpen.set(false);
+      },
+    });
   }
 
   protected closeVideo(): void {
     this.videoOpen.set(false);
+    this.releaseVideo();
+  }
+
+  private releaseVideo(): void {
+    const url = this.videoUrl();
+    if (url) URL.revokeObjectURL(url);
+    this.videoUrl.set(null);
+  }
+
+  protected downloadFormat(format: TrackDetail['formats'][number]): void {
+    const track = this.track();
+    if (!track) return;
+    this.api
+      .downloadFile(this.trackId, format.format)
+      .subscribe({ next: (blob) => saveBlob(blob, `${track.artist} - ${track.title}.${format.format}`) });
   }
 
   protected toggleFav(format: TrackDetail['formats'][number]): void {

@@ -273,6 +273,11 @@
   color: #e23a3a;
 }
 
+.wh-home-sotd-icon-fav-active {
+  border-color: #e23a3a;
+  color: #e23a3a;
+}
+
 .wh-home-recent {
   margin-top: 56px;
 }
