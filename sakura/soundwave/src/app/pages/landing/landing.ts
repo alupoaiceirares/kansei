@@ -4,7 +4,7 @@ import { WirehoodMarkComponent } from '../../shared/wirehood-mark/wirehood-mark'
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
 import { AuthService } from '../../core/auth';
 
-/** Entry point from Kansei — pre-opt-in intro page, links into the opt-in gate. */
+/** Entry point from Kansei, pre-opt-in intro page, links into the opt-in gate. */
 @Component({
   selector: 'wh-landing',
   standalone: true,

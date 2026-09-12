@@ -1,0 +1,216 @@
+.wh-fr-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(ellipse 70% 30% at 18% 0%, rgba(18, 183, 107, 0.07), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 88% 4%, rgba(226, 58, 58, 0.055), transparent 70%),
+    #0a0c0b;
+  font-family: Inter, sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-fr-main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 32px 132px;
+}
+
+.wh-fr-h1 {
+  margin: 0 0 22px;
+  font: 700 27px 'Archivo', sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-fr-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 15px;
+  height: 46px;
+  border-radius: 11px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 26px;
+  transition: border-color 0.18s ease;
+  color: rgba(242, 240, 236, 0.42);
+}
+
+.wh-fr-search:focus-within {
+  border-color: #12b76b;
+}
+
+.wh-fr-search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font: 400 14.5px Inter, sans-serif;
+  color: #f2f0ec;
+}
+
+.wh-fr-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wh-fr-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  font: 600 14px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.55);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.16s ease;
+}
+
+.wh-fr-tab-active {
+  color: #f2f0ec;
+  border-bottom-color: #12b76b;
+}
+
+.wh-fr-tab-badge {
+  min-width: 19px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  font: 600 11px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.65);
+  text-align: center;
+}
+
+.wh-fr-tab-badge-red {
+  background: #e23a3a;
+  color: #fff;
+}
+
+.wh-fr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.wh-fr-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 13px 15px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(13, 16, 15, 0.78);
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease;
+  flex-wrap: wrap;
+}
+
+.wh-fr-row:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(20, 24, 22, 0.88);
+}
+
+.wh-fr-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 16px 'Archivo', sans-serif;
+}
+
+.wh-fr-info {
+  flex: 1;
+  min-width: 150px;
+}
+
+.wh-fr-name {
+  font: 600 15px Inter, sans-serif;
+  color: #f2f0ec;
+  margin-bottom: 2px;
+}
+
+.wh-fr-meta {
+  font: 400 13px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.55);
+}
+
+.wh-fr-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wh-fr-accept {
+  padding: 9px 17px;
+  border-radius: 9px;
+  border: none;
+  background: #f2f0ec;
+  color: #0a0c0b;
+  font: 600 13px Inter, sans-serif;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.wh-fr-accept:hover {
+  background: #ffffff;
+}
+
+.wh-fr-decline {
+  padding: 9px 15px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: rgba(242, 240, 236, 0.7);
+  font: 600 13px Inter, sans-serif;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.wh-fr-decline:hover {
+  border-color: #e23a3a;
+  color: #e23a3a;
+}
+
+.wh-fr-single-action {
+  padding: 9px 17px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: rgba(242, 240, 236, 0.7);
+  font: 600 13px Inter, sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.wh-fr-single-action:hover {
+  border-color: #e23a3a;
+  color: #e23a3a;
+}
+
+.wh-fr-empty {
+  padding: 40px;
+  text-align: center;
+  font: 400 14px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.5);
+}

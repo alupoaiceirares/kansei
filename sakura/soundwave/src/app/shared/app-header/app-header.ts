@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, Input, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { WirehoodMarkComponent } from '../wirehood-mark/wirehood-mark';
 import { AuthService } from '../../core/auth';
+import { DownloadsService } from '../../core/downloads';
+import { FriendsService } from '../../core/friends';
 
 interface MenuItem {
   label: string;
@@ -10,16 +12,7 @@ interface MenuItem {
   badgeColor?: string;
 }
 
-export type QueueStatus = 'pending' | 'failed' | 'ready';
-
-export interface DownloadQueueItem {
-  id: string;
-  title: string;
-  status: QueueStatus;
-  statusText: string;
-}
-
-/** Shared header chrome for every authenticated wirehood page: logo, nav pills, downloads bell, sign out, burger menu. */
+/** Shared header chrome for every authenticated wirehood page, logo, nav pills, downloads bell, sign out, burger menu. */
 @Component({
   selector: 'wh-header',
   standalone: true,
@@ -28,21 +21,23 @@ export interface DownloadQueueItem {
   styleUrl: './app-header.css',
 })
 export class AppHeaderComponent {
-  @Input() pendingDownloads = 0;
-  @Input() incomingRequests = 0;
   @Input() isAdmin = false;
   @Input() adminThumbnailCount = 0;
   @Input() adminGenreCount = 0;
-  @Input() queue: DownloadQueueItem[] = [];
   /** Admin Thumbnails/Genres pages swap the Home/Search/Library pills for Thumbnails/Genres + an Admin badge. */
   @Input() adminHeader = false;
 
-  @Output() retryDownload = new EventEmitter<string>();
-
   private auth = inject(AuthService);
+  protected downloads = inject(DownloadsService);
+  protected friends = inject(FriendsService);
 
   protected menuOpen = signal(false);
   protected trayOpen = signal(false);
+
+  constructor() {
+    this.downloads.ensureStarted();
+    this.friends.ensureStarted();
+  }
 
   protected signOut(): void {
     this.auth.signOut();
@@ -62,7 +57,13 @@ export class AppHeaderComponent {
     this.menuOpen.set(false);
   }
 
+  protected retryDownload(id: string): void {
+    this.downloads.retry(id);
+  }
+
   protected get menuItems(): MenuItem[] {
+    const pendingDownloads = this.downloads.pendingCount();
+    const incomingRequests = this.friends.incomingCount();
     return [
       { label: 'Home', route: '/home' },
       { label: 'Search & Download', route: '/search' },
@@ -72,12 +73,12 @@ export class AppHeaderComponent {
       {
         label: 'Friends',
         route: '/friends',
-        badge: this.incomingRequests > 0 ? String(this.incomingRequests) : null,
+        badge: incomingRequests > 0 ? String(incomingRequests) : null,
         badgeColor: '#E23A3A',
       },
       { label: 'Song of the Day', route: '/song-of-the-day' },
       { label: 'Music Profile', route: '/stats' },
-      { label: 'Downloads', route: '/search', badge: this.pendingDownloads > 0 ? String(this.pendingDownloads) : null },
+      { label: 'Downloads', route: '/search', badge: pendingDownloads > 0 ? String(pendingDownloads) : null },
       { label: 'Account', route: '/account' },
     ];
   }

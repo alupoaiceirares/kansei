@@ -1,53 +1,75 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
+import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
-import { MOCK_DOWNLOAD_QUEUE } from '../../shared/mock-data';
+import { WirehoodApi, SongOfDay, TrackDetail } from '../../core/wirehood-api';
+import { AuthService } from '../../core/auth';
+import { formatDuration } from '../../shared/format';
 
-interface PastPick {
-  date: string;
-  title: string;
-  artist: string;
-  plays: number;
-}
-
-/** Today's pick (large card) plus the last 7 days of past picks with play counts. */
+/** Today's shared pick, real from wirehood. Past picks have no history endpoint yet, see TODO.MD. */
 @Component({
   selector: 'wh-song-of-the-day',
   standalone: true,
-  imports: [RouterLink, AppHeaderComponent, WirehoodWavesComponent],
+  imports: [RouterLink, DatePipe, AppHeaderComponent, MiniPlayerComponent, WirehoodWavesComponent],
   templateUrl: './song-of-the-day.html',
   styleUrl: './song-of-the-day.css',
 })
 export class SongOfTheDayPage {
-  protected pendingDownloads = signal(3);
-  protected incomingRequests = signal(2);
-  protected isAdmin = signal(false);
-  protected queue = MOCK_DOWNLOAD_QUEUE;
+  private api = inject(WirehoodApi);
+  private auth = inject(AuthService);
 
-  protected faved = signal(false);
+  protected isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
 
-  protected today = {
-    date: '10 September 2026',
-    title: 'Slow Static Parade',
-    artist: 'Halden Mure',
-    duration: '4:07',
-    genre: 'Ambient',
-    plays: '318 plays today',
-    description: 'Picked from the shared archive at midnight. Everyone on wirehood gets the same track today.',
-  };
+  protected sotd = signal<SongOfDay | null>(null);
+  protected track = signal<TrackDetail | null>(null);
+  protected nowPlaying = signal<NowPlayingTrack | null>(null);
+  protected playing = signal(false);
 
-  protected past: PastPick[] = [
-    { date: 'Sep 9', title: 'Copper Line', artist: 'Ansel Reed', plays: 412 },
-    { date: 'Sep 8', title: 'Ghost Frequency', artist: 'Mora Vale', plays: 508 },
-    { date: 'Sep 7', title: 'Rust Cathedral', artist: 'The Longwave', plays: 276 },
-    { date: 'Sep 6', title: 'Quiet Wire', artist: 'Ivy Sennett', plays: 331 },
-    { date: 'Sep 5', title: 'Low Tide Signal', artist: 'Bellhouse', plays: 189 },
-    { date: 'Sep 4', title: 'Nightshift Bloom', artist: 'Kestrel Park', plays: 244 },
-    { date: 'Sep 3', title: 'Paper Antenna', artist: 'Mora Vale', plays: 297 },
-  ];
+  constructor() {
+    this.api.songOfTheDay().subscribe({
+      next: (sotd) => {
+        this.sotd.set(sotd);
+        this.api.track(sotd.trackId).subscribe({ next: (track) => this.track.set(track) });
+      },
+      error: () => this.sotd.set(null),
+    });
+  }
+
+  protected formattedDuration = computed(() => {
+    const sotd = this.sotd();
+    return sotd ? formatDuration(sotd.durationSeconds) : '';
+  });
+
+  protected audioFormat = computed(() => this.track()?.formats.find((f) => f.format.toLowerCase() === 'mp3') ?? null);
+  protected videoFormat = computed(() => this.track()?.formats.find((f) => f.format.toLowerCase() === 'mp4') ?? null);
+
+  protected togglePlay(): void {
+    this.playing.update((v) => !v);
+  }
+
+  protected play(): void {
+    const sotd = this.sotd();
+    if (!sotd) return;
+    this.nowPlaying.set({ title: sotd.title, artist: sotd.artist });
+    this.playing.set(true);
+  }
 
   protected toggleFav(): void {
-    this.faved.update((v) => !v);
+    const format = this.audioFormat() ?? this.videoFormat();
+    if (!format) return;
+    const call = format.favorited ? this.api.unfavoriteFormat(format.id) : this.api.favoriteFormat(format.id);
+    call.subscribe({
+      next: () => {
+        this.track.update((t) => (t ? { ...t, formats: t.formats.map((f) => (f.id === format.id ? { ...f, favorited: !f.favorited } : f)) } : t));
+      },
+    });
+  }
+
+  protected faved(): boolean {
+    return !!(this.audioFormat() ?? this.videoFormat())?.favorited;
   }
 }

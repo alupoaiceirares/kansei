@@ -194,6 +194,16 @@
   color: rgba(242, 240, 236, 0.5);
 }
 
+.wh-gen-readonly-note {
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  font: 400 12.5px/1.5 Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.55);
+}
+
 .wh-gen-active-list {
   display: flex;
   flex-direction: column;

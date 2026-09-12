@@ -1,7 +1,7 @@
 <div class="wh-library-page">
   <wh-waves></wh-waves>
 
-  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
 
   <main class="wh-library-main">
     <section class="wh-library-collections">
@@ -16,10 +16,10 @@
           </div>
           <div class="wh-library-fav-meta">
             <div class="wh-library-fav-title">Favorites</div>
-            <div class="wh-library-fav-sub">24 formats hearted</div>
+            <div class="wh-library-fav-sub">{{ favoritesCount() }} formats hearted</div>
           </div>
         </a>
-        @for (c of collections; track c.name) {
+        @for (c of collections(); track c.name) {
           <a routerLink="/playlists" class="wh-library-collection-card">
             <div class="wh-library-collection-icon"><span>w</span></div>
             <div class="wh-library-fav-meta">
@@ -56,9 +56,9 @@
       </div>
 
       <div class="wh-library-grid">
-        @for (t of tracks(); track t.title) {
+        @for (t of tracks(); track t.trackId) {
           <div class="wh-library-card">
-            <a [routerLink]="['/track', t.title]" class="wh-library-card-art">
+            <a [routerLink]="['/track', t.trackId]" class="wh-library-card-art">
               <span class="wh-library-card-art-glyph">w</span>
               @if (t.faved) {
                 <span class="wh-library-card-fav">
@@ -67,7 +67,7 @@
               }
             </a>
             <div class="wh-library-card-body">
-              <a [routerLink]="['/track', t.title]" class="wh-library-card-title">{{ t.title }}</a>
+              <a [routerLink]="['/track', t.trackId]" class="wh-library-card-title">{{ t.title }}</a>
               <div class="wh-library-card-artist">{{ t.artist }}</div>
               <div class="wh-library-card-actions">
                 <button aria-label="Play" class="wh-library-card-play">
@@ -86,19 +86,21 @@
                   }
                 </div>
               </div>
-              <div class="wh-library-card-footer">{{ t.added }} · {{ t.plays }} plays</div>
+              <div class="wh-library-card-footer">{{ t.added }}</div>
             </div>
           </div>
+        } @empty {
+          <div class="wh-library-empty">Nothing downloaded yet.</div>
         }
       </div>
 
       <div class="wh-library-pagination">
         <button type="button" class="wh-library-page-btn" (click)="prevPage()">Previous</button>
-        <span class="wh-library-page-count">{{ page() }} / {{ totalPages }}</span>
+        <span class="wh-library-page-count">{{ page() + 1 }} / {{ totalPages() }}</span>
         <button type="button" class="wh-library-page-btn wh-library-page-btn-next" (click)="nextPage()">Next</button>
       </div>
     </section>
   </main>
 
-  <wh-mini-player [nowPlaying]="nowPlaying" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
+  <wh-mini-player [nowPlaying]="nowPlaying()" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
 </div>

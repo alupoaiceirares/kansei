@@ -1,0 +1,85 @@
+<div class="wh-fr-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
+
+  <main class="wh-fr-main">
+    <h1 class="wh-fr-h1">Friends</h1>
+
+    <div class="wh-fr-search">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="7"></circle>
+        <path d="M16.5 16.5L21 21"></path>
+      </svg>
+      <input type="text" placeholder="Find people on wirehood" [value]="filterText()" (input)="onSearchInput($any($event.target).value)" />
+    </div>
+
+    @if (filterText().trim()) {
+      <div class="wh-fr-list">
+        @for (r of searchResults(); track r.userId) {
+          <div class="wh-fr-row">
+            <div class="wh-fr-avatar" style="background: rgba(18,183,107,0.13); border-color: rgba(18,183,107,0.35); color: #12B76B">
+              {{ r.username.charAt(0).toUpperCase() }}
+            </div>
+            <div class="wh-fr-info">
+              <div class="wh-fr-name">{{ r.username }}</div>
+            </div>
+            @switch (r.relation) {
+              @case ('NONE') {
+                <button type="button" class="wh-fr-single-action" (click)="sendRequest(r.userId)">Add friend</button>
+              }
+              @case ('PENDING_OUTGOING') {
+                <button type="button" class="wh-fr-single-action" (click)="remove(r.userId)">Cancel request</button>
+              }
+              @case ('PENDING_INCOMING') {
+                <div class="wh-fr-actions">
+                  <button type="button" class="wh-fr-accept" (click)="accept(r.userId)">Accept</button>
+                  <button type="button" class="wh-fr-decline" (click)="remove(r.userId)">Decline</button>
+                </div>
+              }
+              @case ('FRIENDS') {
+                <button type="button" class="wh-fr-single-action" (click)="remove(r.userId)">Remove friend</button>
+              }
+            }
+          </div>
+        } @empty {
+          <div class="wh-fr-empty">{{ searching() ? 'Searching…' : 'Nobody matches that search.' }}</div>
+        }
+      </div>
+    } @else {
+      <div class="wh-fr-tabs">
+        @for (t of tabOrder; track t) {
+          <button type="button" class="wh-fr-tab" [class.wh-fr-tab-active]="tab() === t" (click)="pickTab(t)">
+            <span>{{ t }}</span>
+            <span class="wh-fr-tab-badge" [class.wh-fr-tab-badge-red]="t === 'Incoming' && tabCounts()[t] > 0">{{ tabCounts()[t] }}</span>
+          </button>
+        }
+      </div>
+
+      <div class="wh-fr-list">
+        @for (p of people(); track p.userId) {
+          <div class="wh-fr-row">
+            <div class="wh-fr-avatar" [style.background]="p.avatarBg" [style.borderColor]="p.ringColor" [style.color]="p.initialColor">
+              {{ p.initial }}
+            </div>
+            <div class="wh-fr-info">
+              <div class="wh-fr-name">{{ p.username }}</div>
+            </div>
+            @if (tab() === 'Incoming') {
+              <div class="wh-fr-actions">
+                <button type="button" class="wh-fr-accept" (click)="accept(p.userId)">Accept</button>
+                <button type="button" class="wh-fr-decline" (click)="remove(p.userId)">Decline</button>
+              </div>
+            } @else {
+              <button type="button" class="wh-fr-single-action" (click)="remove(p.userId)">
+                {{ tab() === 'Outgoing' ? 'Cancel request' : 'Remove' }}
+              </button>
+            }
+          </div>
+        } @empty {
+          <div class="wh-fr-empty">Nobody here.</div>
+        }
+      </div>
+    }
+  </main>
+</div>

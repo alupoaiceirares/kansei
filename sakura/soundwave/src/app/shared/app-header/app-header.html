@@ -32,8 +32,8 @@
           <path d="M7 11l5 5 5-5"></path>
           <path d="M5 20h14"></path>
         </svg>
-        @if (pendingDownloads > 0) {
-          <span class="wh-header-badge">{{ pendingDownloads }}</span>
+        @if (downloads.pendingCount() > 0) {
+          <span class="wh-header-badge">{{ downloads.pendingCount() }}</span>
         }
       </button>
     }
@@ -85,7 +85,7 @@
         <span class="wh-header-tray-live"><span class="wh-header-tray-live-dot"></span>Live</span>
       </div>
       <div class="wh-header-tray-list">
-        @for (q of queue; track q.id) {
+        @for (q of downloads.queue(); track q.id) {
           <div class="wh-header-tray-item" [class]="'wh-header-tray-item-' + q.status">
             <div class="wh-header-tray-icon">
               @switch (q.status) {
@@ -109,7 +109,7 @@
               <div class="wh-header-tray-status" [class]="'wh-header-tray-status-' + q.status">{{ q.statusText }}</div>
             </div>
             @if (q.status === 'failed') {
-              <button type="button" class="wh-header-tray-retry" (click)="retryDownload.emit(q.id)">Retry</button>
+              <button type="button" class="wh-header-tray-retry" (click)="retryDownload(q.id)">Retry</button>
             }
           </div>
         } @empty {

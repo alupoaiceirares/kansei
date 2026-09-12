@@ -1,18 +1,11 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
-import { MOCK_DOWNLOAD_QUEUE } from '../../shared/mock-data';
-
-interface LibraryTrack {
-  title: string;
-  artist: string;
-  formats: string[];
-  added: string;
-  plays: number;
-  faved: boolean;
-}
+import { WirehoodApi, LibraryItem } from '../../core/wirehood-api';
+import { AuthService } from '../../core/auth';
+import { formatRelativeTime } from '../../shared/format';
 
 interface Collection {
   name: string;
@@ -20,6 +13,7 @@ interface Collection {
 }
 
 type FormatFilter = 'All' | 'MP3' | 'MP4';
+const PAGE_SIZE = 12;
 
 /** Collections row (Favorites + playlists) plus the full downloaded-tracks grid, filterable by format/text. */
 @Component({
@@ -30,48 +24,73 @@ type FormatFilter = 'All' | 'MP3' | 'MP4';
   styleUrl: './library.css',
 })
 export class LibraryPage {
-  protected pendingDownloads = signal(3);
-  protected incomingRequests = signal(2);
-  protected isAdmin = signal(false);
-  protected queue = MOCK_DOWNLOAD_QUEUE;
+  private api = inject(WirehoodApi);
+  private auth = inject(AuthService);
 
-  protected playing = signal(true);
-  protected nowPlaying: NowPlayingTrack = { title: 'Ghost Frequency', artist: 'Mora Vale' };
+  protected isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
+
+  protected playing = signal(false);
+  protected nowPlaying = signal<NowPlayingTrack | null>(null);
 
   protected filter = signal<FormatFilter>('All');
   protected filterText = signal('');
-  protected page = signal(1);
-  protected totalPages = 7;
+  protected page = signal(0);
+  protected totalPages = signal(1);
 
   protected filterOptions: FormatFilter[] = ['All', 'MP3', 'MP4'];
 
-  protected collections: Collection[] = [
-    { name: 'Late shift', meta: '31 tracks · shared' },
-    { name: 'Wire & static', meta: '18 tracks · private' },
-    { name: 'Reed sessions', meta: '9 tracks · collaborating' },
-  ];
+  protected collections = signal<Collection[]>([]);
+  protected favoritedTrackIds = signal<Set<string>>(new Set());
+  protected favoritesCount = signal(0);
+  private items = signal<LibraryItem[]>([]);
 
-  private allTracks: LibraryTrack[] = [
-    { title: 'Ghost Frequency', artist: 'Mora Vale', formats: ['MP3', 'MP4'], added: '2h ago', plays: 41, faved: true },
-    { title: 'Tin Roof Static', artist: 'The Longwave', formats: ['MP3'], added: 'Yesterday', plays: 12, faved: false },
-    { title: 'Copper Line', artist: 'Ansel Reed', formats: ['MP3', 'MP4'], added: '3d ago', plays: 88, faved: true },
-    { title: 'Nightshift Bloom', artist: 'Kestrel Park', formats: ['MP4'], added: '5d ago', plays: 7, faved: false },
-    { title: 'Halogen Hymn', artist: 'Ivy Sennett', formats: ['MP3'], added: '1w ago', plays: 134, faved: true },
-    { title: 'Slow Static Parade', artist: 'Halden Mure', formats: ['MP3', 'MP4'], added: '1w ago', plays: 56, faved: false },
-    { title: 'Paper Antenna', artist: 'Mora Vale', formats: ['MP3'], added: '2w ago', plays: 23, faved: false },
-    { title: 'Low Tide Signal', artist: 'Bellhouse', formats: ['MP3', 'MP4'], added: '2w ago', plays: 62, faved: true },
-    { title: 'Rust Cathedral', artist: 'The Longwave', formats: ['MP4'], added: '3w ago', plays: 19, faved: false },
-    { title: 'Verdigris', artist: 'Ansel Reed', formats: ['MP3'], added: '3w ago', plays: 71, faved: false },
-    { title: 'Quiet Wire', artist: 'Ivy Sennett', formats: ['MP3', 'MP4'], added: '1mo ago', plays: 205, faved: true },
-    { title: 'Marbled Sky', artist: 'Kestrel Park', formats: ['MP3'], added: '1mo ago', plays: 34, faved: false },
-  ];
+  constructor() {
+    this.loadPage(0);
+
+    this.api.favorites(0, 200).subscribe({
+      next: (favPage) => {
+        this.favoritedTrackIds.set(new Set(favPage.items.map((f) => f.trackId)));
+        this.favoritesCount.set(favPage.totalElements);
+      },
+      error: () => {},
+    });
+
+    this.api.myPlaylists().subscribe({
+      next: (playlists) =>
+        this.collections.set(
+          playlists.map((p) => ({ name: p.name, meta: `${p.trackCount} tracks · ${p.shared ? 'shared' : 'private'}` })),
+        ),
+      error: () => {},
+    });
+  }
+
+  private loadPage(page: number): void {
+    this.api.library(page, PAGE_SIZE).subscribe({
+      next: (res) => {
+        this.items.set(res.items);
+        this.page.set(res.page);
+        this.totalPages.set(Math.max(1, res.totalPages));
+      },
+    });
+  }
 
   protected tracks = computed(() => {
     const f = this.filter();
     const text = this.filterText().trim().toLowerCase();
-    return this.allTracks
-      .filter((t) => f === 'All' || t.formats.includes(f))
-      .filter((t) => !text || t.title.toLowerCase().includes(text) || t.artist.toLowerCase().includes(text));
+    const faved = this.favoritedTrackIds();
+    return this.items()
+      .filter((t) => f === 'All' || t.formats.map((x) => x.toUpperCase()).includes(f))
+      .filter((t) => !text || t.title.toLowerCase().includes(text) || t.artist.toLowerCase().includes(text))
+      .map((t) => ({
+        trackId: t.trackId,
+        title: t.title,
+        artist: t.artist,
+        formats: t.formats.map((x) => x.toUpperCase()),
+        added: formatRelativeTime(t.addedAt),
+        faved: faved.has(t.trackId),
+      }));
   });
 
   protected togglePlay(): void {
@@ -80,14 +99,13 @@ export class LibraryPage {
 
   protected pickFilter(f: FormatFilter): void {
     this.filter.set(f);
-    this.page.set(1);
   }
 
   protected prevPage(): void {
-    this.page.update((p) => Math.max(1, p - 1));
+    if (this.page() > 0) this.loadPage(this.page() - 1);
   }
 
   protected nextPage(): void {
-    this.page.update((p) => Math.min(this.totalPages, p + 1));
+    if (this.page() < this.totalPages() - 1) this.loadPage(this.page() + 1);
   }
 }

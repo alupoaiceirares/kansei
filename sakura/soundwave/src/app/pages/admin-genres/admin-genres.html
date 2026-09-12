@@ -5,82 +5,26 @@
 
   <main class="wh-gen-main">
     <h1 class="wh-gen-h1">Genres</h1>
-    <p class="wh-gen-sub">The controlled list users can tag tracks with. {{ countText() }}</p>
-
-    <section class="wh-gen-panel">
-      <h2 class="wh-gen-h2">Add a genre</h2>
-      <div class="wh-gen-add-row">
-        <input
-          type="text"
-          placeholder="Genre name"
-          [value]="draft()"
-          (input)="onDraft($any($event.target).value)"
-          (keydown.enter)="addGenre()"
-          class="wh-gen-input"
-        />
-        <button type="button" class="wh-gen-add-btn" (click)="addGenre()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-            <path d="M12 5v14M5 12h14"></path>
-          </svg>
-          Add genre
-        </button>
-      </div>
-      @if (dupWarning()) {
-        <div class="wh-gen-dup-warning">That genre already exists.</div>
-      }
-    </section>
-
-    @if (proposed().length > 0) {
-      <section class="wh-gen-proposed-panel">
-        <h2 class="wh-gen-h2">Proposed by users</h2>
-        <p class="wh-gen-proposed-sub">Approving adds the genre to the list and keeps the tags already applied.</p>
-        <div class="wh-gen-proposed-list">
-          @for (p of proposed(); track p.name) {
-            <div class="wh-gen-proposed-row">
-              <div class="wh-gen-proposed-info">
-                <div class="wh-gen-proposed-name">{{ p.name }}</div>
-                <div class="wh-gen-proposed-meta">{{ p.uses }} tracks tagged · proposed by {{ p.by }}</div>
-              </div>
-              <div class="wh-gen-proposed-actions">
-                <button type="button" class="wh-gen-approve" (click)="approveProposed(p.name)">Approve</button>
-                <button type="button" class="wh-gen-reject" (click)="rejectProposed(p.name)">Reject</button>
-              </div>
-            </div>
-          }
-        </div>
-      </section>
-    }
+    <p class="wh-gen-sub">The controlled list users can tag tracks with. {{ genres().length }} active.</p>
 
     <section class="wh-gen-panel">
       <div class="wh-gen-active-head">
         <h2 class="wh-gen-h2" style="margin: 0">Active genres</h2>
-        <span class="wh-gen-sorted-by">Sorted by use</span>
+        <span class="wh-gen-sorted-by">Sorted A-Z</span>
       </div>
+      <p class="wh-gen-readonly-note">
+        Adding, renaming, removing, and reviewing user-proposed genres aren't backed by an endpoint yet, this list is read-only for now.
+      </p>
       <div class="wh-gen-active-list">
-        @for (g of sortedGenres(); track g.name) {
+        @for (g of genres(); track g.id) {
           <div class="wh-gen-active-row">
             <span class="wh-gen-dot" [style.background]="g.dot"></span>
             <div class="wh-gen-active-info">
               <div class="wh-gen-active-name">{{ g.name }}</div>
-              <div class="wh-gen-active-meta">{{ g.uses }} tracks · {{ g.votes }} votes</div>
             </div>
-            <div class="wh-gen-active-actions">
-              <button type="button" class="wh-gen-rename">Rename</button>
-              <button type="button" class="wh-gen-remove" (click)="askRemove(g.name)">Remove</button>
-            </div>
-            @if (g.confirming) {
-              <div class="wh-gen-confirm">
-                <div class="wh-gen-confirm-title">Remove "{{ g.name }}" from every track?</div>
-                <div class="wh-gen-confirm-body">
-                  Drops the tag from {{ g.uses }} tracks and discards {{ g.votes }} votes. Tracks and files are untouched.
-                </div>
-                <div class="wh-gen-confirm-actions">
-                  <button type="button" class="wh-gen-confirm-cancel" (click)="cancelRemove()">Cancel</button>
-                  <button type="button" class="wh-gen-confirm-remove" (click)="removeGenre(g.name)">Remove genre</button>
-                </div>
-              </div>
-            }
           </div>
+        } @empty {
+          <div class="wh-gen-active-row">No genres yet.</div>
         }
       </div>
     </section>

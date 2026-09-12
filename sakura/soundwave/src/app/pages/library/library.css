@@ -207,6 +207,14 @@
   gap: 18px;
 }
 
+.wh-library-empty {
+  grid-column: 1 / -1;
+  padding: 40px;
+  text-align: center;
+  font: 400 14px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.5);
+}
+
 .wh-library-card {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.07);

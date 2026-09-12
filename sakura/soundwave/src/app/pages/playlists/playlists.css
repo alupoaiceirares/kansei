@@ -571,3 +571,70 @@
 .wh-pl-toggle-on .wh-pl-toggle-knob {
   left: 21px;
 }
+
+.wh-pl-empty {
+  padding: 30px;
+  text-align: center;
+  font: 400 13.5px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.5);
+}
+
+.wh-pl-create-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.wh-pl-create-row input[type='text'] {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 13px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(13, 16, 15, 0.6);
+  color: #f2f0ec;
+  font: 500 13.5px Inter, sans-serif;
+}
+
+.wh-pl-create-row input[type='text']:focus {
+  outline: none;
+  border-color: #12b76b;
+}
+
+.wh-pl-create-shared {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 12.5px Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.7);
+  white-space: nowrap;
+}
+
+.wh-pl-add-tracks-panel {
+  margin-bottom: 24px;
+}
+
+.wh-pl-add-tracks-search {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 13px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(13, 16, 15, 0.6);
+  color: #f2f0ec;
+  font: 500 13.5px Inter, sans-serif;
+  box-sizing: border-box;
+}
+
+.wh-pl-add-tracks-search:focus {
+  outline: none;
+  border-color: #12b76b;
+}
+
+.wh-pl-add-tracks-panel .wh-pl-tracklist {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}

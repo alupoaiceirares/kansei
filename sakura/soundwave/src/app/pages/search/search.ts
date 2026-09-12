@@ -1,17 +1,12 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AppHeaderComponent, DownloadQueueItem } from '../../shared/app-header/app-header';
+import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { MiniPlayerComponent, NowPlayingTrack } from '../../shared/mini-player/mini-player';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
-import { MOCK_DOWNLOAD_QUEUE } from '../../shared/mock-data';
-
-interface SearchResult {
-  title: string;
-  channel: string;
-  views: string;
-  duration: string;
-  inArchive: boolean;
-}
+import { WirehoodApi, SearchResult, Genre } from '../../core/wirehood-api';
+import { DownloadsService } from '../../core/downloads';
+import { AuthService } from '../../core/auth';
+import { formatDuration } from '../../shared/format';
 
 type Format = 'mp3' | 'mp4';
 
@@ -24,13 +19,17 @@ type Format = 'mp3' | 'mp4';
   styleUrl: './search.css',
 })
 export class SearchPage {
-  protected pendingDownloads = signal(3);
-  protected incomingRequests = signal(2);
-  protected isAdmin = signal(false);
-  protected queue = signal<DownloadQueueItem[]>([...MOCK_DOWNLOAD_QUEUE]);
+  protected formatDuration = formatDuration;
+  private auth = inject(AuthService);
 
-  protected searchQuery = signal('mora vale ghost frequency');
-  protected playing = signal(true);
+  protected isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
+
+  protected searchQuery = signal('');
+  protected searching = signal(false);
+  protected playing = signal(false);
+  protected nowPlaying = signal<NowPlayingTrack | null>(null);
 
   protected previewOpen = signal(false);
   protected confirmOpen = signal(false);
@@ -38,37 +37,33 @@ export class SearchPage {
   protected toastTitle = signal('');
 
   protected format = signal<Format>('mp3');
-  protected selectedGenres = signal<string[]>(['Shoegaze']);
+  protected selectedGenreIds = signal<string[]>([]);
+  protected genreOptions = signal<Genre[]>([]);
 
   protected confirmArtist = signal('');
   protected confirmTitle = signal('');
   protected confirmExtra = signal('');
 
   protected activeResult: SearchResult | null = null;
-
-  protected genreOptions = ['Shoegaze', 'Dream pop', 'Post-punk', 'Ambient', 'Dub techno', 'Alt country'];
-
-  protected nowPlaying: NowPlayingTrack = { title: 'Ghost Frequency', artist: 'Mora Vale' };
-
-  protected results: SearchResult[] = [
-    { title: 'Ghost Frequency (Official Video)', channel: 'Mora Vale', views: '412K views', duration: '3:31', inArchive: true },
-    { title: 'Ghost Frequency — Live at Vault Sessions', channel: 'Vault Sessions', views: '88K views', duration: '4:12', inArchive: false },
-    { title: 'Mora Vale — Ghost Frequency (Slowed)', channel: 'nightloop', views: '1.2M views', duration: '4:48', inArchive: false },
-    { title: 'Ghost Frequency (Instrumental)', channel: 'Mora Vale', views: '31K views', duration: '3:29', inArchive: false },
-    { title: 'Mora Vale — Full Album: Signal Bleed', channel: 'Mora Vale', views: '206K views', duration: '38:14', inArchive: false },
-    { title: 'Ghost Frequency (Kestrel Park Remix)', channel: 'Kestrel Park', views: '74K views', duration: '5:02', inArchive: false },
-  ];
+  protected results = signal<SearchResult[]>([]);
 
   private toastTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private api: WirehoodApi,
+    private downloads: DownloadsService,
   ) {
+    this.api.genres().subscribe({ next: (genres) => this.genreOptions.set(genres), error: () => {} });
+
     const q = this.route.snapshot.queryParamMap.get('q');
     const genre = this.route.snapshot.queryParamMap.get('genre');
-    if (q) this.searchQuery.set(q);
-    else if (genre) this.searchQuery.set(genre);
+    const query = q ?? genre;
+    if (query) {
+      this.searchQuery.set(query);
+      this.runSearch(query);
+    }
   }
 
   protected togglePlay(): void {
@@ -76,7 +71,20 @@ export class SearchPage {
   }
 
   protected submitSearch(): void {
-    this.router.navigate([], { queryParams: { q: this.searchQuery() }, relativeTo: this.route });
+    const query = this.searchQuery();
+    this.router.navigate([], { queryParams: { q: query || undefined }, relativeTo: this.route });
+    if (query) this.runSearch(query);
+  }
+
+  private runSearch(query: string): void {
+    this.searching.set(true);
+    this.api.search(query).subscribe({
+      next: (results) => {
+        this.results.set(results);
+        this.searching.set(false);
+      },
+      error: () => this.searching.set(false),
+    });
   }
 
   protected openPreview(result: SearchResult): void {
@@ -87,11 +95,21 @@ export class SearchPage {
 
   protected openConfirm(result: SearchResult): void {
     this.activeResult = result;
-    this.confirmArtist.set(result.channel);
-    this.confirmTitle.set(result.title.replace(/\s*\([^)]*\)\s*$/, ''));
     this.confirmExtra.set('');
-    this.confirmOpen.set(true);
+    this.selectedGenreIds.set([]);
     this.previewOpen.set(false);
+    this.confirmOpen.set(true);
+    this.api.parseTitle(result.title).subscribe({
+      next: (parsed) => {
+        this.confirmArtist.set(parsed.artist || result.channelTitle);
+        this.confirmTitle.set(parsed.title || result.title);
+        this.confirmExtra.set(parsed.extraInfo ?? '');
+      },
+      error: () => {
+        this.confirmArtist.set(result.channelTitle);
+        this.confirmTitle.set(result.title);
+      },
+    });
   }
 
   protected closeAll(): void {
@@ -103,24 +121,34 @@ export class SearchPage {
     this.format.set(format);
   }
 
-  protected toggleGenre(label: string): void {
-    this.selectedGenres.update((genres) => (genres.includes(label) ? genres.filter((g) => g !== label) : [...genres, label]));
+  protected toggleGenre(id: string): void {
+    this.selectedGenreIds.update((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   }
 
   protected confirmDownload(): void {
-    const title = `${this.confirmArtist()} — ${this.confirmTitle()}`;
-    this.queue.update((q) => [
-      { id: `q${Date.now()}`, title: `${this.confirmTitle()} — ${this.format().toUpperCase()}`, status: 'pending', statusText: 'Queued' },
-      ...q,
-    ]);
+    const result = this.activeResult;
+    if (!result) return;
+    const title = `${this.confirmArtist()}, ${this.confirmTitle()}`;
+    const genreIds = this.selectedGenreIds();
+
+    this.downloads.submit(
+      {
+        youtubeVideoId: result.videoId,
+        title: this.confirmTitle(),
+        artist: this.confirmArtist(),
+        extraInfo: this.confirmExtra(),
+        durationSeconds: result.durationSeconds,
+        format: this.format(),
+      },
+      (queued) => {
+        if (genreIds.length > 0) this.api.tagGenres(queued.trackId, genreIds).subscribe();
+      },
+    );
+
     this.confirmOpen.set(false);
     this.toastTitle.set(title);
     this.toastOpen.set(true);
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => this.toastOpen.set(false), 5200);
-  }
-
-  protected retryDownload(id: string): void {
-    this.queue.update((q) => q.map((item) => (item.id === id ? { ...item, status: 'pending', statusText: 'Retrying…' } : item)));
   }
 }

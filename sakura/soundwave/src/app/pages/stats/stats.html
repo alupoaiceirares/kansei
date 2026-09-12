@@ -1,0 +1,53 @@
+<div class="wh-st-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
+
+  <main class="wh-st-main">
+    <div class="wh-st-head">
+      <div>
+        <h1 class="wh-st-h1">Music profile</h1>
+        <p class="wh-st-sub">Your listening and collecting on wirehood.</p>
+      </div>
+    </div>
+
+    <div class="wh-st-kpis">
+      @for (k of kpis(); track k.label) {
+        <div class="wh-st-kpi">
+          <div class="wh-st-kpi-label">{{ k.label }}</div>
+          <div class="wh-st-kpi-value" [style.font-size]="k.size" [style.color]="k.color">{{ k.value }}</div>
+          @if (k.sub) {
+            <div class="wh-st-kpi-sub">{{ k.sub }}</div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="wh-st-row-2">
+      <section class="wh-st-panel">
+        <h2 class="wh-st-h2">Genre split</h2>
+        <div class="wh-st-donut-wrap">
+          <div class="wh-st-donut" [style.background]="donutBackground()">
+            <div class="wh-st-donut-center">
+              <div class="wh-st-donut-count">{{ genres().length }}</div>
+              <div class="wh-st-donut-label">genres</div>
+            </div>
+          </div>
+        </div>
+        <div class="wh-st-legend">
+          @for (g of genres(); track g.name) {
+            <div class="wh-st-legend-row">
+              <span class="wh-st-legend-dot" [style.background]="g.color"></span>
+              <span class="wh-st-legend-name">{{ g.name }}</span>
+              <span class="wh-st-legend-pct">{{ g.pct }}%</span>
+            </div>
+          } @empty {
+            <div class="wh-st-legend-row">
+              <span class="wh-st-legend-name">No genre-tagged tracks yet.</span>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

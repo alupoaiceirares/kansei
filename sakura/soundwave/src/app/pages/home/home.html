@@ -1,12 +1,7 @@
 <div class="wh-home">
   <wh-waves></wh-waves>
 
-  <wh-header
-    [pendingDownloads]="pendingDownloads()"
-    [incomingRequests]="incomingRequests()"
-    [isAdmin]="isAdmin()"
-    [queue]="queue"
-  ></wh-header>
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
 
   <main class="wh-home-main">
     @if (hasRequests) {
@@ -45,52 +40,54 @@
         </form>
 
         <div class="wh-home-genres">
-          @for (g of genres; track g) {
+          @for (g of genres(); track g) {
             <a [routerLink]="['/search']" [queryParams]="{ genre: g }" class="wh-home-genre-chip">{{ g }}</a>
           }
         </div>
       </section>
 
-      <section class="wh-home-sotd">
-        <div class="wh-home-sotd-head">
-          <span class="wh-home-sotd-label">Song of the Day</span>
-          <a routerLink="/song-of-the-day" class="wh-home-sotd-link">Past picks</a>
-        </div>
-        <div class="wh-home-sotd-art">
-          <span>w</span>
-        </div>
-        <div class="wh-home-sotd-title">{{ sotd.title }}</div>
-        <div class="wh-home-sotd-meta">{{ sotd.artist }} · {{ sotd.duration }}</div>
-        <div class="wh-home-sotd-actions">
-          <button type="button" class="wh-home-sotd-play" (click)="playSotd()">
-            <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
-            <span>Play</span>
-          </button>
-          <button type="button" class="wh-home-sotd-icon" title="Download">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M12 4v11"></path>
-              <path d="M7 11l5 5 5-5"></path>
-              <path d="M5 20h14"></path>
-            </svg>
-          </button>
-          <button type="button" class="wh-home-sotd-icon wh-home-sotd-icon-fav" title="Favorite">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path>
-            </svg>
-          </button>
-        </div>
-      </section>
+      @if (sotd(); as pick) {
+        <section class="wh-home-sotd">
+          <div class="wh-home-sotd-head">
+            <span class="wh-home-sotd-label">Song of the Day</span>
+            <a routerLink="/song-of-the-day" class="wh-home-sotd-link">Past picks</a>
+          </div>
+          <div class="wh-home-sotd-art">
+            <span>w</span>
+          </div>
+          <div class="wh-home-sotd-title">{{ pick.title }}</div>
+          <div class="wh-home-sotd-meta">{{ pick.artist }} · {{ formatDuration(pick.durationSeconds) }}</div>
+          <div class="wh-home-sotd-actions">
+            <button type="button" class="wh-home-sotd-play" (click)="playSotd()">
+              <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
+              <span>Play</span>
+            </button>
+            <button type="button" class="wh-home-sotd-icon" title="Download">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 4v11"></path>
+                <path d="M7 11l5 5 5-5"></path>
+                <path d="M5 20h14"></path>
+              </svg>
+            </button>
+            <button type="button" class="wh-home-sotd-icon wh-home-sotd-icon-fav" title="Favorite">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path>
+              </svg>
+            </button>
+          </div>
+        </section>
+      }
     </div>
 
-    @if (!isEmpty()) {
+    @if (showRecent) {
       <section class="wh-home-recent">
         <div class="wh-home-recent-head">
           <h2 class="wh-home-h2">Recently added</h2>
           <a routerLink="/library" class="wh-home-recent-link">All library →</a>
         </div>
         <div class="wh-home-recent-grid">
-          @for (t of recent; track t.title) {
-            <a [routerLink]="['/track', t.title]" class="wh-home-track-card">
+          @for (t of recent(); track t.trackId) {
+            <a [routerLink]="['/track', t.trackId]" class="wh-home-track-card">
               <div class="wh-home-track-art"><span>w</span></div>
               <div class="wh-home-track-title">{{ t.title }}</div>
               <div class="wh-home-track-artist">{{ t.artist }}</div>
@@ -104,7 +101,7 @@
           }
         </div>
       </section>
-    } @else {
+    } @else if (loaded()) {
       <section class="wh-home-empty">
         <div class="wh-home-empty-title">Your library is empty</div>
         <p class="wh-home-empty-body">Search for a track or paste a YouTube link. First download seeds the shared archive.</p>
@@ -113,5 +110,5 @@
     }
   </main>
 
-  <wh-mini-player [nowPlaying]="nowPlaying" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
+  <wh-mini-player [nowPlaying]="nowPlaying()" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
 </div>
