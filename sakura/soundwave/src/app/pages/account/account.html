@@ -1,7 +1,7 @@
 <div class="wh-acct-page">
   <wh-waves></wh-waves>
 
-  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
 
   <main class="wh-acct-main">
     <h1 class="wh-acct-h1">Account</h1>
@@ -38,8 +38,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12B76B" stroke-width="2.4" stroke-linecap="round">
             <path d="M5 13l4.5 4.5L19 7"></path>
           </svg>
-          <span>wirehood-export-2026-09-10.json is ready</span>
+          <span>wirehood-export.json downloaded</span>
         </div>
+      }
+      @if (exportError()) {
+        <div class="wh-acct-export-error">Could not export your data, try again.</div>
       }
     </section>
 

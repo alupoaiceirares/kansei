@@ -1,21 +1,26 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
+import { WirehoodApi, ThumbnailSubmission } from '../../core/wirehood-api';
+import { CONTROL_TOWER_URL } from '../../core/config';
+import { formatRelativeTime } from '../../shared/format';
 
-type SubmissionStatus = 'Pending' | 'Approved' | 'Rejected';
-type FilterOption = SubmissionStatus | 'All';
+type FilterOption = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-interface RawSubmission {
-  id: number;
-  track: string;
+const STATUS_STYLE: Record<FilterOption, { statusBg: string; statusColor: string }> = {
+  PENDING: { statusBg: 'rgba(255,255,255,0.1)', statusColor: 'rgba(242,240,236,0.7)' },
+  APPROVED: { statusBg: 'rgba(18,183,107,0.16)', statusColor: '#12B76B' },
+  REJECTED: { statusBg: 'rgba(226,58,58,0.16)', statusColor: '#E23A3A' },
+};
+
+interface TrackLabel {
+  title: string;
   artist: string;
-  by: string;
-  when: string;
-  base: SubmissionStatus;
+  hasThumbnail: boolean;
 }
 
-/** Global queue of pending thumbnail submissions — current vs proposed artwork side by side. */
+/** Global queue of pending thumbnail submissions, no per-track title/artist in the list response so each row fetches its own track. */
 @Component({
   selector: 'wh-admin-thumbnails',
   standalone: true,
@@ -23,68 +28,99 @@ interface RawSubmission {
   templateUrl: './admin-thumbnails.html',
   styleUrl: './admin-thumbnails.css',
 })
-export class AdminThumbnailsPage {
-  protected filter = signal<FilterOption>('Pending');
-  protected decisions = signal<Record<number, SubmissionStatus>>({});
+export class AdminThumbnailsPage implements OnDestroy {
+  private api = inject(WirehoodApi);
 
-  protected filterOptions: FilterOption[] = ['Pending', 'Approved', 'Rejected', 'All'];
+  protected filter = signal<FilterOption>('PENDING');
+  protected filterOptions: FilterOption[] = ['PENDING', 'APPROVED', 'REJECTED'];
 
-  private raw: RawSubmission[] = [
-    { id: 1, track: 'Ghost Frequency', artist: 'Mora Vale', by: 'Ansel Reed', when: '2 hours ago', base: 'Pending' },
-    { id: 2, track: 'Rust Cathedral', artist: 'The Longwave', by: 'Ivy Sennett', when: '6 hours ago', base: 'Pending' },
-    { id: 3, track: 'Copper Line', artist: 'Ansel Reed', by: 'Juno Halloway', when: 'Yesterday', base: 'Pending' },
-    { id: 4, track: 'Halogen Hymn', artist: 'Ivy Sennett', by: 'Bellhouse', when: '2 days ago', base: 'Pending' },
-    { id: 5, track: 'Paper Antenna', artist: 'Mora Vale', by: 'Wren Alcott', when: '3 days ago', base: 'Approved' },
-    { id: 6, track: 'Marbled Sky', artist: 'Kestrel Park', by: 'Otis Vance', when: '4 days ago', base: 'Rejected' },
-    { id: 7, track: 'Quiet Wire', artist: 'Ivy Sennett', by: 'Sable Koeppe', when: '5 days ago', base: 'Approved' },
-  ];
+  protected items = signal<ThumbnailSubmission[]>([]);
+  protected page = signal(0);
+  protected totalPages = signal(1);
 
-  protected resolved = computed(() => {
-    const decisions = this.decisions();
-    return this.raw.map((r) => {
-      const status = decisions[r.id] ?? r.base;
-      const pending = status === 'Pending';
-      const approved = status === 'Approved';
-      return {
-        id: r.id,
-        track: r.track,
-        artist: r.artist,
-        by: r.by,
-        when: r.when,
-        status,
-        pending,
-        decided: !pending,
-        border: pending ? 'rgba(255,255,255,0.08)' : approved ? 'rgba(18,183,107,0.25)' : 'rgba(226,58,58,0.25)',
-        bg: pending ? 'rgba(13,16,15,0.78)' : approved ? 'rgba(18,183,107,0.05)' : 'rgba(226,58,58,0.045)',
-        statusBg: approved ? 'rgba(18,183,107,0.16)' : 'rgba(226,58,58,0.16)',
-        statusColor: approved ? '#12B76B' : '#E23A3A',
-      };
+  protected trackLabels = signal<Record<string, TrackLabel>>({});
+  protected previewUrls = signal<Record<string, string>>({});
+
+  constructor() {
+    this.reload();
+  }
+
+  ngOnDestroy(): void {
+    Object.values(this.previewUrls()).forEach((url) => URL.revokeObjectURL(url));
+  }
+
+  private reload(): void {
+    this.api.adminThumbnailSubmissions(this.filter(), this.page(), 10).subscribe({
+      next: (result) => {
+        this.items.set(result.items);
+        this.totalPages.set(Math.max(result.totalPages, 1));
+        result.items.forEach((s) => {
+          this.loadTrackLabel(s.trackId);
+          this.loadPreview(s.id);
+        });
+      },
     });
-  });
+  }
 
-  protected counts = computed(() => {
-    const resolved = this.resolved();
-    return {
-      Pending: resolved.filter((r) => r.status === 'Pending').length,
-      Approved: resolved.filter((r) => r.status === 'Approved').length,
-      Rejected: resolved.filter((r) => r.status === 'Rejected').length,
-      All: resolved.length,
-    };
-  });
+  private loadTrackLabel(trackId: string): void {
+    if (this.trackLabels()[trackId]) return;
+    this.api.track(trackId).subscribe({
+      next: (track) =>
+        this.trackLabels.update((m) => ({ ...m, [trackId]: { title: track.title, artist: track.artist, hasThumbnail: track.hasThumbnail } })),
+      error: () => {},
+    });
+  }
 
-  protected submissions = computed(() => {
-    const f = this.filter();
-    const resolved = this.resolved();
-    return f === 'All' ? resolved : resolved.filter((r) => r.status === f);
-  });
+  private loadPreview(submissionId: string): void {
+    if (this.previewUrls()[submissionId]) return;
+    this.api.adminThumbnailFile(submissionId).subscribe({
+      next: (blob) => this.previewUrls.update((m) => ({ ...m, [submissionId]: URL.createObjectURL(blob) })),
+      error: () => {},
+    });
+  }
 
-  protected pendingText = computed(() => `${this.counts().Pending} awaiting review`);
+  protected rows = computed(() =>
+    this.items().map((s) => {
+      const label = this.trackLabels()[s.trackId];
+      return {
+        id: s.id,
+        trackId: s.trackId,
+        title: label?.title ?? s.trackId,
+        artist: label?.artist ?? '',
+        by: s.submittedBy,
+        when: formatRelativeTime(s.submittedAt),
+        preview: this.previewUrls()[s.id] ?? null,
+        currentThumbnail: label?.hasThumbnail ? `${CONTROL_TOWER_URL}/wirehood/tracks/${s.trackId}/thumbnail` : null,
+        pending: s.status === 'PENDING',
+        ...STATUS_STYLE[s.status],
+        status: s.status,
+      };
+    }),
+  );
 
   protected pickFilter(f: FilterOption): void {
     this.filter.set(f);
+    this.page.set(0);
+    this.reload();
   }
 
-  protected decide(id: number, status: SubmissionStatus): void {
-    this.decisions.update((d) => ({ ...d, [id]: status }));
+  protected prevPage(): void {
+    if (this.page() === 0) return;
+    this.page.update((p) => p - 1);
+    this.reload();
+  }
+
+  protected nextPage(): void {
+    if (this.page() + 1 >= this.totalPages()) return;
+    this.page.update((p) => p + 1);
+    this.reload();
+  }
+
+  protected approve(id: string): void {
+    this.api.adminApproveThumbnail(id).subscribe({ next: () => this.reload() });
+  }
+
+  protected reject(id: string): void {
+    this.api.adminRejectThumbnail(id).subscribe({ next: () => this.reload() });
   }
 }

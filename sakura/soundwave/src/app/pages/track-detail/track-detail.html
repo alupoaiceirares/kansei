@@ -1,0 +1,267 @@
+<div class="wh-td-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
+
+  @if (track(); as track) {
+    <main class="wh-td-main">
+      <a routerLink="/library" class="wh-td-back">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M14 6l-6 6 6 6"></path>
+        </svg>
+        Library
+      </a>
+
+      <div class="wh-td-hero">
+        <div>
+          <div class="wh-td-art"><span>w</span></div>
+          <input #thumbnailInput type="file" accept="image/jpeg,image/png" hidden (change)="onThumbnailSelected($event)" />
+          <button type="button" class="wh-td-thumb-btn" (click)="pickThumbnail()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M12 16V4"></path>
+              <path d="M8 8l4-4 4 4"></path>
+              <path d="M4 16v4h16v-4"></path>
+            </svg>
+            Submit a better thumbnail
+          </button>
+          <div class="wh-td-thumb-note">Goes to an admin review queue</div>
+        </div>
+
+        <div>
+          @if (editingMetadata()) {
+            <div class="wh-td-edit-form">
+              <label class="wh-td-edit-label">
+                <span>Title</span>
+                <input type="text" [value]="editTitle()" (input)="editTitle.set($any($event.target).value)" />
+              </label>
+              <label class="wh-td-edit-label">
+                <span>Artist</span>
+                <input type="text" [value]="editArtist()" (input)="editArtist.set($any($event.target).value)" />
+              </label>
+              <label class="wh-td-edit-label">
+                <span>Extra info</span>
+                <input type="text" [value]="editExtra()" (input)="editExtra.set($any($event.target).value)" />
+              </label>
+              <div class="wh-td-edit-actions">
+                <button type="button" class="wh-td-admin-confirm-cancel" (click)="cancelEditMetadata()">Cancel</button>
+                <button type="button" class="wh-td-format-play" (click)="saveMetadata()">Save</button>
+              </div>
+            </div>
+          } @else {
+            <h1 class="wh-td-title">{{ track.title }}</h1>
+            <div class="wh-td-artist">{{ track.artist }}</div>
+            <div class="wh-td-meta">
+              <span>{{ formatDuration(track.durationSeconds) }}</span>
+              @if (track.extraInfo) {
+                <span>·</span><span><em>{{ track.extraInfo }}</em></span>
+              }
+              @if (!track.visible) {
+                <span>·</span><span class="wh-td-hidden-tag">Hidden</span>
+              }
+            </div>
+          }
+
+          <div class="wh-td-formats">
+            @for (fm of track.formats; track fm.id) {
+              <div class="wh-td-format-row">
+                <span class="wh-td-format-tag" [class.wh-td-format-tag-mp4]="fm.format.toLowerCase() === 'mp4'">{{ fm.format.toUpperCase() }}</span>
+                <div class="wh-td-format-info">
+                  <div class="wh-td-format-kind">{{ fm.quality }}</div>
+                  <div class="wh-td-format-sub">{{ (fm.fileSizeBytes / 1048576).toFixed(1) }} MB · {{ fm.playCount ?? 0 }} plays</div>
+                </div>
+                <button type="button" class="wh-td-format-play" (click)="playFormat(fm)">
+                  <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
+                  Play
+                </button>
+                <button type="button" class="wh-td-format-download" title="Download">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 4v11"></path>
+                    <path d="M7 11l5 5 5-5"></path>
+                    <path d="M5 20h14"></path>
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="wh-td-format-fav"
+                  [class.wh-td-format-fav-active]="fm.favorited"
+                  title="Favorite this format"
+                  (click)="toggleFav(fm)"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" [attr.fill]="fm.favorited ? '#E23A3A' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path>
+                  </svg>
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="wh-td-genres-section">
+            <div class="wh-td-label">Genres</div>
+            <div class="wh-td-genres">
+              @for (g of genreTags(); track g.genreId) {
+                <button type="button" class="wh-td-genre-chip" [class.wh-td-genre-chip-active]="votedGenreIds().has(g.genreId)" (click)="vote(g.genreId)">
+                  <span>{{ g.genreName }}</span>
+                  <span class="wh-td-genre-count">
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 9H5z"></path></svg>
+                    {{ g.votes }}
+                  </span>
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (isAdmin()) {
+            <div class="wh-td-admin">
+              <div class="wh-td-admin-label">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 3l8 4v6c0 4.4-3.4 7.4-8 8-4.6-.6-8-3.6-8-8V7z"></path>
+                </svg>
+                Admin controls
+              </div>
+              <div class="wh-td-admin-actions">
+                <button type="button" class="wh-td-admin-btn" (click)="startEditMetadata()">Edit metadata</button>
+                <button type="button" class="wh-td-admin-btn" (click)="toggleVisible()">{{ track.visible ? 'Hide from archive' : 'Unhide' }}</button>
+                <button type="button" class="wh-td-admin-delete" (click)="askDelete()">Hard delete</button>
+              </div>
+              @if (confirmDelete()) {
+                <div class="wh-td-admin-confirm">
+                  <div class="wh-td-admin-confirm-title">Delete this track for everyone?</div>
+                  <div class="wh-td-admin-confirm-body">
+                    Removes both formats from the shared archive, plus every playlist and favorite referencing them. Cannot be undone.
+                  </div>
+                  <div class="wh-td-admin-confirm-actions">
+                    <button type="button" class="wh-td-admin-confirm-cancel" (click)="cancelDelete()">Cancel</button>
+                    <button type="button" class="wh-td-admin-confirm-delete" (click)="confirmHardDelete()">Yes, delete permanently</button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <section>
+        <h2 class="wh-td-h2">Comments <span class="wh-td-comment-count">· {{ comments().length }}</span></h2>
+
+        <div class="wh-td-composer">
+          <div class="wh-td-composer-avatar">{{ (auth.getUsername() ?? '?').charAt(0).toUpperCase() }}</div>
+          <div class="wh-td-composer-body">
+            <textarea
+              placeholder="Say something about this track"
+              class="wh-td-composer-textarea"
+              [value]="commentDraft()"
+              (input)="commentDraft.set($any($event.target).value)"
+            ></textarea>
+            <div class="wh-td-composer-actions">
+              <button type="button" class="wh-td-composer-submit" (click)="postTopLevelComment()">Post comment</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="wh-td-comments">
+          @for (c of comments(); track c.id; let i = $index) {
+            @let palette = paletteFor(i);
+            <div class="wh-td-comment" [style.marginLeft.px]="c.depth * 34" [style.borderLeftColor]="c.deleted ? 'transparent' : palette.threadLine">
+              <div class="wh-td-comment-avatar" [style.background]="c.deleted ? 'rgba(255,255,255,0.05)' : palette.avatarBg" [style.borderColor]="c.deleted ? 'rgba(255,255,255,0.1)' : palette.avatarRing" [style.color]="c.deleted ? 'rgba(242,240,236,0.3)' : palette.initialColor">
+                {{ c.deleted ? '·' : c.username.charAt(0).toUpperCase() }}
+              </div>
+              <div class="wh-td-comment-body">
+                <div class="wh-td-comment-head">
+                  <span class="wh-td-comment-author" [class.wh-td-comment-author-deleted]="c.deleted">{{ c.deleted ? '[deleted]' : c.username }}</span>
+                  @if (isMine(c)) {
+                    <span class="wh-td-comment-you-badge">You</span>
+                  }
+                  <span class="wh-td-comment-when">{{ c.createdAt | date: 'short' }}</span>
+                  @if (c.editedAt) {
+                    <span class="wh-td-comment-edited">edited</span>
+                  }
+                </div>
+
+                @if (editingCommentId() === c.id) {
+                  <div class="wh-td-reply-form">
+                    <textarea class="wh-td-composer-textarea" [value]="editCommentDraft()" (input)="editCommentDraft.set($any($event.target).value)"></textarea>
+                    <div class="wh-td-composer-actions">
+                      <button type="button" class="wh-td-admin-confirm-cancel" (click)="cancelEditComment()">Cancel</button>
+                      <button type="button" class="wh-td-composer-submit" (click)="submitEditComment(c.id)">Save</button>
+                    </div>
+                  </div>
+                } @else {
+                  <p class="wh-td-comment-text" [class.wh-td-comment-text-deleted]="c.deleted">{{ c.deleted ? '[deleted]' : c.body }}</p>
+                }
+
+                @if (!c.deleted) {
+                  <div class="wh-td-comment-actions">
+                    <button type="button" class="wh-td-comment-action" (click)="startReply(c.id)">Reply</button>
+                    @if (isMine(c)) {
+                      <button type="button" class="wh-td-comment-action wh-td-comment-action-edit" (click)="startEditComment(c)">Edit</button>
+                    }
+                    @if (isMine(c) || isAdmin()) {
+                      <button type="button" class="wh-td-comment-action wh-td-comment-action-delete" (click)="deleteComment(c.id)">
+                        {{ isMine(c) ? 'Delete' : 'Delete (admin)' }}
+                      </button>
+                    }
+                  </div>
+                }
+
+                @if (replyingTo() === c.id) {
+                  <div class="wh-td-reply-form">
+                    <textarea
+                      class="wh-td-composer-textarea"
+                      placeholder="Reply"
+                      [value]="replyDraft()"
+                      (input)="replyDraft.set($any($event.target).value)"
+                    ></textarea>
+                    <div class="wh-td-composer-actions">
+                      <button type="button" class="wh-td-admin-confirm-cancel" (click)="cancelReply()">Cancel</button>
+                      <button type="button" class="wh-td-composer-submit" (click)="submitReply(c.id)">Post reply</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    </main>
+  }
+
+  @if (videoOpen() && track(); as track) {
+    <div class="wh-td-video-takeover">
+      <div class="wh-td-video-head">
+        <button type="button" class="wh-td-video-back" (click)="closeVideo()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M14 6l-6 6 6 6"></path>
+          </svg>
+          Back to track
+        </button>
+        <div class="wh-td-video-meta">
+          <div class="wh-td-video-title">{{ track.title }}</div>
+          <div class="wh-td-video-sub">{{ track.artist }} · MP4 video</div>
+        </div>
+        <span class="wh-td-video-badge">MP4</span>
+      </div>
+      <div class="wh-td-video-frame-wrap">
+        <div class="wh-td-video-frame">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(242,240,236,0.28)" stroke-width="1.3">
+            <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+            <path d="M10 9l5 3-5 3z" fill="rgba(242,240,236,0.28)" stroke="none"></path>
+          </svg>
+          <span class="wh-td-video-frame-label">Video player · streams from the archive</span>
+        </div>
+      </div>
+      <div class="wh-td-video-transport">
+        <button type="button" class="wh-td-video-play">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"></path></svg>
+        </button>
+        <span class="wh-td-video-time">0:00</span>
+        <div class="wh-td-video-bar">
+          <div class="wh-td-video-bar-fill" style="width: 0%"></div>
+        </div>
+        <span class="wh-td-video-time">{{ formatDuration(track.durationSeconds) }}</span>
+        <button type="button" class="wh-td-video-download">Download MP4</button>
+      </div>
+    </div>
+  }
+
+  <wh-mini-player [nowPlaying]="nowPlaying()" [playing]="playing()" (togglePlay)="togglePlay()"></wh-mini-player>
+</div>

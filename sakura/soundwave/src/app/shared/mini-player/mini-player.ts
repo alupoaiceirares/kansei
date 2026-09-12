@@ -5,7 +5,7 @@ export interface NowPlayingTrack {
   artist: string;
 }
 
-/** Persistent fixed-bottom audio mini-player bar — survives navigation while something plays. */
+/** Persistent fixed-bottom audio mini-player bar, survives navigation while something plays. */
 @Component({
   selector: 'wh-mini-player',
   standalone: true,

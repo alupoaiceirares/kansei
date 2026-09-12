@@ -51,4 +51,19 @@ export const routes: Routes = [
     canActivate: [authGuard, optInGuard],
     loadComponent: () => import('./pages/admin-genres/admin-genres').then((m) => m.AdminGenresPage),
   },
+  {
+    path: 'track/:id',
+    canActivate: [authGuard, optInGuard],
+    loadComponent: () => import('./pages/track-detail/track-detail').then((m) => m.TrackDetailPage),
+  },
+  {
+    path: 'friends',
+    canActivate: [authGuard, optInGuard],
+    loadComponent: () => import('./pages/friends/friends').then((m) => m.FriendsPage),
+  },
+  {
+    path: 'stats',
+    canActivate: [authGuard, optInGuard],
+    loadComponent: () => import('./pages/stats/stats').then((m) => m.StatsPage),
+  },
 ];

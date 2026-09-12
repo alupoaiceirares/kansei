@@ -1,34 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
-import { MOCK_DOWNLOAD_QUEUE } from '../../shared/mock-data';
+import { WirehoodApi, Playlist, PlaylistDetail, LibraryItem } from '../../core/wirehood-api';
+import { AuthService } from '../../core/auth';
 
 type PlaylistTag = 'Shared' | 'Private' | 'Collab';
-
-interface PlaylistRow {
-  name: string;
-  tag: PlaylistTag;
-  meta: string;
-  updated: string;
-  owned: boolean;
-}
-
-interface PlaylistTrack {
-  n: number;
-  title: string;
-  artist: string;
-  format: string;
-  length: string;
-}
-
-interface Collaborator {
-  name: string;
-  initial: string;
-  avatarBg: string;
-  ring: string;
-  initialColor: string;
-}
 
 const TAG_STYLE: Record<PlaylistTag, { bg: string; color: string }> = {
   Shared: { bg: 'rgba(18,183,107,0.14)', color: '#12B76B' },
@@ -41,7 +18,12 @@ const COLLAB_PALETTE = [
   { avatarBg: 'rgba(226,58,58,0.17)', ring: 'rgba(226,58,58,0.32)', initialColor: '#F2565A' },
 ];
 
-/** List view (owned/shared/collab) → detail view with reorderable tracks and collaborators. */
+function tagFor(p: Playlist, myUserId: string | null): PlaylistTag {
+  if (p.ownerId !== myUserId) return 'Collab';
+  return p.shared ? 'Shared' : 'Private';
+}
+
+/** List view (owned/shared/collab) leads to detail view with reorderable tracks and collaborators, all real. */
 @Component({
   selector: 'wh-playlists',
   standalone: true,
@@ -50,67 +32,133 @@ const COLLAB_PALETTE = [
   styleUrl: './playlists.css',
 })
 export class PlaylistsPage {
-  protected pendingDownloads = signal(3);
-  protected incomingRequests = signal(2);
-  protected isAdmin = signal(false);
-  protected queue = MOCK_DOWNLOAD_QUEUE;
+  private api = inject(WirehoodApi);
+  private auth = inject(AuthService);
+
+  protected isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
 
   protected view = signal<'list' | 'detail'>('list');
-  protected shared = signal(true);
-  protected activePlaylist = signal<PlaylistRow | null>(null);
+  protected playlists = signal<Playlist[]>([]);
+  protected activePlaylist = signal<PlaylistDetail | null>(null);
 
   protected tagStyle = TAG_STYLE;
 
-  protected playlists: PlaylistRow[] = [
-    { name: 'Late shift', tag: 'Shared', meta: '31 tracks · 2h 14m · you own', updated: '2d ago', owned: true },
-    { name: 'Wire & static', tag: 'Private', meta: '18 tracks · 1h 09m · you own', updated: '5d ago', owned: true },
-    { name: 'Reed sessions', tag: 'Collab', meta: '9 tracks · 41m · Ansel Reed owns', updated: '1w ago', owned: false },
-    { name: 'Winter drone', tag: 'Private', meta: '44 tracks · 3h 52m · you own', updated: '1w ago', owned: true },
-    { name: 'Kitchen radio', tag: 'Shared', meta: '27 tracks · 1h 48m · you own', updated: '2w ago', owned: true },
-    { name: 'Halden picks', tag: 'Collab', meta: '62 tracks · 4h 11m · Halden Mure owns', updated: '2w ago', owned: false },
-    { name: 'Rust and rain', tag: 'Private', meta: '13 tracks · 52m · you own', updated: '3w ago', owned: true },
-    { name: 'Bellhouse b-sides', tag: 'Collab', meta: '21 tracks · 1h 26m · Bellhouse owns', updated: '1mo ago', owned: false },
-    { name: 'Signal bleed', tag: 'Shared', meta: '8 tracks · 34m · you own', updated: '1mo ago', owned: true },
-  ];
+  protected creating = signal(false);
+  protected newName = signal('');
+  protected newShared = signal(false);
 
-  protected tracks = signal<PlaylistTrack[]>([
-    { n: 1, title: 'Ghost Frequency', artist: 'Mora Vale', format: 'MP3', length: '3:31' },
-    { n: 2, title: 'Low Tide Signal', artist: 'Bellhouse', format: 'MP3', length: '4:18' },
-    { n: 3, title: 'Halogen Hymn', artist: 'Ivy Sennett', format: 'MP3', length: '5:02' },
-    { n: 4, title: 'Rust Cathedral', artist: 'The Longwave', format: 'MP4', length: '6:44' },
-    { n: 5, title: 'Copper Line', artist: 'Ansel Reed', format: 'MP3', length: '3:57' },
-    { n: 6, title: 'Quiet Wire', artist: 'Ivy Sennett', format: 'MP3', length: '4:12' },
-    { n: 7, title: 'Nightshift Bloom', artist: 'Kestrel Park', format: 'MP4', length: '5:38' },
-    { n: 8, title: 'Slow Static Parade', artist: 'Halden Mure', format: 'MP3', length: '4:07' },
-  ]);
+  protected renaming = signal(false);
+  protected renameName = signal('');
 
-  protected collaborators: Collaborator[] = ['Ansel Reed', 'Ivy Sennett', 'Halden Mure'].map((name, i) => ({
-    name,
-    initial: name.charAt(0),
-    ...COLLAB_PALETTE[i % 2],
-  }));
+  protected addingTracks = signal(false);
+  protected libraryQuery = signal('');
+  private library = signal<LibraryItem[]>([]);
+
+  protected addingCollaborator = signal(false);
+  protected collaboratorUserId = signal('');
 
   private dragIndex: number | null = null;
 
-  protected openDetail(playlist: PlaylistRow): void {
-    this.activePlaylist.set(playlist);
-    this.view.set('detail');
+  constructor() {
+    this.reloadList();
+  }
+
+  private reloadList(): void {
+    this.api.myPlaylists().subscribe({ next: (list) => this.playlists.set(list) });
+  }
+
+  protected rowTag(p: Playlist): PlaylistTag {
+    return tagFor(p, this.auth.getUserId());
+  }
+
+  protected isOwner(): boolean {
+    const pl = this.activePlaylist();
+    return !!pl && pl.ownerId === this.auth.getUserId();
+  }
+
+  protected openDetail(p: Playlist): void {
+    this.api.playlist(p.id).subscribe({
+      next: (detail) => {
+        this.activePlaylist.set(detail);
+        this.view.set('detail');
+      },
+    });
+  }
+
+  private reloadDetail(): void {
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.api.playlist(pl.id).subscribe({ next: (detail) => this.activePlaylist.set(detail) });
   }
 
   protected backToList(): void {
     this.view.set('list');
+    this.activePlaylist.set(null);
+    this.reloadList();
+  }
+
+  protected startCreate(): void {
+    this.creating.set(true);
+    this.newName.set('');
+    this.newShared.set(false);
+  }
+
+  protected cancelCreate(): void {
+    this.creating.set(false);
+  }
+
+  protected confirmCreate(): void {
+    const name = this.newName().trim();
+    if (!name) return;
+    this.api.createPlaylist(name, this.newShared()).subscribe({
+      next: () => {
+        this.creating.set(false);
+        this.reloadList();
+      },
+    });
+  }
+
+  protected startRename(): void {
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.renameName.set(pl.name);
+    this.renaming.set(true);
+  }
+
+  protected cancelRename(): void {
+    this.renaming.set(false);
+  }
+
+  protected confirmRename(): void {
+    const pl = this.activePlaylist();
+    const name = this.renameName().trim();
+    if (!pl || !name) return;
+    this.api.updatePlaylist(pl.id, name, pl.shared).subscribe({
+      next: () => {
+        this.renaming.set(false);
+        this.reloadDetail();
+      },
+    });
   }
 
   protected toggleShared(): void {
-    this.shared.update((v) => !v);
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.api.updatePlaylist(pl.id, pl.name, !pl.shared).subscribe({ next: () => this.reloadDetail() });
   }
 
-  protected removeTrack(index: number): void {
-    this.tracks.update((list) => list.filter((_, i) => i !== index).map((t, i) => ({ ...t, n: i + 1 })));
+  protected deletePlaylist(): void {
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.api.deletePlaylist(pl.id).subscribe({ next: () => this.backToList() });
   }
 
-  protected removeCollaborator(name: string): void {
-    this.collaborators = this.collaborators.filter((c) => c.name !== name);
+  protected removeTrack(trackId: string): void {
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.api.removeTrackFromPlaylist(pl.id, trackId).subscribe({ next: () => this.reloadDetail() });
   }
 
   protected onDragStart(index: number): void {
@@ -118,13 +166,72 @@ export class PlaylistsPage {
   }
 
   protected onDrop(index: number): void {
-    if (this.dragIndex === null || this.dragIndex === index) return;
-    this.tracks.update((list) => {
-      const next = [...list];
-      const [moved] = next.splice(this.dragIndex!, 1);
-      next.splice(index, 0, moved);
-      return next.map((t, i) => ({ ...t, n: i + 1 }));
-    });
+    const pl = this.activePlaylist();
+    if (!pl || this.dragIndex === null || this.dragIndex === index) return;
+    const next = [...pl.tracks];
+    const [moved] = next.splice(this.dragIndex, 1);
+    next.splice(index, 0, moved);
     this.dragIndex = null;
+    this.activePlaylist.set({ ...pl, tracks: next.map((t, i) => ({ ...t, position: i + 1 })) });
+    this.api.reorderPlaylistTracks(pl.id, next.map((t) => t.trackId)).subscribe({ error: () => this.reloadDetail() });
+  }
+
+  protected startAddTracks(): void {
+    this.addingTracks.set(true);
+    this.libraryQuery.set('');
+    if (this.library().length === 0) {
+      this.api.library(0, 200).subscribe({ next: (page) => this.library.set(page.items) });
+    }
+  }
+
+  protected cancelAddTracks(): void {
+    this.addingTracks.set(false);
+  }
+
+  protected addableTracks = computed(() => {
+    const pl = this.activePlaylist();
+    const already = new Set((pl?.tracks ?? []).map((t) => t.trackId));
+    const q = this.libraryQuery().trim().toLowerCase();
+    return this.library()
+      .filter((t) => !already.has(t.trackId))
+      .filter((t) => !q || t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q))
+      .slice(0, 30);
+  });
+
+  protected addTrack(trackId: string): void {
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.api.addTrackToPlaylist(pl.id, trackId).subscribe({ next: () => this.reloadDetail() });
+  }
+
+  protected startAddCollaborator(): void {
+    this.addingCollaborator.set(true);
+    this.collaboratorUserId.set('');
+  }
+
+  protected cancelAddCollaborator(): void {
+    this.addingCollaborator.set(false);
+  }
+
+  protected confirmAddCollaborator(): void {
+    const pl = this.activePlaylist();
+    const userId = this.collaboratorUserId().trim();
+    if (!pl || !userId) return;
+    this.api.addCollaborator(pl.id, userId).subscribe({
+      next: () => {
+        this.addingCollaborator.set(false);
+        this.reloadDetail();
+      },
+    });
+  }
+
+  protected removeCollaborator(userId: string): void {
+    const pl = this.activePlaylist();
+    if (!pl) return;
+    this.api.removeCollaborator(pl.id, userId).subscribe({ next: () => this.reloadDetail() });
+  }
+
+  protected collabColor(i: number) {
+    return COLLAB_PALETTE[i % 2];
   }
 }

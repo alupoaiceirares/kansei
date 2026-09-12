@@ -3,6 +3,7 @@ import { CONTROL_TOWER_URL, NORTHSTAR_URL } from './config';
 
 const TOKEN_KEY = 'soundwave_token';
 const OPTED_IN_KEY = 'soundwave_opted_in';
+const ROLE_KEY = 'soundwave_role';
 
 /**
  * Auth bridge: captures the JWT handed off from northstar via a URL fragment
@@ -14,6 +15,7 @@ const OPTED_IN_KEY = 'soundwave_opted_in';
 export class AuthService {
   private tokenSignal = signal<string | null>(this.readToken());
   private optedInSignal = signal<boolean>(localStorage.getItem(OPTED_IN_KEY) === 'true');
+  private roleSignal = signal<string | null>(localStorage.getItem(ROLE_KEY));
 
   /** Reads `#token=...` off the URL (if present), persists it, and strips it from the address bar. */
   init(): void {
@@ -33,6 +35,26 @@ export class AuthService {
     return this.tokenSignal();
   }
 
+  /** Reads the JWT's own claims client-side, no signature check, only for display/ownership, never trust for security. */
+  getUserId(): string | null {
+    return this.decodeClaims()?.sub ?? null;
+  }
+
+  getUsername(): string | null {
+    return this.decodeClaims()?.username ?? null;
+  }
+
+  private decodeClaims(): { sub: string; username: string } | null {
+    const token = this.tokenSignal();
+    if (!token) return null;
+    try {
+      const payload = token.split('.')[1];
+      return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    } catch {
+      return null;
+    }
+  }
+
   isAuthenticated(): boolean {
     return !!this.tokenSignal();
   }
@@ -41,9 +63,15 @@ export class AuthService {
     return this.optedInSignal();
   }
 
-  markOptedIn(): void {
+  markOptedIn(role: string): void {
     localStorage.setItem(OPTED_IN_KEY, 'true');
+    localStorage.setItem(ROLE_KEY, role);
     this.optedInSignal.set(true);
+    this.roleSignal.set(role);
+  }
+
+  isAdmin(): boolean {
+    return this.roleSignal() === 'ADMIN';
   }
 
   redirectToLogin(): void {
@@ -57,8 +85,10 @@ export class AuthService {
     const token = this.tokenSignal();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(OPTED_IN_KEY);
+    localStorage.removeItem(ROLE_KEY);
     this.tokenSignal.set(null);
     this.optedInSignal.set(false);
+    this.roleSignal.set(null);
     const bounce = () => (window.location.href = NORTHSTAR_URL);
     if (!token) {
       bounce();

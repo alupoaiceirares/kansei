@@ -26,13 +26,13 @@ export class OptInPage {
     this.joining.set(true);
     this.error.set(null);
     this.wirehoodApi.optIn().subscribe({
-      next: () => {
-        this.auth.markOptedIn();
+      next: (result) => {
+        this.auth.markOptedIn(result.role);
         this.router.navigateByUrl('/home');
       },
       error: () => {
         this.joining.set(false);
-        this.error.set('Could not join wirehood — try again.');
+        this.error.set('Could not join wirehood, try again.');
       },
     });
   }

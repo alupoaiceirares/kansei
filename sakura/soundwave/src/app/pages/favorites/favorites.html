@@ -1,7 +1,7 @@
 <div class="wh-fav-page">
   <wh-waves></wh-waves>
 
-  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
 
   <main class="wh-fav-main">
     <div class="wh-fav-head">
@@ -14,20 +14,20 @@
         }
       </div>
     </div>
-    <p class="wh-fav-sub">Hearted per format — a track can be favorited as audio, as video, or both. {{ countText() }}</p>
+    <p class="wh-fav-sub">Hearted per format, a track can be favorited as audio, as video, or both. {{ countText() }}</p>
 
     <div class="wh-fav-grid">
-      @for (t of items(); track t.title + t.format) {
+      @for (t of items(); track t.trackFormatId) {
         <div class="wh-fav-card">
-          <a [routerLink]="['/track', t.title]" class="wh-fav-card-art">
+          <a [routerLink]="['/track', t.trackId]" class="wh-fav-card-art">
             <span class="wh-fav-card-art-glyph">w</span>
-            <span class="wh-fav-card-format" [style.color]="formatColor(t.format)">{{ t.format }}</span>
+            <span class="wh-fav-card-format" [style.color]="formatColor(t.format)">{{ t.format.toUpperCase() }}</span>
             <span class="wh-fav-card-heart">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="#E23A3A"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path></svg>
             </span>
           </a>
           <div class="wh-fav-card-body">
-            <a [routerLink]="['/track', t.title]" class="wh-fav-card-title">{{ t.title }}</a>
+            <a [routerLink]="['/track', t.trackId]" class="wh-fav-card-title">{{ t.title }}</a>
             <div class="wh-fav-card-artist">{{ t.artist }}</div>
             <div class="wh-fav-card-actions">
               <button aria-label="Play" class="wh-fav-card-play">
@@ -40,13 +40,15 @@
                   <path d="M5 20h14"></path>
                 </svg>
               </button>
-              <button aria-label="Unfavorite" class="wh-fav-card-unfav">
+              <button aria-label="Unfavorite" class="wh-fav-card-unfav" (click)="unfavorite(t.trackFormatId)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.6-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.4 12 20 12 20z"></path></svg>
               </button>
             </div>
-            <div class="wh-fav-card-footer">Hearted {{ t.when }}</div>
+            <div class="wh-fav-card-footer">Hearted {{ when(t.favoritedAt) }}</div>
           </div>
         </div>
+      } @empty {
+        <div class="wh-fav-empty">Nothing hearted yet.</div>
       }
     </div>
   </main>

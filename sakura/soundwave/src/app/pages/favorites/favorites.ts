@@ -1,19 +1,14 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AppHeaderComponent } from '../../shared/app-header/app-header';
 import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-waves';
-import { MOCK_DOWNLOAD_QUEUE } from '../../shared/mock-data';
-
-interface FavoriteItem {
-  title: string;
-  artist: string;
-  format: 'MP3' | 'MP4';
-  when: string;
-}
+import { WirehoodApi, FavoriteItem } from '../../core/wirehood-api';
+import { AuthService } from '../../core/auth';
+import { formatRelativeTime } from '../../shared/format';
 
 type FormatFilter = 'All' | 'MP3' | 'MP4';
 
-/** Per-format hearts — a track can appear twice if both MP3 and MP4 are favorited independently. */
+/** Per-format hearts, a track can appear twice if both MP3 and MP4 are favorited independently. */
 @Component({
   selector: 'wh-favorites',
   standalone: true,
@@ -22,30 +17,30 @@ type FormatFilter = 'All' | 'MP3' | 'MP4';
   styleUrl: './favorites.css',
 })
 export class FavoritesPage {
-  protected pendingDownloads = signal(3);
-  protected incomingRequests = signal(2);
-  protected isAdmin = signal(false);
-  protected queue = MOCK_DOWNLOAD_QUEUE;
+  private api = inject(WirehoodApi);
+  private auth = inject(AuthService);
+
+  protected isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
 
   protected filter = signal<FormatFilter>('All');
   protected filterOptions: FormatFilter[] = ['All', 'MP3', 'MP4'];
 
-  private all: FavoriteItem[] = [
-    { title: 'Ghost Frequency', artist: 'Mora Vale', format: 'MP3', when: '2h ago' },
-    { title: 'Ghost Frequency', artist: 'Mora Vale', format: 'MP4', when: '2h ago' },
-    { title: 'Copper Line', artist: 'Ansel Reed', format: 'MP3', when: '3d ago' },
-    { title: 'Halogen Hymn', artist: 'Ivy Sennett', format: 'MP3', when: '1w ago' },
-    { title: 'Low Tide Signal', artist: 'Bellhouse', format: 'MP4', when: '2w ago' },
-    { title: 'Quiet Wire', artist: 'Ivy Sennett', format: 'MP3', when: '3w ago' },
-    { title: 'Rust Cathedral', artist: 'The Longwave', format: 'MP4', when: '3w ago' },
-    { title: 'Verdigris', artist: 'Ansel Reed', format: 'MP3', when: '1mo ago' },
-    { title: 'Marbled Sky', artist: 'Kestrel Park', format: 'MP3', when: '1mo ago' },
-    { title: 'Paper Antenna', artist: 'Mora Vale', format: 'MP4', when: '2mo ago' },
-  ];
+  private all = signal<FavoriteItem[]>([]);
+
+  constructor() {
+    this.reload();
+  }
+
+  private reload(): void {
+    this.api.favorites(0, 200).subscribe({ next: (page) => this.all.set(page.items) });
+  }
 
   protected items = computed(() => {
     const f = this.filter();
-    return f === 'All' ? this.all : this.all.filter((t) => t.format === f);
+    const format = f.toLowerCase();
+    return f === 'All' ? this.all() : this.all().filter((t) => t.format.toLowerCase() === format);
   });
 
   protected countText = computed(() => {
@@ -58,7 +53,17 @@ export class FavoritesPage {
     this.filter.set(f);
   }
 
-  protected formatColor(format: 'MP3' | 'MP4'): string {
-    return format === 'MP3' ? '#12B76B' : '#E23A3A';
+  protected formatColor(format: string): string {
+    return format.toLowerCase() === 'mp3' ? '#12B76B' : '#E23A3A';
+  }
+
+  protected when(iso: string): string {
+    return formatRelativeTime(iso);
+  }
+
+  protected unfavorite(trackFormatId: string): void {
+    this.api.unfavoriteFormat(trackFormatId).subscribe({
+      next: () => this.all.update((items) => items.filter((i) => i.trackFormatId !== trackFormatId)),
+    });
   }
 }

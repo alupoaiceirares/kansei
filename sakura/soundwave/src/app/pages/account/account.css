@@ -154,6 +154,12 @@
   color: #f2f0ec;
 }
 
+.wh-acct-export-error {
+  margin-top: 16px;
+  font: 500 13px Inter, sans-serif;
+  color: #f2565a;
+}
+
 .wh-acct-prefs {
   display: flex;
   flex-direction: column;

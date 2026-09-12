@@ -99,6 +99,7 @@
 }
 
 .wh-adm-thumb {
+  position: relative;
   width: 74px;
   height: 74px;
   border-radius: 9px;
@@ -109,6 +110,15 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
+  overflow: hidden;
+}
+
+.wh-adm-thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .wh-adm-thumb-proposed {
@@ -126,10 +136,21 @@
 }
 
 .wh-adm-thumb-label {
+  position: relative;
+  z-index: 1;
   font: 500 8.5px Inter, sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(242, 240, 236, 0.35);
+}
+
+.wh-adm-thumb-img ~ .wh-adm-thumb-label {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(6, 8, 7, 0.72);
+  color: rgba(242, 240, 236, 0.8);
+  align-self: flex-end;
+  margin: auto 4px 4px auto;
 }
 
 .wh-adm-thumb-label-proposed {

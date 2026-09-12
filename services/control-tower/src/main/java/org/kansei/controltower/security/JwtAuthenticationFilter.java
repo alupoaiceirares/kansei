@@ -42,7 +42,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/verify-email",
-            "/api/auth/password-reset"
+            "/api/auth/password-reset",
+            // Ticket-authenticated instead of JWT, EventSource can't send an Authorization header,
+            // the ticket itself (burned server-side against Redis) carries the identity check
+            "/wirehood/downloads/stream"
     );
 
     private final SecretKey signingKey;

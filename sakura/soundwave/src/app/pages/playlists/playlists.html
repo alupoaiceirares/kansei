@@ -1,7 +1,7 @@
 <div class="wh-pl-page">
   <wh-waves></wh-waves>
 
-  <wh-header [pendingDownloads]="pendingDownloads()" [incomingRequests]="incomingRequests()" [isAdmin]="isAdmin()" [queue]="queue"></wh-header>
+  <wh-header [isAdmin]="isAdmin()"></wh-header>
 
   <main class="wh-pl-main">
     @if (view() === 'list') {
@@ -9,32 +9,47 @@
         <div class="wh-pl-list-head">
           <div>
             <h1 class="wh-pl-h1">Playlists</h1>
-            <p class="wh-pl-sub">6 you own · 3 you collaborate on</p>
+            <p class="wh-pl-sub">{{ playlists().length }} playlists</p>
           </div>
-          <button type="button" class="wh-pl-new-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-              <path d="M12 5v14M5 12h14"></path>
-            </svg>
-            New playlist
-          </button>
+          @if (!creating()) {
+            <button type="button" class="wh-pl-new-btn" (click)="startCreate()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+              New playlist
+            </button>
+          }
         </div>
 
+        @if (creating()) {
+          <div class="wh-pl-create-row">
+            <input type="text" placeholder="Playlist name" [value]="newName()" (input)="newName.set($any($event.target).value)" />
+            <label class="wh-pl-create-shared">
+              <input type="checkbox" [checked]="newShared()" (change)="newShared.set($any($event.target).checked)" />
+              Shared
+            </label>
+            <button type="button" class="wh-pl-outline-btn" (click)="confirmCreate()">Create</button>
+            <button type="button" class="wh-pl-outline-btn" (click)="cancelCreate()">Cancel</button>
+          </div>
+        }
+
         <div class="wh-pl-list">
-          @for (p of playlists; track p.name) {
+          @for (p of playlists(); track p.id) {
             <button type="button" class="wh-pl-row" (click)="openDetail(p)">
               <div class="wh-pl-row-art"><span>w</span></div>
               <div class="wh-pl-row-body">
                 <div class="wh-pl-row-title-line">
                   <span class="wh-pl-row-name">{{ p.name }}</span>
-                  <span class="wh-pl-row-tag" [style.background]="tagStyle[p.tag].bg" [style.color]="tagStyle[p.tag].color">{{ p.tag }}</span>
+                  <span class="wh-pl-row-tag" [style.background]="tagStyle[rowTag(p)].bg" [style.color]="tagStyle[rowTag(p)].color">{{ rowTag(p) }}</span>
                 </div>
-                <div class="wh-pl-row-meta">{{ p.meta }}</div>
+                <div class="wh-pl-row-meta">{{ p.trackCount }} tracks · {{ p.ownerUsername || 'you' }} owns</div>
               </div>
-              <span class="wh-pl-row-updated">{{ p.updated }}</span>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="wh-pl-row-chevron">
                 <path d="M10 6l6 6-6 6"></path>
               </svg>
             </button>
+          } @empty {
+            <div class="wh-pl-empty">No playlists yet.</div>
           }
         </div>
       </div>
@@ -53,39 +68,77 @@
           <div class="wh-pl-cover"><span>w</span></div>
           <div class="wh-pl-detail-meta">
             <div class="wh-pl-detail-badges">
-              <span class="wh-pl-shared-badge">Shared</span>
-              <span class="wh-pl-owner-note">You own this</span>
+              @if (pl.shared) {
+                <span class="wh-pl-shared-badge">Shared</span>
+              }
+              <span class="wh-pl-owner-note">{{ isOwner() ? 'You own this' : pl.ownerUsername + ' owns this' }}</span>
             </div>
-            <h1 class="wh-pl-detail-title">{{ pl.name }}</h1>
-            <p class="wh-pl-detail-sub">{{ pl.meta }} · updated {{ pl.updated }}</p>
-            <div class="wh-pl-detail-actions">
-              <button type="button" class="wh-pl-play-all">
-                <svg width="12" height="12" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
-                Play all
-              </button>
-              <button type="button" class="wh-pl-outline-btn">Add tracks</button>
-              <button type="button" class="wh-pl-outline-btn">Rename</button>
-              <button type="button" class="wh-pl-delete-btn">Delete</button>
-            </div>
+            @if (renaming()) {
+              <div class="wh-pl-create-row">
+                <input type="text" [value]="renameName()" (input)="renameName.set($any($event.target).value)" />
+                <button type="button" class="wh-pl-outline-btn" (click)="confirmRename()">Save</button>
+                <button type="button" class="wh-pl-outline-btn" (click)="cancelRename()">Cancel</button>
+              </div>
+            } @else {
+              <h1 class="wh-pl-detail-title">{{ pl.name }}</h1>
+            }
+            <p class="wh-pl-detail-sub">{{ pl.tracks.length }} tracks</p>
+            @if (isOwner()) {
+              <div class="wh-pl-detail-actions">
+                <button type="button" class="wh-pl-outline-btn" (click)="startAddTracks()">Add tracks</button>
+                <button type="button" class="wh-pl-outline-btn" (click)="startRename()">Rename</button>
+                <button type="button" class="wh-pl-delete-btn" (click)="deletePlaylist()">Delete</button>
+              </div>
+            }
           </div>
         </div>
+
+        @if (addingTracks()) {
+          <section class="wh-pl-panel wh-pl-add-tracks-panel">
+            <div class="wh-pl-panel-label">Add from your library</div>
+            <input
+              type="text"
+              class="wh-pl-add-tracks-search"
+              placeholder="Filter your library"
+              [value]="libraryQuery()"
+              (input)="libraryQuery.set($any($event.target).value)"
+            />
+            <div class="wh-pl-tracklist">
+              @for (t of addableTracks(); track t.trackId) {
+                <div class="wh-pl-track-row">
+                  <div class="wh-pl-track-art"><span>w</span></div>
+                  <div class="wh-pl-track-body">
+                    <span class="wh-pl-track-title">{{ t.title }}</span>
+                    <div class="wh-pl-track-artist">{{ t.artist }}</div>
+                  </div>
+                  <button type="button" class="wh-pl-outline-btn" (click)="addTrack(t.trackId)">Add</button>
+                </div>
+              } @empty {
+                <div class="wh-pl-empty">Nothing left to add.</div>
+              }
+            </div>
+            <button type="button" class="wh-pl-outline-btn" (click)="cancelAddTracks()">Done</button>
+          </section>
+        }
 
         <div class="wh-pl-detail-grid">
           <section>
             <div class="wh-pl-tracks-head">
               <h2 class="wh-pl-h2">Tracks</h2>
-              <span class="wh-pl-reorder-hint">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                  <path d="M4 8h16M4 16h16"></path>
-                </svg>
-                Drag to reorder
-              </span>
+              @if (isOwner()) {
+                <span class="wh-pl-reorder-hint">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M4 8h16M4 16h16"></path>
+                  </svg>
+                  Drag to reorder
+                </span>
+              }
             </div>
             <div class="wh-pl-tracklist">
-              @for (t of tracks(); track t.title; let i = $index) {
+              @for (t of pl.tracks; track t.trackId; let i = $index) {
                 <div
                   class="wh-pl-track-row"
-                  draggable="true"
+                  [attr.draggable]="isOwner()"
                   (dragstart)="onDragStart(i)"
                   (dragover)="$event.preventDefault()"
                   (drop)="onDrop(i)"
@@ -95,20 +148,22 @@
                       <path d="M8 7h8M8 12h8M8 17h8"></path>
                     </svg>
                   </span>
-                  <span class="wh-pl-track-n">{{ t.n }}</span>
+                  <span class="wh-pl-track-n">{{ t.position }}</span>
                   <div class="wh-pl-track-art"><span>w</span></div>
                   <div class="wh-pl-track-body">
-                    <a [routerLink]="['/track', t.title]" class="wh-pl-track-title">{{ t.title }}</a>
+                    <a [routerLink]="['/track', t.trackId]" class="wh-pl-track-title">{{ t.title }}</a>
                     <div class="wh-pl-track-artist">{{ t.artist }}</div>
                   </div>
-                  <span class="wh-pl-track-format">{{ t.format }}</span>
-                  <span class="wh-pl-track-length">{{ t.length }}</span>
-                  <button aria-label="Remove" class="wh-pl-track-remove" (click)="removeTrack(i)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                      <path d="M7 7l10 10M17 7L7 17"></path>
-                    </svg>
-                  </button>
+                  @if (isOwner()) {
+                    <button aria-label="Remove" class="wh-pl-track-remove" (click)="removeTrack(t.trackId)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M7 7l10 10M17 7L7 17"></path>
+                      </svg>
+                    </button>
+                  }
                 </div>
+              } @empty {
+                <div class="wh-pl-empty">No tracks yet.</div>
               }
             </div>
           </section>
@@ -117,39 +172,60 @@
             <section class="wh-pl-panel">
               <div class="wh-pl-panel-label">Collaborators</div>
               <div class="wh-pl-collab-list">
-                @for (c of collaborators; track c.name) {
+                @for (c of pl.collaborators; track c.userId; let i = $index) {
                   <div class="wh-pl-collab-row">
-                    <div class="wh-pl-collab-avatar" [style.background]="c.avatarBg" [style.borderColor]="c.ring" [style.color]="c.initialColor">
-                      {{ c.initial }}
+                    <div
+                      class="wh-pl-collab-avatar"
+                      [style.background]="collabColor(i).avatarBg"
+                      [style.borderColor]="collabColor(i).ring"
+                      [style.color]="collabColor(i).initialColor"
+                    >
+                      {{ c.username.charAt(0).toUpperCase() }}
                     </div>
-                    <span class="wh-pl-collab-name">{{ c.name }}</span>
-                    <button aria-label="Remove" class="wh-pl-collab-remove" (click)="removeCollaborator(c.name)">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                        <path d="M7 7l10 10M17 7L7 17"></path>
-                      </svg>
-                    </button>
+                    <span class="wh-pl-collab-name">{{ c.username }}</span>
+                    @if (isOwner()) {
+                      <button aria-label="Remove" class="wh-pl-collab-remove" (click)="removeCollaborator(c.userId)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                          <path d="M7 7l10 10M17 7L7 17"></path>
+                        </svg>
+                      </button>
+                    }
                   </div>
+                } @empty {
+                  <div class="wh-pl-empty">No collaborators.</div>
                 }
               </div>
-              <button type="button" class="wh-pl-add-collab">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
-                  <path d="M12 5v14M5 12h14"></path>
-                </svg>
-                Add collaborator
-              </button>
+              @if (isOwner()) {
+                @if (addingCollaborator()) {
+                  <div class="wh-pl-create-row">
+                    <input type="text" placeholder="User id" [value]="collaboratorUserId()" (input)="collaboratorUserId.set($any($event.target).value)" />
+                    <button type="button" class="wh-pl-outline-btn" (click)="confirmAddCollaborator()">Add</button>
+                    <button type="button" class="wh-pl-outline-btn" (click)="cancelAddCollaborator()">Cancel</button>
+                  </div>
+                } @else {
+                  <button type="button" class="wh-pl-add-collab" (click)="startAddCollaborator()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+                      <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                    Add collaborator
+                  </button>
+                }
+              }
             </section>
 
-            <section class="wh-pl-panel">
-              <div class="wh-pl-shared-toggle-row">
-                <div>
-                  <div class="wh-pl-shared-toggle-title">Shared playlist</div>
-                  <div class="wh-pl-shared-toggle-sub">Visible to every wirehood user</div>
+            @if (isOwner()) {
+              <section class="wh-pl-panel">
+                <div class="wh-pl-shared-toggle-row">
+                  <div>
+                    <div class="wh-pl-shared-toggle-title">Shared playlist</div>
+                    <div class="wh-pl-shared-toggle-sub">Visible to every wirehood user</div>
+                  </div>
+                  <button type="button" aria-label="Toggle shared" class="wh-pl-toggle" [class.wh-pl-toggle-on]="pl.shared" (click)="toggleShared()">
+                    <span class="wh-pl-toggle-knob"></span>
+                  </button>
                 </div>
-                <button type="button" aria-label="Toggle shared" class="wh-pl-toggle" [class.wh-pl-toggle-on]="shared()" (click)="toggleShared()">
-                  <span class="wh-pl-toggle-knob"></span>
-                </button>
-              </div>
-            </section>
+              </section>
+            }
           </aside>
         </div>
       </div>
