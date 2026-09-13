@@ -86,13 +86,21 @@ export class DownloadsService {
     this.connectStream();
   }
 
-  submit(request: SubmitDownloadRequest, onResult?: (result: { trackId: string; outcome: string }) => void): void {
+  submit(
+    request: SubmitDownloadRequest,
+    onResult?: (result: { trackId: string; outcome: string }) => void,
+    onError?: () => void,
+  ): void {
     this.http.post<{ trackId: string; outcome: string }>(`${CONTROL_TOWER_URL}/wirehood/downloads`, request).subscribe({
       next: (result) => {
         const status: QueueStatus = result.outcome === 'ALREADY_READY' ? 'ready' : 'pending';
         this.upsert({ trackId: result.trackId, format: request.format, title: request.title, artist: request.artist, status, request });
         onResult?.(result);
       },
+      // Previously silent - the request row/job never got created, but the caller's "Queued" toast
+      // fired anyway (unconditionally, right after calling submit()), so a real failure looked
+      // identical to success with no way to tell the two apart
+      error: () => onError?.(),
     });
   }
 
@@ -121,6 +129,10 @@ export class DownloadsService {
       next: ({ ticket }) => {
         this.eventSource?.close();
         this.eventSource = new EventSource(`${CONTROL_TOWER_URL}/wirehood/downloads/stream?ticket=${ticket}`);
+        // Re-sync on every (re)connect, not just the first one - a dropped connection (backend
+        // restart, network blip, laptop sleep) can miss a status-change event entirely, leaving
+        // an item stuck showing its last-known state forever with no other way to catch up.
+        this.eventSource.onopen = () => this.loadPending();
         this.eventSource.onmessage = (ev) => {
           const data = JSON.parse(ev.data) as StreamEvent;
           const existing = this.entries().get(key(data.trackId, data.format));

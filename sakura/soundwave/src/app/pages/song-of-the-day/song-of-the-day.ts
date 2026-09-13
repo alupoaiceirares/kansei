@@ -6,7 +6,7 @@ import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-wav
 import { WirehoodApi, SongOfDay, TrackDetail } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
 import { PlaybackService } from '../../core/playback';
-import { formatDuration, saveBlob } from '../../shared/format';
+import { formatDuration, hideOnError, saveBlob, trackThumbnailUrl } from '../../shared/format';
 
 /** Today's shared pick, real from wirehood. Past picks have no history endpoint yet, see TODO.MD. */
 @Component({
@@ -20,6 +20,9 @@ export class SongOfTheDayPage {
   private api = inject(WirehoodApi);
   private auth = inject(AuthService);
   private playback = inject(PlaybackService);
+
+  protected thumbnailUrl = trackThumbnailUrl;
+  protected onThumbError = hideOnError;
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();

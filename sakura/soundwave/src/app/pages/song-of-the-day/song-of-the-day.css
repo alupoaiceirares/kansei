@@ -56,7 +56,17 @@
   margin-bottom: 48px;
 }
 
+.wh-thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
 .wh-sotd-hero-art {
+  position: relative;
   width: 230px;
   height: 230px;
   flex-shrink: 0;

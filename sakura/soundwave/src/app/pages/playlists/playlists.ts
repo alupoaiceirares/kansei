@@ -5,6 +5,7 @@ import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-wav
 import { WirehoodApi, Playlist, PlaylistDetail, LibraryItem } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
 import { PlaybackService } from '../../core/playback';
+import { hideOnError, trackThumbnailUrl } from '../../shared/format';
 
 type PlaylistTag = 'Shared' | 'Private' | 'Collab';
 
@@ -34,6 +35,8 @@ function tagFor(p: Playlist, myUserId: string | null): PlaylistTag {
 })
 export class PlaylistsPage {
   private api = inject(WirehoodApi);
+  protected thumbnailUrl = trackThumbnailUrl;
+  protected onThumbError = hideOnError;
   private auth = inject(AuthService);
   private playback = inject(PlaybackService);
 
@@ -73,6 +76,13 @@ export class PlaylistsPage {
 
   protected rowTag(p: Playlist): PlaylistTag {
     return tagFor(p, this.auth.getUserId());
+  }
+
+  // Backend split: rename/toggle-shared/delete allow owner-OR-admin (PlaylistService.requireOwnerOrAdmin),
+  // everything else (add/reorder/remove tracks, collaborators) stays strictly owner - see the comment
+  // on requireOwnerOrAdmin itself. Keep this UI split in sync with that, not a blanket isAdmin() everywhere.
+  protected isOwnerOrAdmin(): boolean {
+    return this.isOwner() || this.isAdmin();
   }
 
   protected isOwner(): boolean {

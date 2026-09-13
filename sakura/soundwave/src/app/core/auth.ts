@@ -4,6 +4,7 @@ import { CONTROL_TOWER_URL, NORTHSTAR_URL } from './config';
 const TOKEN_KEY = 'soundwave_token';
 const OPTED_IN_KEY = 'soundwave_opted_in';
 const ROLE_KEY = 'soundwave_role';
+const JOINED_AT_KEY = 'soundwave_joined_at';
 
 /**
  * Auth bridge: captures the JWT handed off from northstar via a URL fragment
@@ -63,11 +64,17 @@ export class AuthService {
     return this.optedInSignal();
   }
 
-  markOptedIn(role: string): void {
+  markOptedIn(role: string, joinedAt: string): void {
     localStorage.setItem(OPTED_IN_KEY, 'true');
     localStorage.setItem(ROLE_KEY, role);
+    localStorage.setItem(JOINED_AT_KEY, joinedAt);
     this.optedInSignal.set(true);
     this.roleSignal.set(role);
+  }
+
+  /** Only known if this browser is the one that actually did the opt-in, no GET-status endpoint exists to re-fetch it. */
+  getJoinedAt(): string | null {
+    return localStorage.getItem(JOINED_AT_KEY);
   }
 
   isAdmin(): boolean {
@@ -80,15 +87,16 @@ export class AuthService {
     window.location.href = `${NORTHSTAR_URL}/login`;
   }
 
-  /** Clears local state and best-effort blacklists the token server-side before bouncing to northstar. */
+  /**
+   * Clears the session credential and best-effort blacklists the token server-side before
+   * bouncing to northstar. Opt-in/role/joinedAt are permanent wirehood membership, not session
+   * state, so they deliberately survive sign-out - clearing them would force the opt-in modal
+   * back up on next login even though the wirehood_users row still exists server-side.
+   */
   signOut(): void {
     const token = this.tokenSignal();
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(OPTED_IN_KEY);
-    localStorage.removeItem(ROLE_KEY);
     this.tokenSignal.set(null);
-    this.optedInSignal.set(false);
-    this.roleSignal.set(null);
     const bounce = () => (window.location.href = NORTHSTAR_URL);
     if (!token) {
       bounce();

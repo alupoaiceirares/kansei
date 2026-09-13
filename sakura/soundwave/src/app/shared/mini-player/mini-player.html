@@ -2,6 +2,9 @@
   <div class="wh-player-track">
     <div class="wh-player-art">
       <span>w</span>
+      @if (nowPlaying && thumbOk()) {
+        <img [src]="thumbnailUrl(nowPlaying.trackId)" alt="" class="wh-thumb-img" (error)="onThumbError()" />
+      }
     </div>
     <div class="wh-player-meta">
       @if (nowPlaying) {
@@ -14,6 +17,21 @@
   </div>
 
   <div class="wh-player-transport">
+    <button
+      aria-label="Shuffle"
+      title="Shuffle"
+      class="wh-player-btn wh-player-btn-toggle"
+      [class.wh-player-btn-toggle-active]="shuffle"
+      (click)="toggleShuffle.emit()"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 3h5v5"></path>
+        <path d="M4 20L21 3"></path>
+        <path d="M21 16v5h-5"></path>
+        <path d="M15 15l6 6"></path>
+        <path d="M4 4l5 5"></path>
+      </svg>
+    </button>
     <button aria-label="Previous" class="wh-player-btn" [disabled]="!hasPrevious" (click)="previous.emit()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6z"></path><path d="M20 5v14l-11-7z"></path></svg>
     </button>
@@ -28,6 +46,23 @@
     </button>
     <button aria-label="Next" class="wh-player-btn" [disabled]="!hasNext" (click)="next.emit()">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2z"></path><path d="M4 5v14l11-7z"></path></svg>
+    </button>
+    <button
+      aria-label="Repeat"
+      [title]="repeatMode === 'one' ? 'Repeat one' : repeatMode === 'all' ? 'Repeat all' : 'Repeat off'"
+      class="wh-player-btn wh-player-btn-toggle"
+      [class.wh-player-btn-toggle-active]="repeatMode !== 'off'"
+      (click)="cycleRepeat.emit()"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 2l4 4-4 4"></path>
+        <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+        <path d="M7 22l-4-4 4-4"></path>
+        <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+      </svg>
+      @if (repeatMode === 'one') {
+        <span class="wh-player-repeat-one">1</span>
+      }
     </button>
   </div>
 
@@ -58,4 +93,8 @@
       <input type="range" class="wh-player-range" min="0" max="100" [value]="volume * 100" (input)="onVolume($any($event.target).value)" />
     </div>
   </div>
+
+  <button aria-label="Close player" title="Close player" class="wh-player-close" (click)="close.emit()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+  </button>
 </div>

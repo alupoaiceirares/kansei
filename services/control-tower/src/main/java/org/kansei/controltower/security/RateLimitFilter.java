@@ -38,7 +38,7 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
     public RateLimitFilter(
             ReactiveStringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
-            @Value("${app.rate-limit.max-requests:300}") int maxRequests,
+            @Value("${app.rate-limit.max-requests:1200}") int maxRequests,
             @Value("${app.rate-limit.window-seconds:60}") long windowSeconds
     ) {
         this.redisTemplate = redisTemplate;
@@ -57,12 +57,15 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
     // Redis down/unreachable fails OPEN, not closed - same philosophy as JwtAuthenticationFilter's
     // credentials_version check: this is a defense-in-depth throttle, not the only thing keeping
     // the gateway alive, so an outage here shouldn't take down every route behind it.
+    //
+    // Re-asserts the TTL on every hit, not just when count==1 - only setting it on the
+    // key's first-ever increment meant one failed/raced expire() call (e.g. during a Redis
+    // reconnect) left the key permanently without a TTL, silently turning "429 for a minute"
+    // into "429 forever" with no self-healing path. Re-setting it every time is self-healing:
+    // a single failure just gets corrected by the next successful request.
     private Mono<Boolean> isOverLimit(String key) {
         return redisTemplate.opsForValue().increment(key)
-                .flatMap(count -> {
-                    Mono<Boolean> expireIfFirst = count == 1 ? redisTemplate.expire(key, window) : Mono.just(true);
-                    return expireIfFirst.thenReturn(count > maxRequests);
-                })
+                .flatMap(count -> redisTemplate.expire(key, window).thenReturn(count > maxRequests))
                 .onErrorReturn(false);
     }
 

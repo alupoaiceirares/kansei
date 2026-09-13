@@ -1,7 +1,9 @@
 package org.kansei.wirehood.controller;
 
+import org.kansei.wirehood.dto.ExistingTrackResponse;
 import org.kansei.wirehood.parser.ParsedTitle;
 import org.kansei.wirehood.parser.TrackTitleParser;
+import org.kansei.wirehood.service.TrackService;
 import org.kansei.wirehood.youtube.YouTubeSearchResult;
 import org.kansei.wirehood.youtube.YouTubeUrlExtractor;
 import org.kansei.wirehood.youtube.YtDlpSearchClient;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
@@ -18,9 +21,11 @@ import java.util.Optional;
 public class SearchController {
 
     private final YtDlpSearchClient searchClient;
+    private final TrackService trackService;
 
-    public SearchController(YtDlpSearchClient searchClient) {
+    public SearchController(YtDlpSearchClient searchClient, TrackService trackService) {
         this.searchClient = searchClient;
+        this.trackService = trackService;
     }
 
     /**
@@ -41,5 +46,13 @@ public class SearchController {
     @GetMapping("/search/parse-title")
     public ParsedTitle parseTitle(@RequestParam String title) {
         return TrackTitleParser.parse(title);
+    }
+
+    // Checked right before the confirm popup opens - if this video's already on the platform, the
+    // frontend greys out the title/artist/extra-info fields instead of letting the user edit values
+    // that would just be silently discarded on submit (existing track's own columns always win)
+    @GetMapping("/search/existing-track")
+    public Mono<ExistingTrackResponse> existingTrack(@RequestParam String videoId) {
+        return trackService.findExistingByVideoId(videoId);
     }
 }

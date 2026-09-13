@@ -8,6 +8,7 @@
       <nav class="wh-header-nav">
         <a routerLink="/admin/thumbnails" routerLinkActive="wh-pill-active" class="wh-pill">Thumbnails</a>
         <a routerLink="/admin/genres" routerLinkActive="wh-pill-active" class="wh-pill">Genres</a>
+        <a routerLink="/admin/users" routerLinkActive="wh-pill-active" class="wh-pill">Users</a>
       </nav>
       <span class="wh-header-admin-badge">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -58,7 +59,16 @@
         </a>
       }
 
-      @if (isAdmin) {
+      @if (!adminHeader) {
+        <button type="button" class="wh-header-menu-item wh-header-menu-item-btn" (click)="openDownloadsFromMenu()">
+          <span>Downloads</span>
+          @if (downloads.pendingCount() > 0) {
+            <span class="wh-header-menu-badge" style="background: #12B76B">{{ downloads.pendingCount() }}</span>
+          }
+        </button>
+      }
+
+      @if (isAdmin()) {
         <div class="wh-header-menu-admin">
           <div class="wh-header-menu-admin-label">Admin</div>
           <a routerLink="/admin/thumbnails" (click)="closeMenu()" class="wh-header-menu-item wh-header-menu-item-admin">
@@ -72,6 +82,9 @@
             @if (adminGenreCount > 0) {
               <span class="wh-header-menu-badge" style="background:#E23A3A">{{ adminGenreCount }}</span>
             }
+          </a>
+          <a routerLink="/admin/users" (click)="closeMenu()" class="wh-header-menu-item wh-header-menu-item-admin">
+            <span>Users</span>
           </a>
         </div>
       }

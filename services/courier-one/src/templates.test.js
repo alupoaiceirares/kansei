@@ -24,6 +24,17 @@ test('render(password-reset) returns the right subject and interpolates vars', (
   assert.match(html, /reset-password\?token(=|&#x3D;)xyz789/);
 });
 
+test('render(wirehood-disable-request) returns the right subject and interpolates vars', () => {
+  const { subject, html } = render('wirehood-disable-request', {
+    username: 'rares',
+    userId: '11111111-1111-1111-1111-111111111111',
+  });
+
+  assert.equal(subject, 'Wirehood account disable request');
+  assert.match(html, /rares/);
+  assert.match(html, /11111111-1111-1111-1111-111111111111/);
+});
+
 test('render(unknown template) throws', () => {
   assert.throws(() => render('not-a-real-template', {}), /Unknown mail template/);
 });

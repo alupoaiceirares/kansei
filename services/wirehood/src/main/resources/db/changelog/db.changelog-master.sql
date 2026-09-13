@@ -232,3 +232,19 @@ CREATE TABLE track_format_play_counts (
 );
 
 CREATE INDEX idx_track_format_play_counts_track_format_id ON track_format_play_counts (track_format_id);
+
+--changeset kansei:019-create-genre-proposals-table
+-- Crowd-proposed new genres, admin-approved before they land in the real (seeded, fixed) genres table - same submit/approve/reject shape as track_thumbnail_submissions, 
+-- no track_id here since a proposed genre isn't tied to one specific track
+CREATE TABLE genre_proposals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL,
+    submitted_by UUID NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+        CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    submitted_at TIMESTAMP NOT NULL,
+    reviewed_at TIMESTAMP,
+    reviewed_by UUID
+);
+
+CREATE INDEX idx_genre_proposals_status ON genre_proposals (status);

@@ -7,13 +7,34 @@
     <h1 class="wh-gen-h1">Genres</h1>
     <p class="wh-gen-sub">The controlled list users can tag tracks with. {{ genres().length }} active.</p>
 
+    <section class="wh-gen-proposed-panel">
+      <h2 class="wh-gen-h2">Proposed genres <span class="wh-gen-sorted-by">· {{ proposals().length }} pending</span></h2>
+      <p class="wh-gen-proposed-sub">Crowd-submitted from Track Detail's "Add genre" picker, approve moves it into the real list below.</p>
+      <div class="wh-gen-proposed-list">
+        @for (p of proposals(); track p.id) {
+          <div class="wh-gen-proposed-row">
+            <div class="wh-gen-proposed-info">
+              <div class="wh-gen-proposed-name">{{ p.name }}</div>
+              <div class="wh-gen-proposed-meta">Proposed {{ formatRelativeTime(p.submittedAt) }}</div>
+            </div>
+            <div class="wh-gen-proposed-actions">
+              <button type="button" class="wh-gen-approve" (click)="approve(p.id)">Approve</button>
+              <button type="button" class="wh-gen-reject" (click)="reject(p.id)">Reject</button>
+            </div>
+          </div>
+        } @empty {
+          <div class="wh-gen-proposed-meta">Nothing pending review.</div>
+        }
+      </div>
+    </section>
+
     <section class="wh-gen-panel">
       <div class="wh-gen-active-head">
         <h2 class="wh-gen-h2" style="margin: 0">Active genres</h2>
         <span class="wh-gen-sorted-by">Sorted A-Z</span>
       </div>
       <p class="wh-gen-readonly-note">
-        Adding, renaming, removing, and reviewing user-proposed genres aren't backed by an endpoint yet, this list is read-only for now.
+        Renaming and removing an active genre still has no endpoint - only adding via the proposal queue above is wired up.
       </p>
       <div class="wh-gen-active-list">
         @for (g of genres(); track g.id) {

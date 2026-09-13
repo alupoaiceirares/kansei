@@ -27,7 +27,7 @@ export class OptInPage {
     this.error.set(null);
     this.wirehoodApi.optIn().subscribe({
       next: (result) => {
-        this.auth.markOptedIn(result.role);
+        this.auth.markOptedIn(result.role, result.joinedAt);
         this.router.navigateByUrl('/home');
       },
       error: () => {

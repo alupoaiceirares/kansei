@@ -226,10 +226,25 @@ public class DownloadService {
     }
 
     // Publishes the RabbitMQ download job and records this user's download_requests row (QUEUED outcome)
+    // If the publish (or the request-row save) fails after the TrackFormat was already committed
+    // PENDING in the caller (queueFormat), that row would otherwise be stuck PENDING forever -
+    // nothing else ever re-publishes a job for a format sitting at PENDING, every future request
+    // for it just assumes a job is already in flight (see handleExistingFormat). Flip it to FAILED
+    // instead so the existing retry-a-FAILED-format path can recover it, and still surface the error.
     private Mono<SubmitDownloadResponse> queue(UUID userId, Track track, String format) {
         return downloadJobPublisher.publish(track, format)
                 .then(saveDownloadRequest(userId, track.getId(), format))
-                .thenReturn(new SubmitDownloadResponse(track.getId(), DownloadOutcome.QUEUED));
+                .thenReturn(new SubmitDownloadResponse(track.getId(), DownloadOutcome.QUEUED))
+                .onErrorResume(ex -> markPendingFormatFailed(track.getId(), format).then(Mono.error(ex)));
+    }
+
+    private Mono<Void> markPendingFormatFailed(UUID trackId, String format) {
+        return trackFormatRepository.findByTrackIdAndFormat(trackId, format)
+                .flatMap(fmt -> {
+                    fmt.setStatus(TrackFormatStatus.FAILED);
+                    return trackFormatRepository.save(fmt);
+                })
+                .then();
     }
 
     // Shared insert used by both queue() (new/pending format) and trackAsPending() (already in-flight format)

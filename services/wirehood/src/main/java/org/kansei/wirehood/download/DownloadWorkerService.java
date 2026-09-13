@@ -8,6 +8,8 @@ import org.kansei.wirehood.repository.TrackFormatRepository;
 import org.kansei.wirehood.repository.TrackRepository;
 import org.kansei.wirehood.service.DownloadService;
 import org.kansei.wirehood.storage.FilenameBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -27,6 +29,8 @@ import java.time.Instant;
  */
 @Service
 public class DownloadWorkerService {
+
+    private static final Logger log = LoggerFactory.getLogger(DownloadWorkerService.class);
 
     private final TrackRepository trackRepository;
     private final TrackFormatRepository trackFormatRepository;
@@ -53,7 +57,7 @@ public class DownloadWorkerService {
                 .zipWith(trackFormatRepository.findByTrackIdAndFormat(message.trackId(), message.format()))
                 .flatMap(tuple -> markDownloading(tuple.getT2())
                         .flatMap(format -> runDownload(tuple.getT1(), format)
-                                .onErrorResume(ex -> markFailed(tuple.getT1(), format))))
+                                .onErrorResume(ex -> markFailed(tuple.getT1(), format, ex))))
                 .then();
     }
 
@@ -93,7 +97,8 @@ public class DownloadWorkerService {
         return trackRepository.save(track);
     }
 
-    private Mono<TrackFormat> markFailed(Track track, TrackFormat format) {
+    private Mono<TrackFormat> markFailed(Track track, TrackFormat format, Throwable ex) {
+        log.error("Download failed for track {} format {}: {}", track.getId(), format.getFormat(), ex.getMessage(), ex);
         format.setStatus(TrackFormatStatus.FAILED);
         return trackFormatRepository.save(format)
                 .flatMap(saved -> downloadService.notifyFailedTrack(track, saved.getFormat()).thenReturn(saved));

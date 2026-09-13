@@ -147,6 +147,18 @@ public class PlaylistService {
                                 .flatMap(position -> playlistTrackRepository.insert(playlistId, request.trackId(), position)));
     }
 
+    // Which of this user's accessible playlists already contain this track - backs the add-to-playlist
+    // popup's checked state, filtered in Java rather than a SQL IN/ANY clause since the accessible-playlist
+    // count per user is small
+    public Mono<Set<UUID>> playlistIdsContainingTrack(UUID userId, UUID trackId) {
+        return playlistRepository.findAccessibleByUserId(userId)
+                .map(Playlist::getId)
+                .collectList()
+                .flatMap(accessibleIds -> playlistTrackRepository.findPlaylistIdsByTrackId(trackId)
+                        .filter(accessibleIds::contains)
+                        .collect(Collectors.toSet()));
+    }
+
     public Mono<Void> removeTrack(UUID playlistId, UUID userId, UUID trackId) {
         return requireAccess(playlistId, userId)
                 .then(playlistTrackRepository.deleteByPlaylistIdAndTrackId(playlistId, trackId));
