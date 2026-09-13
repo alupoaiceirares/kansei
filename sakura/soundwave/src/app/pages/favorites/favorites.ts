@@ -5,7 +5,7 @@ import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-wav
 import { WirehoodApi, FavoriteItem } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
 import { PlaybackService } from '../../core/playback';
-import { formatRelativeTime, saveBlob } from '../../shared/format';
+import { formatRelativeTime, hideOnError, saveBlob, trackThumbnailUrl } from '../../shared/format';
 
 type FormatFilter = 'All' | 'MP3' | 'MP4';
 
@@ -21,6 +21,9 @@ export class FavoritesPage {
   private api = inject(WirehoodApi);
   private auth = inject(AuthService);
   private playback = inject(PlaybackService);
+
+  protected thumbnailUrl = trackThumbnailUrl;
+  protected onThumbError = hideOnError;
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();

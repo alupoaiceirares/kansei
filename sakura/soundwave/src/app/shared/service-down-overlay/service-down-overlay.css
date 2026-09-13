@@ -1,0 +1,46 @@
+.wh-down-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(5, 7, 6, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+.wh-down-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 28px 26px;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 58, 58, 0.3);
+  background: #0d100f;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  font-family: Inter, sans-serif;
+}
+
+.wh-down-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: rgba(226, 58, 58, 0.14);
+}
+
+.wh-down-title {
+  font: 700 19px 'Archivo', sans-serif;
+  color: #f2f0ec;
+  margin-bottom: 8px;
+}
+
+.wh-down-body {
+  margin: 0;
+  font: 400 13.5px/1.6 Inter, sans-serif;
+  color: rgba(242, 240, 236, 0.65);
+}

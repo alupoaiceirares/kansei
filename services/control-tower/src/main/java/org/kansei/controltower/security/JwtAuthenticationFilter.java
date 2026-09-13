@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Verifies signature + expiry, and credentials_version (the ver claim) against Redis, shieldwall writes the current version there on every password/email change, so a token issued before such a change is rejected here instead of surviving until natural expiry
@@ -45,8 +46,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/password-reset",
             // Ticket-authenticated instead of JWT, EventSource can't send an Authorization header,
             // the ticket itself (burned server-side against Redis) carries the identity check
-            "/wirehood/downloads/stream"
+            "/wirehood/downloads/stream",
+            // A logged-out or expired-token visitor should still see "wirehood is down", not a 401
+            "/health/"
     );
+
+    // A plain <img src> can't send an Authorization header (same problem as EventSource above),
+    // and these are non-sensitive, platform-shared cosmetic images anyway - no ownership check
+    // exists server-side for them either (see TrackService.getThumbnail). Path shape is fixed
+    // (only the trackId segment varies), so a prefix match alone would also wrongly expose sibling
+    // routes like GET/PATCH/DELETE /wirehood/tracks/{trackId} - matched by exact shape instead.
+    private static final Pattern THUMBNAIL_PATH = Pattern.compile("^/wirehood/tracks/[0-9a-fA-F-]{36}/thumbnail$");
 
     private final SecretKey signingKey;
     private final ObjectMapper objectMapper;
@@ -130,7 +140,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublic(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith) || THUMBNAIL_PATH.matcher(path).matches();
     }
 
     /**

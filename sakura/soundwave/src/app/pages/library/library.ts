@@ -5,7 +5,7 @@ import { WirehoodWavesComponent } from '../../shared/wirehood-waves/wirehood-wav
 import { WirehoodApi, LibraryItem } from '../../core/wirehood-api';
 import { AuthService } from '../../core/auth';
 import { PlaybackService } from '../../core/playback';
-import { formatRelativeTime, saveBlob } from '../../shared/format';
+import { formatRelativeTime, hideOnError, saveBlob, trackThumbnailUrl } from '../../shared/format';
 
 interface Collection {
   name: string;
@@ -36,6 +36,9 @@ export class LibraryPage {
   private api = inject(WirehoodApi);
   private auth = inject(AuthService);
   private playback = inject(PlaybackService);
+
+  protected thumbnailUrl = trackThumbnailUrl;
+  protected onThumbError = hideOnError;
 
   protected isAdmin(): boolean {
     return this.auth.isAdmin();

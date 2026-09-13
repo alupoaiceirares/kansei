@@ -1,5 +1,7 @@
 <router-outlet />
 
+<wh-service-down-overlay></wh-service-down-overlay>
+
 @if (playback.nowPlaying()) {
   <wh-mini-player
     [nowPlaying]="playback.nowPlaying()"
@@ -10,10 +12,15 @@
     [volume]="playback.volume()"
     [hasPrevious]="playback.hasPrevious()"
     [hasNext]="playback.hasNext()"
+    [shuffle]="playback.shuffle()"
+    [repeatMode]="playback.repeatMode()"
     (togglePlay)="playback.toggle()"
     (previous)="playback.previous()"
     (next)="playback.next()"
     (seek)="playback.seekTo($event)"
     (volumeChange)="playback.setVolume($event)"
+    (close)="playback.stop()"
+    (toggleShuffle)="playback.toggleShuffle()"
+    (cycleRepeat)="playback.cycleRepeat()"
   ></wh-mini-player>
 }

@@ -29,8 +29,19 @@ export class PlaybackService {
   readonly duration = signal(0);
   readonly volume = signal(0.7);
 
+  readonly shuffle = signal(false);
+  readonly repeatMode = signal<'off' | 'all' | 'one'>('off');
+
   readonly hasPrevious = computed(() => this.index() > 0);
-  readonly hasNext = computed(() => this.index() >= 0 && this.index() < this.queue().length - 1);
+  // With shuffle or repeat-all, "Next" always has somewhere to go as long as there's more than
+  // one track - repeat-one deliberately doesn't factor in here, it only loops the current track
+  // on natural end (see onEnded), a manual Next press still advances normally either way
+  readonly hasNext = computed(() => {
+    const len = this.queue().length;
+    if (len <= 1) return false;
+    if (this.shuffle() || this.repeatMode() === 'all') return true;
+    return this.index() < len - 1;
+  });
 
   constructor() {
     this.audio.volume = this.volume();
@@ -38,7 +49,7 @@ export class PlaybackService {
     this.audio.addEventListener('loadedmetadata', () => this.duration.set(this.audio.duration || 0));
     this.audio.addEventListener('play', () => this.playing.set(true));
     this.audio.addEventListener('pause', () => this.playing.set(false));
-    this.audio.addEventListener('ended', () => this.next());
+    this.audio.addEventListener('ended', () => this.onEnded());
   }
 
   /** Starts a queue at the given index, previous/next walk this same list. */
@@ -68,6 +79,28 @@ export class PlaybackService {
     this.audio.volume = fraction;
   }
 
+  toggleShuffle(): void {
+    this.shuffle.update((v) => !v);
+  }
+
+  cycleRepeat(): void {
+    const order: Array<'off' | 'all' | 'one'> = ['off', 'all', 'one'];
+    this.repeatMode.update((m) => order[(order.indexOf(m) + 1) % order.length]);
+  }
+
+  // Natural end of track - repeat-one loops in place (just seeks back, no refetch needed),
+  // anything else falls through to the normal next() logic (shuffle/repeat-all/stop)
+  private onEnded(): void {
+    if (this.repeatMode() === 'one') {
+      this.audio.currentTime = 0;
+      this.audio.play();
+      return;
+    }
+    this.next();
+  }
+
+  // Previous always steps back sequentially regardless of shuffle - only "next" picks randomly,
+  // matching how most players treat shuffle (affects what's coming, not where you've already been)
   previous(): void {
     if (!this.hasPrevious()) return;
     this.index.update((i) => i - 1);
@@ -75,12 +108,33 @@ export class PlaybackService {
   }
 
   next(): void {
-    if (!this.hasNext()) {
-      this.stop();
+    const len = this.queue().length;
+    if (len === 0) return;
+
+    if (this.shuffle() && len > 1) {
+      const current = this.index();
+      let nextIndex = current;
+      while (nextIndex === current) {
+        nextIndex = Math.floor(Math.random() * len);
+      }
+      this.index.set(nextIndex);
+      this.loadCurrent();
       return;
     }
-    this.index.update((i) => i + 1);
-    this.loadCurrent();
+
+    if (this.index() < len - 1) {
+      this.index.update((i) => i + 1);
+      this.loadCurrent();
+      return;
+    }
+
+    if (this.repeatMode() === 'all') {
+      this.index.set(0);
+      this.loadCurrent();
+      return;
+    }
+
+    this.stop();
   }
 
   stop(): void {

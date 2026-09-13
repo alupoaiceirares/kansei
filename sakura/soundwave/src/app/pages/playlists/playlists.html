@@ -1,7 +1,7 @@
 <div class="wh-pl-page">
   <wh-waves></wh-waves>
 
-  <wh-header [isAdmin]="isAdmin()"></wh-header>
+  <wh-header></wh-header>
 
   <main class="wh-pl-main">
     @if (view() === 'list') {
@@ -92,8 +92,10 @@
               }
               @if (isOwner()) {
                 <button type="button" class="wh-pl-outline-btn" (click)="startAddTracks()">Add tracks</button>
+              }
+              @if (isOwnerOrAdmin()) {
                 <button type="button" class="wh-pl-outline-btn" (click)="startRename()">Rename</button>
-                <button type="button" class="wh-pl-delete-btn" (click)="deletePlaylist()">Delete</button>
+                <button type="button" class="wh-pl-delete-btn" (click)="deletePlaylist()">Delete{{ isOwner() ? '' : ' (admin)' }}</button>
               }
             </div>
           </div>
@@ -112,7 +114,10 @@
             <div class="wh-pl-tracklist">
               @for (t of addableTracks(); track t.trackId) {
                 <div class="wh-pl-track-row">
-                  <div class="wh-pl-track-art"><span>w</span></div>
+                  <div class="wh-pl-track-art">
+                    <span>w</span>
+                    <img [src]="thumbnailUrl(t.trackId)" alt="" class="wh-thumb-img" (error)="onThumbError($event)" />
+                  </div>
                   <div class="wh-pl-track-body">
                     <span class="wh-pl-track-title">{{ t.title }}</span>
                     <div class="wh-pl-track-artist">{{ t.artist }}</div>
@@ -155,7 +160,10 @@
                     </svg>
                   </span>
                   <span class="wh-pl-track-n">{{ t.position }}</span>
-                  <div class="wh-pl-track-art"><span>w</span></div>
+                  <div class="wh-pl-track-art">
+                    <span>w</span>
+                    <img [src]="thumbnailUrl(t.trackId)" alt="" class="wh-thumb-img" (error)="onThumbError($event)" />
+                  </div>
                   <div class="wh-pl-track-body">
                     <a [routerLink]="['/track', t.trackId]" class="wh-pl-track-title">{{ t.title }}</a>
                     <div class="wh-pl-track-artist">{{ t.artist }}</div>
@@ -219,7 +227,7 @@
               }
             </section>
 
-            @if (isOwner()) {
+            @if (isOwnerOrAdmin()) {
               <section class="wh-pl-panel">
                 <div class="wh-pl-shared-toggle-row">
                   <div>

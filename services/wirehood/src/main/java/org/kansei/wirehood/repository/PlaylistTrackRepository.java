@@ -33,4 +33,7 @@ public interface PlaylistTrackRepository extends Repository<PlaylistTrack, Void>
 
     @Query("SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id = :playlistId")
     Mono<Long> countByPlaylistId(UUID playlistId);
+
+    @Query("SELECT playlist_id FROM playlist_tracks WHERE track_id = :trackId")
+    Flux<UUID> findPlaylistIdsByTrackId(UUID trackId);
 }

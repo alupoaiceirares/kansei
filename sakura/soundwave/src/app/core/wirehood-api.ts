@@ -17,6 +17,15 @@ export interface ParsedTitle {
   extraInfo: string;
 }
 
+export interface ExistingTrack {
+  exists: boolean;
+  trackId: string | null;
+  title: string | null;
+  artist: string | null;
+  extraInfo: string | null;
+  formats: TrackFormat[];
+}
+
 export interface LibraryItem {
   trackId: string;
   title: string;
@@ -69,6 +78,18 @@ export interface FriendSearchResult {
 export interface Genre {
   id: string;
   name: string;
+}
+
+export type GenreProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface GenreProposal {
+  id: string;
+  name: string;
+  submittedBy: string;
+  status: GenreProposalStatus;
+  submittedAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
 }
 
 export interface TrackFormat {
@@ -206,12 +227,24 @@ export class WirehoodApi {
     );
   }
 
+  me() {
+    return this.http.get<{ userId: string; role: string; joinedAt: string; enabled: boolean }>(`${CONTROL_TOWER_URL}/wirehood/users/me`);
+  }
+
+  requestDisable() {
+    return this.http.post(`${CONTROL_TOWER_URL}/wirehood/users/me/disable-request`, {});
+  }
+
   search(q: string) {
     return this.http.get<SearchResult[]>(`${CONTROL_TOWER_URL}/wirehood/search`, { params: new HttpParams().set('q', q) });
   }
 
   parseTitle(title: string) {
     return this.http.get<ParsedTitle>(`${CONTROL_TOWER_URL}/wirehood/search/parse-title`, { params: new HttpParams().set('title', title) });
+  }
+
+  existingTrack(videoId: string) {
+    return this.http.get<ExistingTrack>(`${CONTROL_TOWER_URL}/wirehood/search/existing-track`, { params: new HttpParams().set('videoId', videoId) });
   }
 
   library(page = 0, size = 20) {
@@ -252,6 +285,28 @@ export class WirehoodApi {
 
   genres() {
     return this.http.get<Genre[]>(`${CONTROL_TOWER_URL}/wirehood/genres`);
+  }
+
+  proposeGenre(name: string) {
+    return this.http.post<GenreProposal>(`${CONTROL_TOWER_URL}/wirehood/genres/proposals`, { name });
+  }
+
+  adminGenreProposals(status: GenreProposalStatus, page = 0, size = 20) {
+    return this.http.get<Page<GenreProposal>>(`${CONTROL_TOWER_URL}/wirehood/admin/genre-proposals`, {
+      params: new HttpParams().set('status', status).set('page', page).set('size', size),
+    });
+  }
+
+  adminApproveGenreProposal(proposalId: string) {
+    return this.http.post(`${CONTROL_TOWER_URL}/wirehood/admin/genre-proposals/${proposalId}/approve`, {});
+  }
+
+  adminRejectGenreProposal(proposalId: string) {
+    return this.http.post(`${CONTROL_TOWER_URL}/wirehood/admin/genre-proposals/${proposalId}/reject`, {});
+  }
+
+  disableUser(targetUserId: string) {
+    return this.http.post(`${CONTROL_TOWER_URL}/wirehood/users/${targetUserId}/disable`, {});
   }
 
   tagGenres(trackId: string, genreIds: string[]) {
@@ -326,6 +381,10 @@ export class WirehoodApi {
 
   myPlaylists() {
     return this.http.get<Playlist[]>(`${CONTROL_TOWER_URL}/wirehood/playlists/mine`);
+  }
+
+  myPlaylistIdsContaining(trackId: string) {
+    return this.http.get<string[]>(`${CONTROL_TOWER_URL}/wirehood/playlists/mine/containing/${trackId}`);
   }
 
   createPlaylist(name: string, shared: boolean) {

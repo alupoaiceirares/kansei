@@ -12,11 +12,14 @@ public interface TrackRepository extends ReactiveCrudRepository<Track, UUID> {
     Mono<Track> findByYoutubeVideoId(String youtubeVideoId);
 
     // Song of the Day pick, readiness lives on track_formats, visible=true excludes anything an admin's hidden from the pool
-    // DISTINCT since a track with two READY formats (mp3 + mp4) would otherwise join into two rows
+    // Dedup via an IN subquery, not SELECT DISTINCT - Postgres rejects DISTINCT combined with
+    // ORDER BY RANDOM() ("ORDER BY expressions must appear in select list") since DISTINCT would
+    // need RANDOM() itself in the select list to dedup on. This shape avoids DISTINCT at the outer
+    // level entirely, so a track with two READY formats (mp3 + mp4) still only joins into one row.
     @Query("""
-            SELECT DISTINCT t.* FROM tracks t
-            JOIN track_formats tf ON tf.track_id = t.id
-            WHERE tf.status = 'READY' AND t.visible = true
+            SELECT t.* FROM tracks t
+            WHERE t.visible = true
+            AND t.id IN (SELECT DISTINCT tf.track_id FROM track_formats tf WHERE tf.status = 'READY')
             ORDER BY RANDOM() LIMIT 1
             """)
     Mono<Track> findRandomReadyTrack();

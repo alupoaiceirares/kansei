@@ -1,7 +1,7 @@
 <div class="wh-sotd-page">
   <wh-waves></wh-waves>
 
-  <wh-header [isAdmin]="isAdmin()"></wh-header>
+  <wh-header></wh-header>
 
   <main class="wh-sotd-main">
     @if (sotd(); as sotd) {
@@ -12,7 +12,10 @@
       </div>
 
       <section class="wh-sotd-hero">
-        <div class="wh-sotd-hero-art"><span>w</span></div>
+        <div class="wh-sotd-hero-art">
+          <span>w</span>
+          <img [src]="thumbnailUrl(sotd.trackId)" alt="" class="wh-thumb-img" (error)="onThumbError($event)" />
+        </div>
         <div class="wh-sotd-hero-body">
           <h1 class="wh-sotd-title">{{ sotd.title }}</h1>
           <div class="wh-sotd-artist">{{ sotd.artist }}</div>
@@ -34,7 +37,7 @@
                 <path d="M7 11l5 5 5-5"></path>
                 <path d="M5 20h14"></path>
               </svg>
-              Download
+              Save to device
             </button>
             <button type="button" class="wh-sotd-fav" [class.wh-sotd-fav-active]="faved()" (click)="toggleFav()">
               <svg width="14" height="14" viewBox="0 0 24 24" [attr.fill]="faved() ? '#E23A3A' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round">

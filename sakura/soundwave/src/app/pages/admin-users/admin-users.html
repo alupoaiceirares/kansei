@@ -1,0 +1,60 @@
+<div class="wh-au-page">
+  <wh-waves></wh-waves>
+
+  <wh-header [adminHeader]="true"></wh-header>
+
+  <main class="wh-au-main">
+    <h1 class="wh-au-h1">Users</h1>
+    <p class="wh-au-sub">Search a wirehood user by username to disable them (wirehood-scoped kick, their shieldwall login is untouched).</p>
+
+    <div class="wh-au-note">
+      No endpoint lists every wirehood user or reports a user's current enabled/disabled status, and there's no re-enable
+      endpoint either - this stays a search-then-disable action, not a full user table, and disabling here is one-way.
+    </div>
+
+    <form class="wh-au-search-row" (submit)="$event.preventDefault(); search()">
+      <input
+        type="text"
+        placeholder="Search by username…"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+        class="wh-au-search-input"
+      />
+      <button type="submit" class="wh-au-search-btn">Search</button>
+    </form>
+
+    <div class="wh-au-list">
+      @for (r of results(); track r.userId) {
+        <div class="wh-au-row">
+          <div class="wh-au-avatar">{{ r.username.charAt(0).toUpperCase() }}</div>
+          <div class="wh-au-row-body">
+            <span class="wh-au-row-name">{{ r.username }}</span>
+            @if (isDisabled(r.userId)) {
+              <span class="wh-au-disabled-badge">Disabled</span>
+            }
+          </div>
+
+          @if (!isDisabled(r.userId)) {
+            @if (confirmingId() === r.userId) {
+              <div class="wh-au-confirm">
+                <span class="wh-au-confirm-text">Disable {{ r.username }}?</span>
+                <button type="button" class="wh-au-confirm-cancel" (click)="cancelDisable()">Cancel</button>
+                <button type="button" class="wh-au-confirm-disable" (click)="confirmDisable(r.userId)">Yes, disable</button>
+              </div>
+            } @else {
+              <button type="button" class="wh-au-disable-btn" (click)="askDisable(r.userId)">Disable</button>
+            }
+          }
+        </div>
+      } @empty {
+        @if (searching()) {
+          <div class="wh-au-empty">Searching…</div>
+        } @else if (query()) {
+          <div class="wh-au-empty">No matching wirehood users.</div>
+        } @else {
+          <div class="wh-au-empty">Search for a username to get started.</div>
+        }
+      }
+    </div>
+  </main>
+</div>

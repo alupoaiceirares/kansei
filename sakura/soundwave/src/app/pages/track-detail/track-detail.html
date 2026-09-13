@@ -1,7 +1,7 @@
 <div class="wh-td-page">
   <wh-waves></wh-waves>
 
-  <wh-header [isAdmin]="isAdmin()"></wh-header>
+  <wh-header></wh-header>
 
   @if (track(); as track) {
     <main class="wh-td-main">
@@ -14,7 +14,12 @@
 
       <div class="wh-td-hero">
         <div>
-          <div class="wh-td-art"><span>w</span></div>
+          <div class="wh-td-art">
+            <span>w</span>
+            @if (!thumbFailed()) {
+              <img [src]="thumbnailUrl(trackId)" alt="" class="wh-thumb-img" (error)="onThumbError()" />
+            }
+          </div>
           <input #thumbnailInput type="file" accept="image/jpeg,image/png" hidden (change)="onThumbnailSelected($event)" />
           <button type="button" class="wh-td-thumb-btn" (click)="pickThumbnail()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -73,7 +78,7 @@
                   <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
                   Play
                 </button>
-                <button type="button" class="wh-td-format-download" title="Download" (click)="downloadFormat(fm)">
+                <button type="button" class="wh-td-format-download" title="Save to device" (click)="downloadFormat(fm)">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <path d="M12 4v11"></path>
                     <path d="M7 11l5 5 5-5"></path>
@@ -95,6 +100,14 @@
             }
           </div>
 
+          <button type="button" class="wh-td-add-playlist-btn" (click)="openPlaylistPicker()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M4 6h11M4 12h11M4 18h6"></path>
+              <path d="M18 14v6M15 17h6"></path>
+            </svg>
+            Add to playlist
+          </button>
+
           <div class="wh-td-genres-section">
             <div class="wh-td-label">Genres</div>
             <div class="wh-td-genres">
@@ -105,9 +118,50 @@
                     <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 9H5z"></path></svg>
                     {{ g.votes }}
                   </span>
+                  @if (isAdmin()) {
+                    <span class="wh-td-genre-remove" title="Remove tag (admin)" (click)="adminRemoveGenreTag(g.genreId, $event)">
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg>
+                    </span>
+                  }
                 </button>
+              } @if (!genreTags().length) {
+                <span class="wh-td-genre-none">No genres tagged yet, be the first.</span>
               }
+              <button type="button" class="wh-td-genre-add" (click)="toggleAddGenre()">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                {{ addGenreOpen() ? 'Close' : 'Add genre' }}
+              </button>
             </div>
+
+            @if (addGenreOpen()) {
+              <div class="wh-td-genre-picker">
+                @if (proposingGenre()) {
+                  <div class="wh-td-genre-propose-form">
+                    <input
+                      type="text"
+                      placeholder="New genre name…"
+                      [value]="newGenreName()"
+                      (input)="newGenreName.set($any($event.target).value)"
+                      class="wh-td-genre-propose-input"
+                    />
+                    <button type="button" class="wh-td-admin-confirm-cancel" (click)="cancelProposeGenre()">Cancel</button>
+                    <button type="button" class="wh-td-format-play" (click)="submitGenreProposal()">Submit for review</button>
+                  </div>
+                } @else {
+                  <div class="wh-td-genre-picker-list">
+                    @for (g of untaggedGenres(); track g.id) {
+                      <button type="button" class="wh-td-genre-chip" (click)="addGenre(g)">{{ g.name }}</button>
+                    } @empty {
+                      <span class="wh-td-genre-none">Every catalog genre is already tagged here.</span>
+                    }
+                  </div>
+                  <button type="button" class="wh-td-genre-propose-btn" (click)="startProposeGenre()">Don't see it? Propose a new genre</button>
+                }
+                @if (proposeMessage()) {
+                  <div class="wh-td-genre-propose-msg">{{ proposeMessage() }}</div>
+                }
+              </div>
+            }
           </div>
 
           @if (isAdmin()) {
@@ -225,6 +279,54 @@
     </main>
   }
 
+  @if (playlistPickerOpen()) {
+    <div class="wh-td-modal-scrim" (mousedown)="onScrimMouseDown($event)" (click)="onScrimClick($event)">
+      <div class="wh-td-playlist-modal" (click)="$event.stopPropagation()">
+        <h2 class="wh-td-playlist-h2">Add to playlist</h2>
+
+        <div class="wh-td-playlist-list">
+          @for (p of myPlaylists(); track p.id) {
+            <button
+              type="button"
+              class="wh-td-playlist-row"
+              [class.wh-td-playlist-row-added]="isAddedToPlaylist(p.id)"
+              [title]="isAddedToPlaylist(p.id) ? 'Click to remove from this playlist' : 'Click to add to this playlist'"
+              (click)="togglePlaylist(p.id)"
+            >
+              <span class="wh-td-playlist-row-name">{{ p.name }}</span>
+              <span class="wh-td-playlist-row-count">{{ p.trackCount }} tracks</span>
+              @if (isAddedToPlaylist(p.id)) {
+                <svg class="wh-td-playlist-row-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#12B76B" stroke-width="3" stroke-linecap="round"><path d="M5 13l4.5 4.5L19 7"></path></svg>
+              } @else {
+                <span class="wh-td-playlist-row-add">Add</span>
+              }
+            </button>
+          } @empty {
+            <div class="wh-td-playlist-empty">No playlists yet, create one below.</div>
+          }
+        </div>
+
+        @if (creatingPlaylist()) {
+          <div class="wh-td-playlist-create-form">
+            <input
+              type="text"
+              placeholder="Playlist name"
+              [value]="newPlaylistName()"
+              (input)="newPlaylistName.set($any($event.target).value)"
+              class="wh-td-playlist-create-input"
+            />
+            <button type="button" class="wh-td-admin-confirm-cancel" (click)="cancelCreatePlaylist()">Cancel</button>
+            <button type="button" class="wh-td-format-play" (click)="confirmCreatePlaylist()">Create &amp; add</button>
+          </div>
+        } @else {
+          <button type="button" class="wh-td-playlist-new-btn" (click)="startCreatePlaylist()">+ New playlist</button>
+        }
+
+        <button type="button" class="wh-td-playlist-done" (click)="closePlaylistPicker()">Done</button>
+      </div>
+    </div>
+  }
+
   @if (videoOpen() && track(); as track) {
     <div class="wh-td-video-takeover">
       <div class="wh-td-video-head">
@@ -252,7 +354,7 @@
       <div class="wh-td-video-transport">
         @for (fm of track.formats; track fm.id) {
           @if (fm.format.toLowerCase() === 'mp4') {
-            <button type="button" class="wh-td-video-download" (click)="downloadFormat(fm)">Download MP4</button>
+            <button type="button" class="wh-td-video-download" (click)="downloadFormat(fm)">Save MP4</button>
           }
         }
       </div>

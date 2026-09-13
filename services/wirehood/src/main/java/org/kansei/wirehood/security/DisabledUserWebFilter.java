@@ -1,5 +1,6 @@
 package org.kansei.wirehood.security;
 
+import org.kansei.wirehood.model.WirehoodUser;
 import org.kansei.wirehood.repository.WirehoodUserRepository;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -41,9 +42,15 @@ public class DisabledUserWebFilter implements WebFilter {
             return chain.filter(exchange); // malformed - not this filter's job, downstream handles it
         }
 
+        // chain.filter(exchange) returns Mono<Void>, it never emits a value, so switchIfEmpty
+        // can't tell "no wirehood_users row" apart from "the flatMap branch already ran and
+        // completed" - both look empty to it, so it would call chain.filter(exchange) a SECOND
+        // time on every enabled-user request. Decide allow/forbid as a Mono<Boolean> first, then
+        // call chain.filter(exchange) exactly once from a single flatMap.
         return wirehoodUserRepository.findById(userId)
-                .flatMap(user -> user.isEnabled() ? chain.filter(exchange) : forbidden(exchange))
-                .switchIfEmpty(chain.filter(exchange));
+                .map(WirehoodUser::isEnabled)
+                .defaultIfEmpty(true) // no row yet (never opted in) - not this filter's call to reject
+                .flatMap(enabled -> enabled ? chain.filter(exchange) : forbidden(exchange));
     }
 
     private Mono<Void> forbidden(ServerWebExchange exchange) {

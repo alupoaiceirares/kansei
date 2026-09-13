@@ -1,7 +1,7 @@
 <div class="wh-home">
   <wh-waves></wh-waves>
 
-  <wh-header [isAdmin]="isAdmin()"></wh-header>
+  <wh-header></wh-header>
 
   <main class="wh-home-main">
     @if (hasRequests) {
@@ -54,6 +54,7 @@
           </div>
           <div class="wh-home-sotd-art">
             <span>w</span>
+            <img [src]="thumbnailUrl(pick.trackId)" alt="" class="wh-thumb-img" (error)="onThumbError($event)" />
           </div>
           <div class="wh-home-sotd-title">{{ pick.title }}</div>
           <div class="wh-home-sotd-meta">{{ pick.artist }} · {{ formatDuration(pick.durationSeconds) }}</div>
@@ -62,7 +63,7 @@
               <svg width="11" height="11" viewBox="0 0 12 14" fill="currentColor"><path d="M1 1l10 6-10 6z"></path></svg>
               <span>Play</span>
             </button>
-            <button type="button" class="wh-home-sotd-icon" title="Download" (click)="downloadSotd()">
+            <button type="button" class="wh-home-sotd-icon" title="Save to device" (click)="downloadSotd()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                 <path d="M12 4v11"></path>
                 <path d="M7 11l5 5 5-5"></path>
@@ -94,7 +95,10 @@
         <div class="wh-home-recent-grid">
           @for (t of recent(); track t.trackId) {
             <a [routerLink]="['/track', t.trackId]" class="wh-home-track-card">
-              <div class="wh-home-track-art"><span>w</span></div>
+              <div class="wh-home-track-art">
+                <span>w</span>
+                <img [src]="thumbnailUrl(t.trackId)" alt="" class="wh-thumb-img" (error)="onThumbError($event)" />
+              </div>
               <div class="wh-home-track-title">{{ t.title }}</div>
               <div class="wh-home-track-artist">{{ t.artist }}</div>
               <div class="wh-home-track-footer">

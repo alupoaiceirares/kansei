@@ -1,7 +1,7 @@
 <div class="wh-search-page">
   <wh-waves></wh-waves>
 
-  <wh-header [isAdmin]="isAdmin()"></wh-header>
+  <wh-header></wh-header>
 
   <main class="wh-search-main">
     <h1 class="wh-search-h1">Search &amp; download</h1>
@@ -64,14 +64,16 @@
   </main>
 
   @if (previewOpen() && activeResult) {
-    <div class="wh-modal-scrim" (click)="closeAll()">
+    <div class="wh-modal-scrim" (mousedown)="onScrimMouseDown($event)" (click)="onScrimClick($event)">
       <div class="wh-preview-modal" (click)="$event.stopPropagation()">
         <div class="wh-preview-frame">
-          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="rgba(242,240,236,0.3)" stroke-width="1.4">
-            <rect x="2" y="4" width="20" height="16" rx="3"></rect>
-            <path d="M10 9l5 3-5 3z" fill="rgba(242,240,236,0.3)" stroke="none"></path>
-          </svg>
-          <span class="wh-preview-frame-label">Embedded YouTube player</span>
+          <iframe
+            [src]="previewEmbedUrl()"
+            class="wh-preview-iframe"
+            title="YouTube preview"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+          ></iframe>
         </div>
         <div class="wh-preview-footer">
           <div class="wh-preview-footer-meta">
@@ -93,19 +95,41 @@
   }
 
   @if (confirmOpen()) {
-    <div class="wh-modal-scrim wh-modal-scrim-scroll" (click)="closeAll()">
+    <div class="wh-modal-scrim wh-modal-scrim-scroll" (mousedown)="onScrimMouseDown($event)" (click)="onScrimClick($event)">
       <div class="wh-confirm-modal" (click)="$event.stopPropagation()">
         <h2 class="wh-confirm-h2">Confirm download</h2>
-        <p class="wh-confirm-sub">Parsed from the title, edit anything that looks wrong before confirming.</p>
+        @if (existingTrack()?.exists) {
+          <p class="wh-confirm-existing-note">
+            @if (isAdmin()) {
+              Already in the shared archive as shown below, edits here won't be saved, use "Edit metadata" on the track page instead.
+            } @else {
+              Already in the shared archive as shown below, edits here won't be saved, it's shared by everyone who downloaded it.
+            }
+          </p>
+        } @else {
+          <p class="wh-confirm-sub">Parsed from the title, edit anything that looks wrong before confirming.</p>
+        }
 
         <div class="wh-confirm-fields">
           <label class="wh-confirm-label">
             <span class="wh-confirm-label-text">Artist</span>
-            <input type="text" [value]="confirmArtist()" (input)="confirmArtist.set($any($event.target).value)" class="wh-confirm-input" />
+            <input
+              type="text"
+              [value]="confirmArtist()"
+              (input)="confirmArtist.set($any($event.target).value)"
+              [disabled]="existingTrack()?.exists ?? false"
+              class="wh-confirm-input"
+            />
           </label>
           <label class="wh-confirm-label">
             <span class="wh-confirm-label-text">Title</span>
-            <input type="text" [value]="confirmTitle()" (input)="confirmTitle.set($any($event.target).value)" class="wh-confirm-input" />
+            <input
+              type="text"
+              [value]="confirmTitle()"
+              (input)="confirmTitle.set($any($event.target).value)"
+              [disabled]="existingTrack()?.exists ?? false"
+              class="wh-confirm-input"
+            />
           </label>
           <label class="wh-confirm-label">
             <span class="wh-confirm-label-text">Extra info <span class="wh-confirm-label-optional">optional</span></span>
@@ -114,6 +138,7 @@
               placeholder="Live, remix, album name…"
               [value]="confirmExtra()"
               (input)="confirmExtra.set($any($event.target).value)"
+              [disabled]="existingTrack()?.exists ?? false"
               class="wh-confirm-input"
             />
           </label>
@@ -129,7 +154,7 @@
               (click)="pickFormat('mp3')"
             >
               <div class="wh-confirm-format-name">MP3</div>
-              <div class="wh-confirm-format-desc">Audio · ~7 MB</div>
+              <div class="wh-confirm-format-desc">{{ existingFormatStatus('mp3') ?? 'Audio · ~7 MB' }}</div>
             </button>
             <button
               type="button"
@@ -138,7 +163,7 @@
               (click)="pickFormat('mp4')"
             >
               <div class="wh-confirm-format-name">MP4</div>
-              <div class="wh-confirm-format-desc">Video · ~48 MB</div>
+              <div class="wh-confirm-format-desc">{{ existingFormatStatus('mp4') ?? 'Video · ~48 MB' }}</div>
             </button>
           </div>
         </div>
@@ -168,17 +193,30 @@
   }
 
   @if (toastOpen()) {
-    <div class="wh-toast">
-      <span class="wh-toast-icon">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0A0C0B" stroke-width="3.4" stroke-linecap="round">
-          <path d="M5 13l4.5 4.5L19 7"></path>
-        </svg>
+    <div class="wh-toast" [class.wh-toast-error]="toastError()">
+      <span class="wh-toast-icon" [class.wh-toast-icon-error]="toastError()">
+        @if (toastError()) {
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0A0C0B" stroke-width="3.4" stroke-linecap="round">
+            <path d="M7 7l10 10M17 7L7 17"></path>
+          </svg>
+        } @else {
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0A0C0B" stroke-width="3.4" stroke-linecap="round">
+            <path d="M5 13l4.5 4.5L19 7"></path>
+          </svg>
+        }
       </span>
       <div>
-        <div class="wh-toast-title">Queued, {{ toastTitle() }}</div>
-        <div class="wh-toast-sub">You will get a toast here when it flips to ready</div>
+        @if (toastError()) {
+          <div class="wh-toast-title">Couldn't queue {{ toastTitle() }}</div>
+          <div class="wh-toast-sub">Something went wrong, try again</div>
+        } @else {
+          <div class="wh-toast-title">Queued, {{ toastTitle() }}</div>
+          <div class="wh-toast-sub">You will get a toast here when it flips to ready</div>
+        }
       </div>
-      <a routerLink="/library" class="wh-toast-link">View</a>
+      @if (!toastError()) {
+        <a routerLink="/library" class="wh-toast-link">View</a>
+      }
     </div>
   }
 </div>

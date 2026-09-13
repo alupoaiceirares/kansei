@@ -33,6 +33,12 @@
             <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
         </dependency>
 
+        <!-- WebClient.Builder isn't bundled with the gateway starter anymore in Boot 4 - needs its own starter (same gotcha documented for wirehood in CLAUDE.md). Used by HealthController to ping wirehood's own actuator health -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webclient</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>me.paulschwarz</groupId>
             <artifactId>springboot4-dotenv</artifactId>

@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Set;
 import java.util.UUID;
 
 // Playlists are owner-scoped (private to owner + collaborators), unlike tracks/comments/genre-tags which are global every method here goes through PlaylistService's requireOwner/requireAccess check before touching data
@@ -49,6 +50,14 @@ public class PlaylistController {
     @GetMapping("/mine")
     public Flux<PlaylistResponse> listAccessiblePlaylists(@RequestHeader("X-User-Id") UUID userId) {
         return playlistService.listAccessiblePlaylists(userId);
+    }
+
+    @GetMapping("/mine/containing/{trackId}")
+    public Mono<Set<UUID>> myPlaylistIdsContaining(
+            @PathVariable UUID trackId,
+            @RequestHeader("X-User-Id") UUID userId
+    ) {
+        return playlistService.playlistIdsContainingTrack(userId, trackId);
     }
 
     @GetMapping("/{playlistId}")

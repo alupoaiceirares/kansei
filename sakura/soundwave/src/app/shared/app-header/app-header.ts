@@ -21,10 +21,9 @@ interface MenuItem {
   styleUrl: './app-header.css',
 })
 export class AppHeaderComponent {
-  @Input() isAdmin = false;
   @Input() adminThumbnailCount = 0;
   @Input() adminGenreCount = 0;
-  /** Admin Thumbnails/Genres pages swap the Home/Search/Library pills for Thumbnails/Genres + an Admin badge. */
+  /** Admin Thumbnails/Genres/Users pages swap the Home/Search/Library pills for the admin ones + an Admin badge. */
   @Input() adminHeader = false;
 
   private auth = inject(AuthService);
@@ -33,6 +32,14 @@ export class AppHeaderComponent {
 
   protected menuOpen = signal(false);
   protected trayOpen = signal(false);
+
+  // Computed directly from AuthService instead of an @Input every page had to remember to pass -
+  // the admin pages (adminHeader=true) never passed [isAdmin] since they only cared about the top
+  // nav swap, which silently meant the burger menu's own admin section defaulted to hidden while
+  // standing on those exact pages. Self-sufficient now, can't be forgotten by a future page either.
+  protected isAdmin(): boolean {
+    return this.auth.isAdmin();
+  }
 
   constructor() {
     this.downloads.ensureStarted();
@@ -62,7 +69,6 @@ export class AppHeaderComponent {
   }
 
   protected get menuItems(): MenuItem[] {
-    const pendingDownloads = this.downloads.pendingCount();
     const incomingRequests = this.friends.incomingCount();
     return [
       { label: 'Home', route: '/home' },
@@ -78,8 +84,12 @@ export class AppHeaderComponent {
       },
       { label: 'Song of the Day', route: '/song-of-the-day' },
       { label: 'Music Profile', route: '/stats' },
-      { label: 'Downloads', route: '/search', badge: pendingDownloads > 0 ? String(pendingDownloads) : null },
       { label: 'Account', route: '/account' },
     ];
+  }
+
+  protected openDownloadsFromMenu(): void {
+    this.menuOpen.set(false);
+    this.trayOpen.set(true);
   }
 }

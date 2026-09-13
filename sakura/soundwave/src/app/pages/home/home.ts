@@ -6,7 +6,7 @@ import { WirehoodApi, LibraryItem, SongOfDay, TrackDetail } from '../../core/wir
 import { FriendsService } from '../../core/friends';
 import { AuthService } from '../../core/auth';
 import { PlaybackService } from '../../core/playback';
-import { formatDuration, formatRelativeTime, saveBlob } from '../../shared/format';
+import { formatDuration, formatRelativeTime, hideOnError, saveBlob, trackThumbnailUrl } from '../../shared/format';
 
 interface RecentTrack {
   trackId: string;
@@ -26,6 +26,8 @@ interface RecentTrack {
 })
 export class HomePage {
   protected formatDuration = formatDuration;
+  protected thumbnailUrl = trackThumbnailUrl;
+  protected onThumbError = hideOnError;
   protected friends = inject(FriendsService);
   private auth = inject(AuthService);
   private playback = inject(PlaybackService);

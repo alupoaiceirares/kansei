@@ -52,6 +52,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/admin-genres/admin-genres').then((m) => m.AdminGenresPage),
   },
   {
+    path: 'admin/users',
+    canActivate: [authGuard, optInGuard],
+    loadComponent: () => import('./pages/admin-users/admin-users').then((m) => m.AdminUsersPage),
+  },
+  {
     path: 'track/:id',
     canActivate: [authGuard, optInGuard],
     loadComponent: () => import('./pages/track-detail/track-detail').then((m) => m.TrackDetailPage),

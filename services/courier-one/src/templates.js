@@ -9,6 +9,7 @@ const templatesDir = path.join(__dirname, '..', 'templates');
 const SUBJECTS = {
   'email-verification': 'Confirm your email',
   'password-reset': 'Reset your password',
+  'wirehood-disable-request': 'Wirehood account disable request',
 };
 
 const compiled = new Map();

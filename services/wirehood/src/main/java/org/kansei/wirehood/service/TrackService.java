@@ -1,5 +1,6 @@
 package org.kansei.wirehood.service;
 
+import org.kansei.wirehood.dto.ExistingTrackResponse;
 import org.kansei.wirehood.dto.LibraryTrackResponse;
 import org.kansei.wirehood.dto.PageResponse;
 import org.kansei.wirehood.dto.TrackDetailResponse;
@@ -81,6 +82,17 @@ public class TrackService {
                         .map(formats -> TrackDetailResponse.of(track, formats)));
     }
 
+    // Backs the search confirm popup's "already exists" check, keyed by youtube_video_id since that's
+    // all the popup has before any download is submitted - no trackId yet. No auth needed, same as search itself.
+    public Mono<ExistingTrackResponse> findExistingByVideoId(String youtubeVideoId) {
+        return trackRepository.findByYoutubeVideoId(youtubeVideoId)
+                .flatMap(track -> trackFormatRepository.findByTrackId(track.getId())
+                        .map(TrackFormatSummary::from)
+                        .collectList()
+                        .map(formats -> new ExistingTrackResponse(true, track.getId(), track.getTitle(), track.getArtist(), track.getExtraInfo(), formats)))
+                .defaultIfEmpty(ExistingTrackResponse.notFound());
+    }
+
     private Mono<List<TrackFormatSummary>> plainSummaries(List<TrackFormat> formats) {
         return Mono.just(formats.stream().map(TrackFormatSummary::from).collect(Collectors.toList()));
     }
@@ -117,14 +129,18 @@ public class TrackService {
                 );
     }
 
-    // Scoped to the user's own library on purpose, platform-wide dedup means the file exists once for everyone, but "download to my machine" is a personal action, not a way to pull any track's file without having saved it
+    // Not scoped to the user's own library - this endpoint backs both in-browser streaming
+    // (mini-player, nothing ever touches disk) and the explicit "Save to device" action, and a
+    // library-ownership gate blocked the former for any track a user hasn't saved yet, including
+    // Song of the Day's own discovery picks (deliberately NOT scoped to any one user's library -
+    // the whole point is previewing something before deciding to keep it). Same trust level every
+    // other per-track read already has (comments, genre-tags, thumbnail) - platform-wide shared
+    // archive, no ownership check, not "download to my machine is a personal action" (that
+    // reasoning only ever applied to the save case, never the stream-to-play one sharing this path).
     public Mono<ResponseEntity<Resource>> downloadFile(UUID userId, UUID trackId, String format) {
-        return userLibraryRepository.existsByUserIdAndTrackId(userId, trackId)
-                .flatMap(inLibrary -> inLibrary
-                        ? trackFormatRepository.findByTrackIdAndFormat(trackId, format)
-                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "This format hasn't been downloaded for this track")))
-                                .flatMap(trackFormat -> toFileResponse(userId, trackFormat))
-                        : Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Track not in your library")));
+        return trackFormatRepository.findByTrackIdAndFormat(trackId, format)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "This format hasn't been downloaded for this track")))
+                .flatMap(trackFormat -> toFileResponse(userId, trackFormat));
     }
 
     // Records the play only on an actual successful serve (status READY, file present) - never on a 404/409, so a
