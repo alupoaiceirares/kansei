@@ -59,9 +59,9 @@ public class GenreProposalService {
                 .map(GenreProposalResponse::from);
     }
 
-    public Mono<PageResponse<GenreProposalResponse>> listByStatus(UUID adminUserId, GenreProposalStatus status, int page, int size) {
+    public Mono<PageResponse<GenreProposalResponse>> listByStatus(UUID adminUserId, String adminRole, GenreProposalStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), Sort.by(Sort.Direction.ASC, "submittedAt"));
-        return adminAuthService.requireAdmin(adminUserId)
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(Mono.zip(
                         genreProposalRepository.findByStatus(status, pageable).map(GenreProposalResponse::from).collectList(),
                         genreProposalRepository.countByStatus(status)))
@@ -75,16 +75,16 @@ public class GenreProposalService {
     // Inserts the real Genre row, unless the same name got approved from a different proposal
     // in the meantime (re-checked here, not just at submit time) - then just marks this one
     // approved too without creating a duplicate genre
-    public Mono<Void> approve(UUID proposalId, UUID adminUserId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> approve(UUID proposalId, UUID adminUserId, String adminRole) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findPendingOr409(proposalId))
                 .flatMap(proposal -> genreRepository.existsByNameIgnoreCase(proposal.getName())
                         .flatMap(alreadyExists -> alreadyExists ? Mono.empty() : genreRepository.save(Genre.builder().name(proposal.getName()).build()))
                         .then(markReviewed(proposal, GenreProposalStatus.APPROVED, adminUserId)));
     }
 
-    public Mono<Void> reject(UUID proposalId, UUID adminUserId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> reject(UUID proposalId, UUID adminUserId, String adminRole) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findPendingOr409(proposalId))
                 .flatMap(proposal -> markReviewed(proposal, GenreProposalStatus.REJECTED, adminUserId));
     }

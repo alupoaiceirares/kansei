@@ -77,9 +77,10 @@ public class TrackController {
     public Mono<TrackDetailResponse> updateMetadata(
             @PathVariable UUID trackId,
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody UpdateTrackMetadataRequest request
     ) {
-        return trackService.updateMetadata(trackId, userId, request);
+        return trackService.updateMetadata(trackId, userId, role, request);
     }
 
     // Admin-only, hide from regular users, keep on server
@@ -87,16 +88,21 @@ public class TrackController {
     public Mono<Void> setVisible(
             @PathVariable UUID trackId,
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody SetTrackVisibleRequest request
     ) {
-        return trackService.setVisible(trackId, userId, request.visible());
+        return trackService.setVisible(trackId, userId, role, request.visible());
     }
 
     // Admin-only, permanent
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> hardDelete(@PathVariable UUID trackId, @RequestHeader("X-User-Id") UUID userId) {
-        return trackService.hardDelete(trackId, userId);
+    public Mono<Void> hardDelete(
+            @PathVariable UUID trackId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role
+    ) {
+        return trackService.hardDelete(trackId, userId, role);
     }
 
     // Any wirehood user, submission sits PENDING until an admin approves/rejects it
@@ -131,9 +137,10 @@ public class TrackController {
     public Mono<Void> removeTag(
             @PathVariable UUID trackId,
             @PathVariable UUID genreId,
-            @RequestHeader("X-User-Id") UUID userId
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role
     ) {
-        return genreTagService.removeTag(trackId, genreId, userId);
+        return genreTagService.removeTag(trackId, genreId, userId, role);
     }
 
     // parentCommentId in the body (null = top-level) makes this a reply if set

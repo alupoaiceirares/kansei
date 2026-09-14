@@ -29,9 +29,6 @@ public class WirehoodUser implements Persistable<UUID> {
     @Id
     private UUID userId;
 
-    @Builder.Default
-    private WirehoodRole role = WirehoodRole.USER;
-
     private Instant joinedAt;
 
     @Builder.Default

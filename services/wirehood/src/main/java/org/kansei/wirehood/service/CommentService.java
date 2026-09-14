@@ -115,8 +115,8 @@ public class CommentService {
     }
 
     // Own comment OR an admin, editing stays owner-only, only delete is admin-gated
-    public Mono<Void> softDelete(UUID commentId, UUID userId) {
-        return findOwnedOrAdmin(commentId, userId)
+    public Mono<Void> softDelete(UUID commentId, UUID userId, String userRole) {
+        return findOwnedOrAdmin(commentId, userId, userRole)
                 .map(comment -> {
                     comment.setDeletedAt(Instant.now());
                     return comment;
@@ -134,11 +134,11 @@ public class CommentService {
                         : Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your comment")));
     }
 
-    private Mono<TrackComment> findOwnedOrAdmin(UUID commentId, UUID userId) {
+    private Mono<TrackComment> findOwnedOrAdmin(UUID commentId, UUID userId, String userRole) {
         return trackCommentRepository.findById(commentId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found")))
                 .flatMap(comment -> comment.getUserId().equals(userId)
                         ? Mono.just(comment)
-                        : adminAuthService.requireAdmin(userId).thenReturn(comment));
+                        : adminAuthService.requireAdmin(userId, userRole).thenReturn(comment));
     }
 }

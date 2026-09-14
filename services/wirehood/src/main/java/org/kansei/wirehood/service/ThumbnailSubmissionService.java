@@ -79,9 +79,9 @@ public class ThumbnailSubmissionService {
     }
 
     public Mono<PageResponse<ThumbnailSubmissionResponse>> listByStatus(
-            UUID adminUserId, ThumbnailSubmissionStatus status, int page, int size) {
+            UUID adminUserId, String adminRole, ThumbnailSubmissionStatus status, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), clampSize(size), Sort.by(Sort.Direction.ASC, "submittedAt"));
-        return adminAuthService.requireAdmin(adminUserId)
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(Mono.zip(
                         submissionRepository.findByStatus(status, pageable).map(ThumbnailSubmissionResponse::from).collectList(),
                         submissionRepository.countByStatus(status)))
@@ -94,8 +94,8 @@ public class ThumbnailSubmissionService {
     }
 
     // Lets an admin actually see the image before approving/rejecting it - same FileSystemResource pattern as TrackService.getThumbnail
-    public Mono<ResponseEntity<Resource>> getFile(UUID adminUserId, UUID submissionId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<ResponseEntity<Resource>> getFile(UUID adminUserId, String adminRole, UUID submissionId) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findByIdOr404(submissionId))
                 .map(submission -> {
                     Path path = Path.of(submission.getFilePath());
@@ -104,8 +104,8 @@ public class ThumbnailSubmissionService {
                 });
     }
 
-    public Mono<Void> approve(UUID submissionId, UUID adminUserId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> approve(UUID submissionId, UUID adminUserId, String adminRole) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findPendingOr409(submissionId))
                 .flatMap(submission -> trackRepository.findById(submission.getTrackId())
                         .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Track not found")))
@@ -125,8 +125,8 @@ public class ThumbnailSubmissionService {
                         .then(autoRejectOthers(savedTrack.getId(), submission.getId(), adminUserId)));
     }
 
-    public Mono<Void> reject(UUID submissionId, UUID adminUserId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> reject(UUID submissionId, UUID adminUserId, String adminRole) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findPendingOr409(submissionId))
                 .flatMap(submission -> deleteFileIfPresent(Path.of(submission.getFilePath()))
                         .then(markReviewed(submission, ThumbnailSubmissionStatus.REJECTED, adminUserId)));

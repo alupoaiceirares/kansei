@@ -248,3 +248,8 @@ CREATE TABLE genre_proposals (
 );
 
 CREATE INDEX idx_genre_proposals_status ON genre_proposals (status);
+
+--changeset kansei:020-drop-wirehood-users-role
+-- Admin role now lives in shieldwall (users.role), carried as a JWT claim and injected as X-User-Role by
+-- control-tower. wirehood no longer owns its own copy.
+ALTER TABLE wirehood_users DROP COLUMN role;
