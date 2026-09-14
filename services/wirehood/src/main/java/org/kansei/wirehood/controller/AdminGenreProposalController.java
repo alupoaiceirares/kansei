@@ -29,20 +29,29 @@ public class AdminGenreProposalController {
     @GetMapping
     public Mono<PageResponse<GenreProposalResponse>> list(
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
             @RequestParam(required = false, defaultValue = "PENDING") GenreProposalStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return genreProposalService.listByStatus(userId, status, page, size);
+        return genreProposalService.listByStatus(userId, role, status, page, size);
     }
 
     @PostMapping("/{proposalId}/approve")
-    public Mono<Void> approve(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID proposalId) {
-        return genreProposalService.approve(proposalId, userId);
+    public Mono<Void> approve(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID proposalId
+    ) {
+        return genreProposalService.approve(proposalId, userId, role);
     }
 
     @PostMapping("/{proposalId}/reject")
-    public Mono<Void> reject(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID proposalId) {
-        return genreProposalService.reject(proposalId, userId);
+    public Mono<Void> reject(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID proposalId
+    ) {
+        return genreProposalService.reject(proposalId, userId, role);
     }
 }

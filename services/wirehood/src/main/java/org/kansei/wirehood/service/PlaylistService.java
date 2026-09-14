@@ -117,8 +117,8 @@ public class PlaylistService {
     }
 
     // Owner OR an admin, ownerUsername left null when the caller IS the owner, an admin editing someone else's playlist pays the lookup instead
-    public Mono<PlaylistResponse> update(UUID playlistId, UUID userId, UpdatePlaylistRequest request) {
-        return requireOwnerOrAdmin(playlistId, userId)
+    public Mono<PlaylistResponse> update(UUID playlistId, UUID userId, String userRole, UpdatePlaylistRequest request) {
+        return requireOwnerOrAdmin(playlistId, userId, userRole)
                 .map(playlist -> {
                     playlist.setName(request.name());
                     playlist.setShared(request.shared());
@@ -133,8 +133,8 @@ public class PlaylistService {
                                         .map(usernames -> PlaylistResponse.from(saved, usernames.get(saved.getOwnerId()), count))));
     }
 
-    public Mono<Void> delete(UUID playlistId, UUID userId) {
-        return requireOwnerOrAdmin(playlistId, userId)
+    public Mono<Void> delete(UUID playlistId, UUID userId, String userRole) {
+        return requireOwnerOrAdmin(playlistId, userId, userRole)
                 .flatMap(playlistRepository::delete);
     }
 
@@ -228,11 +228,11 @@ public class PlaylistService {
     }
 
     // Only update()/delete() use this, addCollaborator/reorder/etc. stay strictly owner-only
-    private Mono<Playlist> requireOwnerOrAdmin(UUID playlistId, UUID userId) {
+    private Mono<Playlist> requireOwnerOrAdmin(UUID playlistId, UUID userId, String userRole) {
         return findPlaylistOr404(playlistId)
                 .flatMap(playlist -> playlist.getOwnerId().equals(userId)
                         ? Mono.just(playlist)
-                        : adminAuthService.requireAdmin(userId).thenReturn(playlist));
+                        : adminAuthService.requireAdmin(userId, userRole).thenReturn(playlist));
     }
 
     private Mono<Playlist> requireAccess(UUID playlistId, UUID userId) {

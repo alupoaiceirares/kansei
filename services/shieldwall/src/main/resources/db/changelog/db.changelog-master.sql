@@ -39,3 +39,7 @@ CREATE TABLE verification_tokens (
 );
 
 CREATE INDEX idx_verification_tokens_token ON verification_tokens (token);
+
+--changeset kansei:006-add-role-to-users
+-- Platform admin role, carried as a JWT claim and injected downstream as X-User-Role by control-tower.
+ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN'));

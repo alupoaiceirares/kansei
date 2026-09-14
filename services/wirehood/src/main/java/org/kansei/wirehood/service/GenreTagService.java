@@ -38,8 +38,8 @@ public class GenreTagService {
     }
 
     // Admin-only moderation action, bad-faith tagging the crowd-vote hasn't corrected yet
-    public Mono<Void> removeTag(UUID trackId, UUID genreId, UUID adminUserId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> removeTag(UUID trackId, UUID genreId, UUID adminUserId, String adminRole) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(trackGenreTagRepository.deleteTag(trackId, genreId));
     }
 }

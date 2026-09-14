@@ -36,7 +36,11 @@ public class CommentController {
     }
 
     @DeleteMapping
-    public Mono<Void> delete(@PathVariable UUID commentId, @RequestHeader("X-User-Id") UUID userId) {
-        return commentService.softDelete(commentId, userId);
+    public Mono<Void> delete(
+            @PathVariable UUID commentId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role
+    ) {
+        return commentService.softDelete(commentId, userId, role);
     }
 }

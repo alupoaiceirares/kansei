@@ -36,6 +36,8 @@ import java.util.regex.Pattern;
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String USER_ROLE_HEADER = "X-User-Role";
+    private static final String DEFAULT_ROLE = "USER";
     private static final String CREDENTIALS_VERSION_KEY_PREFIX = "shieldwall:credentials-version:";
     private static final String BLACKLISTED_JTI_KEY_PREFIX = "shieldwall:blacklisted-jti:";
 
@@ -76,7 +78,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
         if (isPublic(path)) {
-            return chain.filter(stripUserIdHeader(exchange));
+            return chain.filter(stripSpoofableHeaders(exchange));
         }
 
         String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
@@ -95,7 +97,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return hasCurrentCredentialsVersion(claims)
                 .zipWith(isNotBlacklisted(claims))
                 .flatMap(checks -> (checks.getT1() && checks.getT2())
-                        ? chain.filter(withUserIdHeader(exchange, claims.getSubject()))
+                        ? chain.filter(withIdentityHeaders(exchange, claims.getSubject(), extractRole(claims)))
                         : unauthorized(exchange, "Invalid or expired token"));
     }
 
@@ -125,6 +127,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .onErrorReturn(true);
     }
 
+    // Missing role claim (pre-existing tokens issued before this claim existed) defaults to USER, never ADMIN
+    private static String extractRole(Claims claims) {
+        String role = claims.get("role", String.class);
+        return role != null ? role : DEFAULT_ROLE;
+    }
+
     private static boolean matchesOrUnparseable(String storedVersion, int tokenVersion) {
         try {
             return Integer.parseInt(storedVersion) == tokenVersion;
@@ -144,18 +152,24 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * Client-supplied X-User-Id is untrusted input - always dropped before forwarding downstream, whether the request ends up authenticated or not, so nothing can spoof it
+     * Client-supplied X-User-Id/X-User-Role are untrusted input - always dropped before forwarding downstream, whether the request ends up authenticated or not, so nothing can spoof them
      */
-    private ServerWebExchange stripUserIdHeader(ServerWebExchange exchange) {
+    private ServerWebExchange stripSpoofableHeaders(ServerWebExchange exchange) {
         ServerHttpRequest mutated = exchange.getRequest().mutate()
-                .headers(headers -> headers.remove(USER_ID_HEADER))
+                .headers(headers -> {
+                    headers.remove(USER_ID_HEADER);
+                    headers.remove(USER_ROLE_HEADER);
+                })
                 .build();
         return exchange.mutate().request(mutated).build();
     }
 
-    private ServerWebExchange withUserIdHeader(ServerWebExchange exchange, String userId) {
+    private ServerWebExchange withIdentityHeaders(ServerWebExchange exchange, String userId, String role) {
         ServerHttpRequest mutated = exchange.getRequest().mutate()
-                .headers(headers -> headers.set(USER_ID_HEADER, userId))
+                .headers(headers -> {
+                    headers.set(USER_ID_HEADER, userId);
+                    headers.set(USER_ROLE_HEADER, role);
+                })
                 .build();
         return exchange.mutate().request(mutated).build();
     }

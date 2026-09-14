@@ -31,26 +31,39 @@ public class AdminThumbnailController {
     @GetMapping
     public Mono<PageResponse<ThumbnailSubmissionResponse>> list(
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
             @RequestParam(required = false, defaultValue = "PENDING") ThumbnailSubmissionStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return thumbnailSubmissionService.listByStatus(userId, status, page, size);
+        return thumbnailSubmissionService.listByStatus(userId, role, status, page, size);
     }
 
     // Lets an admin actually see the submitted image before deciding
     @GetMapping("/{submissionId}/file")
-    public Mono<ResponseEntity<Resource>> file(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID submissionId) {
-        return thumbnailSubmissionService.getFile(userId, submissionId);
+    public Mono<ResponseEntity<Resource>> file(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID submissionId
+    ) {
+        return thumbnailSubmissionService.getFile(userId, role, submissionId);
     }
 
     @PostMapping("/{submissionId}/approve")
-    public Mono<Void> approve(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID submissionId) {
-        return thumbnailSubmissionService.approve(submissionId, userId);
+    public Mono<Void> approve(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID submissionId
+    ) {
+        return thumbnailSubmissionService.approve(submissionId, userId, role);
     }
 
     @PostMapping("/{submissionId}/reject")
-    public Mono<Void> reject(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID submissionId) {
-        return thumbnailSubmissionService.reject(submissionId, userId);
+    public Mono<Void> reject(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable UUID submissionId
+    ) {
+        return thumbnailSubmissionService.reject(submissionId, userId, role);
     }
 }

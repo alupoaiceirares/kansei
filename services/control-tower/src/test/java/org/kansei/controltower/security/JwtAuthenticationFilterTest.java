@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.ObjectMapper;
 
@@ -56,7 +58,9 @@ class JwtAuthenticationFilterTest {
     void publicPath_bypassesAuth_andStripsSpoofedUserIdHeader() {
         when(chain.filter(any())).thenReturn(Mono.empty());
         MockServerWebExchange exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.post("/api/auth/login").header("X-User-Id", "spoofed-id"));
+                MockServerHttpRequest.post("/api/auth/login")
+                        .header("X-User-Id", "spoofed-id")
+                        .header("X-User-Role", "ADMIN"));
 
         filter.filter(exchange, chain).block();
 
@@ -140,6 +144,68 @@ class JwtAuthenticationFilterTest {
 
         verify(chain).filter(any());
         assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    // ---- role claim (X-User-Role) ----
+
+    @Test
+    void protectedPath_roleClaim_forwardsRequestWithRoleHeader() {
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        when(chain.filter(captor.capture())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .claim("role", "ADMIN")
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        assertThat(captor.getValue().getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("ADMIN");
+    }
+
+    @Test
+    void protectedPath_missingRoleClaim_defaultsToUserRoleHeader() {
+        // Pre-existing tokens issued before this claim existed must never default to ADMIN
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        when(chain.filter(captor.capture())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks").header("Authorization", "Bearer " + token));
+
+        filter.filter(exchange, chain).block();
+
+        assertThat(captor.getValue().getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("USER");
+    }
+
+    @Test
+    void protectedPath_spoofedRoleHeader_isStrippedAndReplacedWithClaimValue() {
+        // Client sends its own X-User-Role: ADMIN alongside a token whose real role is USER (no claim) - the
+        // spoofed value must never survive, only the verified claim's value should reach downstream services
+        ArgumentCaptor<ServerWebExchange> captor = ArgumentCaptor.forClass(ServerWebExchange.class);
+        when(chain.filter(captor.capture())).thenReturn(Mono.empty());
+        String userId = "11111111-1111-1111-1111-111111111111";
+        String token = Jwts.builder()
+                .subject(userId)
+                .expiration(new Date(System.currentTimeMillis() + 60_000))
+                .signWith(SIGNING_KEY)
+                .compact();
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/wirehood/tracks")
+                        .header("Authorization", "Bearer " + token)
+                        .header("X-User-Role", "ADMIN"));
+
+        filter.filter(exchange, chain).block();
+
+        assertThat(captor.getValue().getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("USER");
     }
 
     // ---- credentials_version (ver claim) checked against Redis ----

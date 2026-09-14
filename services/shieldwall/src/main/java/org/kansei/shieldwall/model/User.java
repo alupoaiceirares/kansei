@@ -60,6 +60,11 @@ public class User {
     @Builder.Default
     private int credentialsVersion = 0;
 
+    // Platform admin role. Carried as a JWT claim, control-tower injects it downstream as X-User-Role.
+    @Column(nullable = false)
+    @Builder.Default
+    private String role = "USER";
+
     /**
      * Set on deactivation, cleared on reactivation (login within the retention window).
      * Past the retention window, the purge job hard-deletes the row.

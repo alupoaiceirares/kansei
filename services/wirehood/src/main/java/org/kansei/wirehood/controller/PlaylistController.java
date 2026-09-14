@@ -72,15 +72,20 @@ public class PlaylistController {
     public Mono<PlaylistResponse> update(
             @PathVariable UUID playlistId,
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody UpdatePlaylistRequest request
     ) {
-        return playlistService.update(playlistId, userId, request);
+        return playlistService.update(playlistId, userId, role, request);
     }
 
     @DeleteMapping("/{playlistId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> delete(@PathVariable UUID playlistId, @RequestHeader("X-User-Id") UUID userId) {
-        return playlistService.delete(playlistId, userId);
+    public Mono<Void> delete(
+            @PathVariable UUID playlistId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role
+    ) {
+        return playlistService.delete(playlistId, userId, role);
     }
 
     @PostMapping("/{playlistId}/tracks")

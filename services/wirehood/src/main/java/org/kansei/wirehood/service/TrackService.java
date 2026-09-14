@@ -199,8 +199,8 @@ public class TrackService {
     }
 
     // Admin-only, fixing a bad parse-and-confirm entry (title/artist/extra_info), title's @NotBlank enforced by @Valid at the controller, not re-checked here
-    public Mono<TrackDetailResponse> updateMetadata(UUID trackId, UUID adminUserId, UpdateTrackMetadataRequest request) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<TrackDetailResponse> updateMetadata(UUID trackId, UUID adminUserId, String adminRole, UpdateTrackMetadataRequest request) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findTrackOr404(trackId))
                 .flatMap(track -> {
                     track.setTitle(request.title());
@@ -216,8 +216,8 @@ public class TrackService {
     }
 
     // Admin-only, hide from regular users, keep on server/DB for admin/archive purposes; distinct from hardDelete below
-    public Mono<Void> setVisible(UUID trackId, UUID adminUserId, boolean visible) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> setVisible(UUID trackId, UUID adminUserId, String adminRole, boolean visible) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findTrackOr404(trackId))
                 .flatMap(track -> {
                     track.setVisible(visible);
@@ -230,8 +230,8 @@ public class TrackService {
     // Admin-only, permanent, the audit_log row is what preserves the history, not the row itself
     // Every FK to tracks(id) is ON DELETE CASCADE, so DB rows clean up on their own
     // The actual media/thumbnail/submission files on disk don't, so those are gathered before the delete and removed after
-    public Mono<Void> hardDelete(UUID trackId, UUID adminUserId) {
-        return adminAuthService.requireAdmin(adminUserId)
+    public Mono<Void> hardDelete(UUID trackId, UUID adminUserId, String adminRole) {
+        return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findTrackOr404(trackId))
                 .flatMap(track -> Mono.zip(
                                 trackFormatRepository.findByTrackId(trackId).collectList(),
