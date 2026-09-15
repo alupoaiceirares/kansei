@@ -1,0 +1,40 @@
+local.file_match "logs" {
+  path_targets = [
+    {"__path__" = "/var/log/kansei/*/*.json"},
+  ]
+}
+
+loki.source.file "logs" {
+  targets    = local.file_match.logs.targets
+  forward_to = [loki.process.logs.receiver]
+}
+
+loki.process "logs" {
+  stage.json {
+    expressions = {
+      service = "service.name",
+      level   = "log.level",
+    }
+  }
+
+  stage.labels {
+    values = {
+      service = "",
+      level   = "",
+    }
+  }
+
+  stage.static_labels {
+    values = {
+      env = "local",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

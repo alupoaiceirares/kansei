@@ -36,6 +36,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!-- New in Boot 4 - bundles the OTel bridge + the actual Tracer-bean autoconfiguration (spring-boot-micrometer-tracing alone doesn't include that, the classes live here).
+             No OTLP endpoint configured on purpose - trace/span ids still get generated locally for log correlation with no exporter, nothing leaves this process -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-opentelemetry</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

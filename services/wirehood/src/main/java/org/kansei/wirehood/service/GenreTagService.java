@@ -12,7 +12,7 @@ import java.util.UUID;
 
 /**
  * Crowd-tagging: any user with the track in their library can tag/re-tag it with one or more genres - one vote per
- * (track, genre, user), see WIREHOOD_PLAN.md's Genres + music profile section
+ * (track, genre, user)
  */
 @Service
 public class GenreTagService {

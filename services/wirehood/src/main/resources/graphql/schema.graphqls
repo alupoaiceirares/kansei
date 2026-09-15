@@ -4,7 +4,7 @@ type Query {
 
 # A profile screen pulling from several joined tables at once - fields are resolved lazily
 # (MusicProfileController), so a compact-card query and a full-stats-page query only pay for
-# the fields they actually ask for. See WIREHOOD_PLAN.md's Genres + music profile section.
+# the fields they actually ask for.
 type MusicProfile {
     totalTracksSaved: Int!
     genreBreakdown: [GenreBreakdown!]!

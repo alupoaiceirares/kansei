@@ -114,6 +114,9 @@ services:
       DB_NAME: ${SHIELDWALL_DB_NAME}
       RABBITMQ_HOST: rabbitmq
       REDIS_HOST: redis
+      LOG_FILE: /app/logs/shieldwall.json
+    volumes:
+      - ./logs/shieldwall:/app/logs
     ports:
       - "${SHIELDWALL_PORT}:${SHIELDWALL_PORT}"
     depends_on:
@@ -135,6 +138,9 @@ services:
       SHIELDWALL_URI: http://shieldwall:${SHIELDWALL_PORT}
       WIREHOOD_URI: http://wirehood:${WIREHOOD_PORT}
       REDIS_HOST: redis
+      LOG_FILE: /app/logs/control-tower.json
+    volumes:
+      - ./logs/control-tower:/app/logs
     ports:
       - "${CONTROL_TOWER_PORT}:${CONTROL_TOWER_PORT}"
     depends_on:
@@ -162,9 +168,11 @@ services:
       RABBITMQ_HOST: rabbitmq
       REDIS_HOST: redis
       STORAGE_ROOT: /app/storage
+      LOG_FILE: /app/logs/wirehood.json
     volumes:
       # Bind mount, not a named volume - downloaded tracks/thumbnails survive `docker-compose down -v` and stay browsable directly on the host
       - ${WIREHOOD_STORAGE_HOST_DIR}:/app/storage
+      - ./logs/wirehood:/app/logs
     ports:
       - "${WIREHOOD_PORT}:${WIREHOOD_PORT}"
     depends_on:
@@ -176,6 +184,54 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Log store fed by alloy, filesystem storage, 30d retention via the compactor - see infra/loki/config.yaml
+  loki:
+    image: grafana/loki:3.3.0
+    command: -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./infra/loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Tails ./logs/*/*.json (bind-mounted from every service, container or mvn/IntelliJ writing to the same host path) and ships to loki - see infra/alloy/config.alloy
+  alloy:
+    image: grafana/alloy:v1.5.1
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./infra/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./logs:/var/log/kansei:ro
+    ports:
+      - "127.0.0.1:12345:12345"
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  # UI over the loki datasource (provisioned, infra/grafana/provisioning/) - Explore for logs now, the fdr audit-trail dashboard once Phase 3 lands
+  grafana:
+    image: grafana/grafana:11.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT}:3000"
+    depends_on:
+      loki:
+        condition: service_healthy
+
   courier-one:
     build:
       context: ./services/courier-one
@@ -184,6 +240,9 @@ services:
     environment:
       # Inside the compose network the broker's hostname is the service name, not localhost
       RABBITMQ_HOST: rabbitmq
+      LOG_DIR: /app/logs
+    volumes:
+      - ./logs/courier-one:/app/logs
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -192,3 +251,5 @@ services:
 volumes:
   shieldwall-postgres-data:
   wirehood-postgres-data:
+  loki-data:
+  grafana-data:

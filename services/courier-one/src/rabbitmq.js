@@ -1,4 +1,5 @@
 import amqp from 'amqplib';
+import { info, error } from './logger.js';
 
 const MAIL_EXCHANGE = 'mail.events';
 const QUEUE_NAME = 'courier-one.queue';
@@ -55,19 +56,19 @@ export async function consumeMailEvents(handler) {
     } catch (err) {
       const attempt = retryCount(msg) + 1;
       if (attempt > MAX_RETRIES) {
-        console.error(`Failed to process mail event after ${MAX_RETRIES} retries - giving up`, err);
+        error(`Failed to process mail event after ${MAX_RETRIES} retries - giving up`, err);
         // nack would send it back through the queue's own x-dead-letter-exchange (the retry queue) again - publish straight to the final DLQ instead, then ack to remove it from the main queue without re-triggering that path
         channel.publish(DEAD_LETTER_EXCHANGE, '', msg.content, { headers: msg.properties.headers, persistent: true });
         channel.ack(msg);
       } else {
-        console.error(`Failed to process mail event (attempt ${attempt}/${MAX_RETRIES}), retrying in ${RETRY_DELAY_MS}ms`, err);
+        error(`Failed to process mail event (attempt ${attempt}/${MAX_RETRIES}), retrying in ${RETRY_DELAY_MS}ms`, err);
         // Not requeued on the same queue (would spin immediately) - goes to the retry queue instead, via x-dead-letter-exchange, and comes back after RETRY_DELAY_MS
         channel.nack(msg, false, false);
       }
     }
   });
 
-  console.log(`Listening on exchange "${MAIL_EXCHANGE}", queue "${queue}"`);
+  info(`Listening on exchange "${MAIL_EXCHANGE}", queue "${queue}"`);
   return connection;
 }
 
