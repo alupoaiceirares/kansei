@@ -1,4 +1,4 @@
-# Local dev infra for shieldwall + control-tower + wirehood + courier-one
+# Local dev infra for shieldwall + control-tower + wirehood + fdr + courier-one
 
 services:
   # Dedicated to shieldwall - not a shared project-wide Postgres. Each service that needs a DB gets its own container/volume/env-var namespace
@@ -35,6 +35,28 @@ services:
       - wirehood-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${WIREHOOD_DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Dedicated to fdr - the permanent audit record, see infra/postgres-fdr
+  postgres-fdr:
+    image: postgres:17-alpine
+    environment:
+      # FDR_DB_USERNAME/PASSWORD/NAME read from repo-root .env - must match DB_USERNAME/DB_PASSWORD/DB_NAME in services/fdr/.env
+      POSTGRES_USER: ${FDR_DB_USERNAME}
+      POSTGRES_PASSWORD: ${FDR_DB_PASSWORD}
+      POSTGRES_DB: ${FDR_DB_NAME}
+      # Read by infra/postgres-fdr/init/01-grafana-reader.sh on first init only - the read-only role Grafana's datasource connects as
+      FDR_GRAFANA_DB_PASSWORD: ${FDR_GRAFANA_DB_PASSWORD}
+    ports:
+      # Host-side port from .env - container-side 5432 is fixed by the postgres image itself
+      - "${FDR_DB_PORT}:5432"
+    volumes:
+      - fdr-postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres-fdr/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${FDR_DB_USERNAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -184,6 +206,32 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  fdr:
+    profiles: ["full"]
+    build:
+      context: ./services
+      dockerfile: fdr/Dockerfile
+    env_file:
+      - ./services/fdr/.env
+    environment:
+      DB_HOST: postgres-fdr
+      DB_PORT: "5432" # container-internal, fixed by the postgres image - not the host-published FDR_DB_PORT from .env
+      DB_USERNAME: ${FDR_DB_USERNAME}
+      DB_PASSWORD: ${FDR_DB_PASSWORD}
+      DB_NAME: ${FDR_DB_NAME}
+      RABBITMQ_HOST: rabbitmq
+      LOG_FILE: /app/logs/fdr.json
+    volumes:
+      - ./logs/fdr:/app/logs
+    ports:
+      - "${FDR_PORT}:${FDR_PORT}"
+    depends_on:
+      postgres-fdr:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Log store fed by alloy, filesystem storage, 30d retention via the compactor - see infra/loki/config.yaml
   loki:
     image: grafana/loki:3.3.0
@@ -215,7 +263,7 @@ services:
       loki:
         condition: service_healthy
 
-  # UI over the loki datasource (provisioned, infra/grafana/provisioning/) - Explore for logs now, the fdr audit-trail dashboard once Phase 3 lands
+  # UI over the loki and fdr-audit datasources (both provisioned, infra/grafana/provisioning/) - Explore for logs, the audit-trail dashboard for fdr
   grafana:
     image: grafana/grafana:11.3.1
     environment:
@@ -223,13 +271,18 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      # Read by infra/grafana/provisioning/datasources/fdr-audit.yml's $__env{} substitution
+      FDR_GRAFANA_DB_PASSWORD: ${FDR_GRAFANA_DB_PASSWORD}
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/etc/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     ports:
       - "127.0.0.1:${GRAFANA_PORT}:3000"
     depends_on:
       loki:
+        condition: service_healthy
+      postgres-fdr:
         condition: service_healthy
 
   courier-one:
@@ -251,5 +304,6 @@ services:
 volumes:
   shieldwall-postgres-data:
   wirehood-postgres-data:
+  fdr-postgres-data:
   loki-data:
   grafana-data:

@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: fdr-audit
+    uid: fdr-audit
+    type: postgres
+    access: proxy
+    url: postgres-fdr:5432
+    database: fdr
+    user: grafana_reader
+    secureJsonData:
+      password: $__env{FDR_GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1700
+    editable: false

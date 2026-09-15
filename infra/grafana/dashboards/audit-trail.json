@@ -1,0 +1,93 @@
+{
+  "id": null,
+  "uid": "fdr-audit-trail",
+  "title": "Audit Trail",
+  "tags": ["fdr", "audit"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "fdr-audit" },
+        "query": "SELECT DISTINCT service FROM audit_log ORDER BY 1",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" },
+        "refresh": 2
+      },
+      {
+        "name": "action",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "fdr-audit" },
+        "query": "SELECT DISTINCT action FROM audit_log ORDER BY 1",
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" },
+        "refresh": 2
+      },
+      {
+        "name": "actor",
+        "type": "textbox",
+        "label": "Actor (username or id)",
+        "current": { "text": "", "value": "" }
+      },
+      {
+        "name": "target_id",
+        "type": "textbox",
+        "label": "Target id",
+        "current": { "text": "", "value": "" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Audit log",
+      "type": "table",
+      "datasource": { "type": "postgres", "uid": "fdr-audit" },
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "trace_id" },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View in Loki",
+                    "url": "",
+                    "targetBlank": true,
+                    "internal": {
+                      "query": {
+                        "expr": "{service=~\".+\"} | json | traceId=\"${__value.raw}\"",
+                        "refId": "A"
+                      },
+                      "datasourceUid": "loki"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "format": "table",
+          "rawSql": "SELECT\n  occurred_at AS \"time\",\n  coalesce(actor_username, actor_user_id::text, 'system') || ' ' || lower(replace(action, '_', ' ')) || ' ' || coalesce(target_type, '') || ' ' || coalesce(target_id, '') AS \"event\",\n  service,\n  details,\n  trace_id\nFROM audit_log\nWHERE $__timeFilter(occurred_at)\n  AND service IN ($service)\n  AND action IN ($action)\n  AND ('$actor' = '' OR actor_username ILIKE '%' || '$actor' || '%' OR actor_user_id::text ILIKE '%' || '$actor' || '%')\n  AND ('$target_id' = '' OR target_id ILIKE '%' || '$target_id' || '%')\nORDER BY occurred_at DESC"
+        }
+      ]
+    }
+  ]
+}
