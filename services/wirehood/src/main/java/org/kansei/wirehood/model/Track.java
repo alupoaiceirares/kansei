@@ -13,8 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Canonical row per YouTube video - shared by every user's library (platform-wide dedup), see
- * WIREHOOD_PLAN.md. Timestamps/id aren't set here (unlike shieldwall's JPA @PrePersist) - R2DBC
+ * Canonical row per YouTube video - shared by every user's library (platform-wide dedup). Timestamps/id aren't set here (unlike shieldwall's JPA @PrePersist) - R2DBC
  * has no equivalent lifecycle callback, id is left null so Postgres generates it
  * (id column default gen_random_uuid()) and timestamps are the caller's responsibility for now.
  */
