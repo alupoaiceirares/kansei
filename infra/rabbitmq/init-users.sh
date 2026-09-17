@@ -57,14 +57,18 @@ create_user "wirehood" "$WIREHOOD_RABBITMQ_PASSWORD" \
   '^(wirehood\\.download-jobs|mail\\.events|audit\\.events)$' \
   '^(wirehood\\.download-jobs)$'
 
-# courier-one: owns its mail.events consumer chain (main/retry/dlq queues + retry/dlx exchanges)
+# courier-one: owns its mail.events consumer chain (main/retry/dlq queues + retry/dlx exchanges).
+# Binding a queue needs read on the source exchange too, and a queue's dead-letter-exchange
+# argument needs write on the target, not just the queues themselves.
 create_user "courier-one" "$COURIER_ONE_RABBITMQ_PASSWORD" \
   '^(mail\\.events|mail\\.events\\.retry\\.dlx|mail\\.events\\.dlx|courier-one\\.queue|courier-one\\.queue\\.retry|courier-one\\.queue\\.dlq)$' \
-  '^(mail\\.events\\.retry\\.dlx|mail\\.events\\.dlx|courier-one\\.queue|courier-one\\.queue\\.retry|courier-one\\.queue\\.dlq)$' \
-  '^(courier-one\\.queue|courier-one\\.queue\\.retry|courier-one\\.queue\\.dlq)$'
+  '^(mail\\.events|mail\\.events\\.retry\\.dlx|mail\\.events\\.dlx|courier-one\\.queue|courier-one\\.queue\\.retry|courier-one\\.queue\\.dlq)$' \
+  '^(mail\\.events|mail\\.events\\.retry\\.dlx|mail\\.events\\.dlx|courier-one\\.queue|courier-one\\.queue\\.retry|courier-one\\.queue\\.dlq)$'
 
-# fdr: sole consumer of fdr.audit, owns its dlx/dlq, never publishes (dead-lettering is broker-internal)
+# fdr: sole consumer of fdr.audit, owns its dlx/dlq, never publishes a real message itself.
+# Still needs read on both source exchanges (binding) and write on fdr.audit.dlx (its own
+# dead-letter-exchange argument).
 create_user "fdr" "$FDR_RABBITMQ_PASSWORD" \
   '^(audit\\.events|fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$' \
-  '^$' \
-  '^(fdr\\.audit)$'
+  '^(fdr\\.audit\\.dlx)$' \
+  '^(audit\\.events|fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$'
