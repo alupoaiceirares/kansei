@@ -5,6 +5,7 @@ import org.kansei.wirehood.dto.CommentResponse;
 import org.kansei.wirehood.dto.CreateCommentRequest;
 import org.kansei.wirehood.dto.CursorPageResponse;
 import org.kansei.wirehood.dto.EditCommentRequest;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.TrackComment;
 import org.kansei.wirehood.repository.TrackCommentRepository;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,15 +28,18 @@ public class CommentService {
     private final TrackCommentRepository trackCommentRepository;
     private final ShieldwallUserClient shieldwallUserClient;
     private final AdminAuthService adminAuthService;
+    private final AuditPublisher auditPublisher;
 
     public CommentService(
             TrackCommentRepository trackCommentRepository,
             ShieldwallUserClient shieldwallUserClient,
-            AdminAuthService adminAuthService
+            AdminAuthService adminAuthService,
+            AuditPublisher auditPublisher
     ) {
         this.trackCommentRepository = trackCommentRepository;
         this.shieldwallUserClient = shieldwallUserClient;
         this.adminAuthService = adminAuthService;
+        this.auditPublisher = auditPublisher;
     }
 
     public Mono<CommentResponse> post(UUID trackId, UUID userId, CreateCommentRequest request) {
@@ -117,11 +122,15 @@ public class CommentService {
     // Own comment OR an admin, editing stays owner-only, only delete is admin-gated
     public Mono<Void> softDelete(UUID commentId, UUID userId, String userRole) {
         return findOwnedOrAdmin(commentId, userId, userRole)
-                .map(comment -> {
+                .flatMap(comment -> {
+                    boolean isAdminOverride = !comment.getUserId().equals(userId);
                     comment.setDeletedAt(Instant.now());
-                    return comment;
+                    return trackCommentRepository.save(comment)
+                            .flatMap(saved -> isAdminOverride
+                                    ? auditPublisher.publishWithResolvedUsername("DELETE_COMMENT", userId, "COMMENT", commentId.toString(),
+                                            Map.of("trackId", saved.getTrackId().toString(), "commentAuthorId", saved.getUserId().toString()))
+                                    : Mono.empty());
                 })
-                .flatMap(trackCommentRepository::save)
                 .then();
     }
 

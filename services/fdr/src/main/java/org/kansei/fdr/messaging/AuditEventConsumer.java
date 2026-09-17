@@ -2,8 +2,10 @@ package org.kansei.fdr.messaging;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
@@ -24,10 +26,17 @@ public class AuditEventConsumer {
     }
 
     @RabbitListener(queues = RabbitMQConfig.AUDIT_QUEUE)
-    public void onAuditEvent(AuditEvent event) {
+    public void onAuditEvent(AuditEvent event, @Header(name = AmqpHeaders.RECEIVED_USER_ID, required = false) String amqpUserId) {
         if (event.eventId() == null || event.service() == null || event.action() == null || event.occurredAt() == null) {
             // Thrown, not swallowed - the listener retry/DLQ setup (application.properties) is what actually handles this, a malformed message has no fix on redelivery so it dead-letters after retries exhaust
             throw new IllegalArgumentException("Audit event missing a required field: " + event);
+        }
+
+        // RabbitMQ itself already rejects a user-id property that doesn't match the connection's
+        // authenticated user - this catches the remaining case, a service publishing under its own
+        // real identity but claiming to be a different one in the payload's `service` field
+        if (!event.service().equals(amqpUserId)) {
+            throw new IllegalArgumentException("Audit event service=" + event.service() + " doesn't match AMQP user-id=" + amqpUserId);
         }
 
         String detailsJson = objectMapper.writeValueAsString(event.details() != null ? event.details() : Map.of());

@@ -55,9 +55,22 @@ class FdrIntegrationTest {
     @Autowired
     private AuditRetentionScheduler retentionScheduler;
 
+    // RabbitMQ rejects a message whose user-id property doesn't match the connection's own
+    // authenticated identity (unless that user is tagged "impersonator") - so a well-formed test
+    // event's service field has to be the test connection's own admin username, not a real service name
     private AuditEvent event(UUID eventId) {
-        return new AuditEvent(eventId, "shieldwall", "LOGIN", UUID.randomUUID(), "someuser",
+        return new AuditEvent(eventId, rabbitmq.getAdminUsername(), "LOGIN", UUID.randomUUID(), "someuser",
                 null, null, Map.of("k", "v"), "trace-1", Instant.now());
+    }
+
+    // Real producers set the AMQP user-id property to their own RabbitMQ username - fdr's
+    // consumer now checks it against the payload's service field, so a well-formed test event needs it too
+    private void sendWithUserId(AuditEvent event, String userId) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.AUDIT_EXCHANGE, "shieldwall.login", event,
+                message -> {
+                    message.getMessageProperties().setUserId(userId);
+                    return message;
+                });
     }
 
     private long countRows(UUID eventId) {
@@ -68,7 +81,7 @@ class FdrIntegrationTest {
     @Test
     void validEvent_getsStored() {
         UUID eventId = UUID.randomUUID();
-        rabbitTemplate.convertAndSend(RabbitMQConfig.AUDIT_EXCHANGE, "shieldwall.login", event(eventId));
+        sendWithUserId(event(eventId), rabbitmq.getAdminUsername());
 
         await().atMost(TEN_SECONDS).untilAsserted(() -> assertThat(countRows(eventId)).isEqualTo(1));
     }
@@ -76,21 +89,36 @@ class FdrIntegrationTest {
     @Test
     void duplicateEventId_isNoOp() {
         UUID eventId = UUID.randomUUID();
-        rabbitTemplate.convertAndSend(RabbitMQConfig.AUDIT_EXCHANGE, "shieldwall.login", event(eventId));
+        sendWithUserId(event(eventId), rabbitmq.getAdminUsername());
         await().atMost(TEN_SECONDS).untilAsserted(() -> assertThat(countRows(eventId)).isEqualTo(1));
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.AUDIT_EXCHANGE, "shieldwall.login", event(eventId));
+        sendWithUserId(event(eventId), rabbitmq.getAdminUsername());
         await().pollDelay(TEN_SECONDS.dividedBy(5)).atMost(TEN_SECONDS)
                 .untilAsserted(() -> assertThat(countRows(eventId)).isEqualTo(1));
     }
 
     @Test
     void malformedEvent_deadLetters() {
-        AuditEvent malformed = new AuditEvent(null, "shieldwall", "LOGIN", null, null, null, null, Map.of(), null, Instant.now());
-        rabbitTemplate.convertAndSend(RabbitMQConfig.AUDIT_EXCHANGE, "shieldwall.login", malformed);
+        AuditEvent malformed = new AuditEvent(null, rabbitmq.getAdminUsername(), "LOGIN", null, null, null, null, Map.of(), null, Instant.now());
+        sendWithUserId(malformed, rabbitmq.getAdminUsername());
 
         var dlqMessage = rabbitTemplate.receive(RabbitMQConfig.DEAD_LETTER_QUEUE, 10_000);
         assertThat(dlqMessage).isNotNull();
+    }
+
+    @Test
+    void mismatchedServiceClaim_deadLetters() {
+        // The AMQP user-id matches the real (test) connection identity, so the broker's own
+        // validated_user_id check passes this through - but the payload's `service` field claims
+        // to be someone else, which only fdr's own consumer-side check (not RabbitMQ) catches
+        UUID eventId = UUID.randomUUID();
+        AuditEvent impersonating = new AuditEvent(eventId, "someone-else", "LOGIN", UUID.randomUUID(), "someuser",
+                null, null, Map.of("k", "v"), "trace-1", Instant.now());
+        sendWithUserId(impersonating, rabbitmq.getAdminUsername());
+
+        var dlqMessage = rabbitTemplate.receive(RabbitMQConfig.DEAD_LETTER_QUEUE, 10_000);
+        assertThat(dlqMessage).isNotNull();
+        assertThat(countRows(eventId)).isZero();
     }
 
     @Test

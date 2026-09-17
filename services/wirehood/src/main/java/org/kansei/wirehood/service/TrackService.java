@@ -6,6 +6,7 @@ import org.kansei.wirehood.dto.PageResponse;
 import org.kansei.wirehood.dto.TrackDetailResponse;
 import org.kansei.wirehood.dto.TrackFormatSummary;
 import org.kansei.wirehood.dto.UpdateTrackMetadataRequest;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackFormat;
 import org.kansei.wirehood.model.TrackFormatFavorite;
@@ -53,6 +54,7 @@ public class TrackService {
     private final TrackFormatFavoriteRepository trackFormatFavoriteRepository;
     private final TrackFormatPlayCountRepository trackFormatPlayCountRepository;
     private final AdminAuthService adminAuthService;
+    private final AuditPublisher auditPublisher;
 
     public TrackService(
             TrackRepository trackRepository,
@@ -61,7 +63,8 @@ public class TrackService {
             TrackThumbnailSubmissionRepository trackThumbnailSubmissionRepository,
             TrackFormatFavoriteRepository trackFormatFavoriteRepository,
             TrackFormatPlayCountRepository trackFormatPlayCountRepository,
-            AdminAuthService adminAuthService
+            AdminAuthService adminAuthService,
+            AuditPublisher auditPublisher
     ) {
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
@@ -70,6 +73,7 @@ public class TrackService {
         this.trackFormatFavoriteRepository = trackFormatFavoriteRepository;
         this.trackFormatPlayCountRepository = trackFormatPlayCountRepository;
         this.adminAuthService = adminAuthService;
+        this.auditPublisher = auditPublisher;
     }
 
     // userId optional - anonymous browsing still works (matches this endpoint's existing no-auth behavior), just
@@ -209,10 +213,12 @@ public class TrackService {
                     track.setUpdatedAt(Instant.now());
                     return trackRepository.save(track);
                 })
-                .flatMap(saved -> trackFormatRepository.findByTrackId(trackId)
-                        .map(TrackFormatSummary::from)
-                        .collectList()
-                        .map(formats -> TrackDetailResponse.of(saved, formats)));
+                .flatMap(saved -> auditPublisher.publishWithResolvedUsername("EDIT_TRACK", adminUserId, "TRACK", trackId.toString(),
+                                Map.of("title", saved.getTitle(), "artist", saved.getArtist()))
+                        .then(trackFormatRepository.findByTrackId(trackId)
+                                .map(TrackFormatSummary::from)
+                                .collectList()
+                                .map(formats -> TrackDetailResponse.of(saved, formats))));
     }
 
     // Admin-only, hide from regular users, keep on server/DB for admin/archive purposes; distinct from hardDelete below
@@ -224,7 +230,8 @@ public class TrackService {
                     track.setUpdatedAt(Instant.now());
                     return trackRepository.save(track);
                 })
-                .then();
+                .flatMap(saved -> auditPublisher.publishWithResolvedUsername("SET_TRACK_VISIBILITY", adminUserId, "TRACK", trackId.toString(),
+                        Map.of("visible", visible)));
     }
 
     // Admin-only, permanent, the audit_log row is what preserves the history, not the row itself
@@ -238,7 +245,9 @@ public class TrackService {
                                 trackThumbnailSubmissionRepository.findByTrackId(trackId).collectList()
                         )
                         .flatMap(gathered -> trackRepository.delete(track)
-                                .then(deleteTrackFiles(track, gathered.getT1(), gathered.getT2()))));
+                                .then(deleteTrackFiles(track, gathered.getT1(), gathered.getT2()))
+                                .then(auditPublisher.publishWithResolvedUsername("DELETE_TRACK", adminUserId, "TRACK", trackId.toString(),
+                                        Map.of("title", track.getTitle(), "artist", track.getArtist())))));
     }
 
     private Mono<Void> deleteTrackFiles(Track track, List<TrackFormat> formats, List<TrackThumbnailSubmission> submissions) {

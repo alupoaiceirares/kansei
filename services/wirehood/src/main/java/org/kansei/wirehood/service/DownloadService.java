@@ -7,6 +7,7 @@ import org.kansei.wirehood.dto.FailedDownloadItem;
 import org.kansei.wirehood.dto.PendingDownloadItem;
 import org.kansei.wirehood.dto.SubmitDownloadRequest;
 import org.kansei.wirehood.dto.SubmitDownloadResponse;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.messaging.DownloadJobPublisher;
 import org.kansei.wirehood.model.DownloadRequest;
 import org.kansei.wirehood.model.Track;
@@ -41,6 +42,7 @@ public class DownloadService {
     private final DownloadRequestRepository downloadRequestRepository;
     private final DownloadJobPublisher downloadJobPublisher;
     private final DownloadEventPublisher downloadEventPublisher;
+    private final AuditPublisher auditPublisher;
 
     public DownloadService(
             TrackRepository trackRepository,
@@ -48,7 +50,8 @@ public class DownloadService {
             UserLibraryRepository userLibraryRepository,
             DownloadRequestRepository downloadRequestRepository,
             DownloadJobPublisher downloadJobPublisher,
-            DownloadEventPublisher downloadEventPublisher
+            DownloadEventPublisher downloadEventPublisher,
+            AuditPublisher auditPublisher
     ) {
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
@@ -56,13 +59,18 @@ public class DownloadService {
         this.downloadRequestRepository = downloadRequestRepository;
         this.downloadJobPublisher = downloadJobPublisher;
         this.downloadEventPublisher = downloadEventPublisher;
+        this.auditPublisher = auditPublisher;
     }
 
     // Entry point for POST /wirehood/downloads - looks up the track by youtube_video_id, branches to existing-track handling or creates a brand new one
+    // Self-service action, not admin-gated - still worth an audit trail entry for a "who downloaded what" record
     public Mono<SubmitDownloadResponse> submit(UUID userId, SubmitDownloadRequest request) {
         return trackRepository.findByYoutubeVideoId(request.youtubeVideoId())
                 .flatMap(existing -> handleExistingTrack(userId, existing, request))
-                .switchIfEmpty(Mono.defer(() -> createTrackAndQueue(userId, request)));
+                .switchIfEmpty(Mono.defer(() -> createTrackAndQueue(userId, request)))
+                .flatMap(response -> auditPublisher.publishWithResolvedUsername("DOWNLOAD_TRACK", userId, "TRACK", response.trackId().toString(),
+                                Map.of("format", request.format(), "outcome", response.outcome().toString(), "youtubeVideoId", request.youtubeVideoId()))
+                        .thenReturn(response));
     }
 
     // Track already exists - route by whether the SPECIFIC requested format has been attempted yet
