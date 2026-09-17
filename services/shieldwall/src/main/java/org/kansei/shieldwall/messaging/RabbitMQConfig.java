@@ -13,9 +13,17 @@ public class RabbitMQConfig {
     // Consumed by the courier-one service - not declared here as a queue since shieldwall only publishes. The exchange is declared on both sides so either can start first.
     public static final String MAIL_EXCHANGE = "mail.events";
 
+    // Consumed by fdr - not declared here as a queue since shieldwall only publishes. Declared on both sides so whichever service starts first doesn't fail.
+    public static final String AUDIT_EXCHANGE = "audit.events";
+
     @Bean
     public TopicExchange mailExchange() {
         return new TopicExchange(MAIL_EXCHANGE);
+    }
+
+    @Bean
+    public TopicExchange auditExchange() {
+        return new TopicExchange(AUDIT_EXCHANGE);
     }
 
     @Bean

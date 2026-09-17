@@ -6,6 +6,7 @@ import org.kansei.wirehood.dto.ExportTrackSummary;
 import org.kansei.wirehood.dto.FormatExport;
 import org.kansei.wirehood.dto.LibraryTrackExport;
 import org.kansei.wirehood.dto.PlaylistExport;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.Playlist;
 import org.kansei.wirehood.model.PlaylistTrack;
 import org.kansei.wirehood.model.Track;
@@ -36,28 +37,35 @@ public class DataExportService {
     private final UserLibraryRepository userLibraryRepository;
     private final TrackRepository trackRepository;
     private final TrackFormatRepository trackFormatRepository;
+    private final AuditPublisher auditPublisher;
 
     public DataExportService(
             PlaylistRepository playlistRepository,
             PlaylistTrackRepository playlistTrackRepository,
             UserLibraryRepository userLibraryRepository,
             TrackRepository trackRepository,
-            TrackFormatRepository trackFormatRepository
+            TrackFormatRepository trackFormatRepository,
+            AuditPublisher auditPublisher
     ) {
         this.playlistRepository = playlistRepository;
         this.playlistTrackRepository = playlistTrackRepository;
         this.userLibraryRepository = userLibraryRepository;
         this.trackRepository = trackRepository;
         this.trackFormatRepository = trackFormatRepository;
+        this.auditPublisher = auditPublisher;
     }
 
+    // Self-service action, not admin-gated - still worth an audit trail entry since it's a full personal-data pull
     public Mono<DataExportResponse> export(UUID userId) {
         return Mono.zip(exportPlaylists(userId), exportLibrary(userId))
                 .map(resolved -> new DataExportResponse(
                         resolved.getT1(),
                         resolved.getT2(),
                         new ExportCounts(resolved.getT2().size(), resolved.getT1().size())
-                ));
+                ))
+                .flatMap(response -> auditPublisher.publishWithResolvedUsername("EXPORT_DATA", userId, "USER", userId.toString(),
+                                Map.of("playlistsOwned", response.counts().playlistsOwned(), "tracksDownloaded", response.counts().tracksDownloaded()))
+                        .thenReturn(response));
     }
 
     // One query per owned playlist for its track order - not a hot path, this is a one-off export action

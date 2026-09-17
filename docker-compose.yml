@@ -107,7 +107,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
-      # Overrides the guest/guest default - must match RABBITMQ_USERNAME/PASSWORD in services/shieldwall/.env and services/courier-one/.env. Read from repo-root .env
+      # Broker admin login (management UI + rabbitmq-init below) - no service authenticates as this
+      # one anymore, each gets its own scoped user via rabbitmq-init. Read from repo-root .env
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
@@ -119,6 +120,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Creates shieldwall/wirehood/courier-one/fdr as separate scoped RabbitMQ users (regex
+  # permissions per service) via the management HTTP API - see infra/rabbitmq/init-users.sh.
+  # Runs once per `up`, exits 0 when done; other services wait on service_completed_successfully.
+  rabbitmq-init:
+    image: curlimages/curl:8.11.0
+    entrypoint: ["/bin/sh", "/init-users.sh"]
+    volumes:
+      - ./infra/rabbitmq/init-users.sh:/init-users.sh:ro
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      SHIELDWALL_RABBITMQ_PASSWORD: ${SHIELDWALL_RABBITMQ_PASSWORD}
+      WIREHOOD_RABBITMQ_PASSWORD: ${WIREHOOD_RABBITMQ_PASSWORD}
+      COURIER_ONE_RABBITMQ_PASSWORD: ${COURIER_ONE_RABBITMQ_PASSWORD}
+      FDR_RABBITMQ_PASSWORD: ${FDR_RABBITMQ_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
   shieldwall:
     profiles: ["full"]
@@ -135,8 +155,11 @@ services:
       DB_PASSWORD: ${SHIELDWALL_DB_PASSWORD}
       DB_NAME: ${SHIELDWALL_DB_NAME}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: shieldwall
+      RABBITMQ_PASSWORD: ${SHIELDWALL_RABBITMQ_PASSWORD}
       REDIS_HOST: redis
       LOG_FILE: /app/logs/shieldwall.json
+      AUDIT_FALLBACK_FILE: /app/logs/audit-fallback.jsonl
     volumes:
       - ./logs/shieldwall:/app/logs
     ports:
@@ -144,8 +167,8 @@ services:
     depends_on:
       postgres-shieldwall:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   control-tower:
@@ -188,9 +211,12 @@ services:
       DB_PASSWORD: ${WIREHOOD_DB_PASSWORD}
       DB_NAME: ${WIREHOOD_DB_NAME}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: wirehood
+      RABBITMQ_PASSWORD: ${WIREHOOD_RABBITMQ_PASSWORD}
       REDIS_HOST: redis
       STORAGE_ROOT: /app/storage
       LOG_FILE: /app/logs/wirehood.json
+      AUDIT_FALLBACK_FILE: /app/logs/audit-fallback.jsonl
     volumes:
       # Bind mount, not a named volume - downloaded tracks/thumbnails survive `docker-compose down -v` and stay browsable directly on the host
       - ${WIREHOOD_STORAGE_HOST_DIR}:/app/storage
@@ -200,8 +226,8 @@ services:
     depends_on:
       postgres-wirehood:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
@@ -220,6 +246,8 @@ services:
       DB_PASSWORD: ${FDR_DB_PASSWORD}
       DB_NAME: ${FDR_DB_NAME}
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: fdr
+      RABBITMQ_PASSWORD: ${FDR_RABBITMQ_PASSWORD}
       LOG_FILE: /app/logs/fdr.json
     volumes:
       - ./logs/fdr:/app/logs
@@ -228,8 +256,8 @@ services:
     depends_on:
       postgres-fdr:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   # Log store fed by alloy, filesystem storage, 30d retention via the compactor - see infra/loki/config.yaml
@@ -293,12 +321,14 @@ services:
     environment:
       # Inside the compose network the broker's hostname is the service name, not localhost
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: courier-one
+      RABBITMQ_PASSWORD: ${COURIER_ONE_RABBITMQ_PASSWORD}
       LOG_DIR: /app/logs
     volumes:
       - ./logs/courier-one:/app/logs
     depends_on:
-      rabbitmq:
-        condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:

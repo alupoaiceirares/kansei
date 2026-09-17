@@ -2,6 +2,7 @@ package org.kansei.wirehood.service;
 
 import org.kansei.wirehood.client.ShieldwallUserClient;
 import org.kansei.wirehood.dto.WirehoodUserResponse;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.WirehoodUser;
 import org.kansei.wirehood.repository.WirehoodUserRepository;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -20,17 +22,20 @@ public class WirehoodUserService {
     private final AdminAuthService adminAuthService;
     private final ShieldwallUserClient shieldwallUserClient;
     private final MailEventPublisher mailEventPublisher;
+    private final AuditPublisher auditPublisher;
 
     public WirehoodUserService(
             WirehoodUserRepository wirehoodUserRepository,
             AdminAuthService adminAuthService,
             ShieldwallUserClient shieldwallUserClient,
-            MailEventPublisher mailEventPublisher
+            MailEventPublisher mailEventPublisher,
+            AuditPublisher auditPublisher
     ) {
         this.wirehoodUserRepository = wirehoodUserRepository;
         this.adminAuthService = adminAuthService;
         this.shieldwallUserClient = shieldwallUserClient;
         this.mailEventPublisher = mailEventPublisher;
+        this.auditPublisher = auditPublisher;
     }
 
     // Backs re-checking role/enabled after opt-in - the frontend only ever learns its role once,
@@ -48,11 +53,13 @@ public class WirehoodUserService {
     public Mono<WirehoodUserResponse> optIn(UUID userId, String role) {
         return wirehoodUserRepository.findById(userId)
                 .switchIfEmpty(Mono.defer(() -> wirehoodUserRepository.save(
-                        WirehoodUser.builder()
-                                .userId(userId)
-                                .joinedAt(Instant.now())
-                                .build()
-                )))
+                                WirehoodUser.builder()
+                                        .userId(userId)
+                                        .joinedAt(Instant.now())
+                                        .build()
+                        )
+                        .flatMap(saved -> auditPublisher.publishWithResolvedUsername("OPT_IN", userId, "WIREHOOD_USER", userId.toString(), null)
+                                .thenReturn(saved))))
                 .map(user -> WirehoodUserResponse.of(user, role));
     }
 
@@ -73,6 +80,6 @@ public class WirehoodUserService {
                     target.setEnabled(false);
                     return wirehoodUserRepository.save(target);
                 })
-                .then();
+                .then(auditPublisher.publishWithResolvedUsername("DISABLE_USER", adminUserId, "WIREHOOD_USER", targetUserId.toString(), null));
     }
 }

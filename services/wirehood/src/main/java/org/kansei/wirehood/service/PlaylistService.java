@@ -10,6 +10,7 @@ import org.kansei.wirehood.dto.PlaylistResponse;
 import org.kansei.wirehood.dto.PlaylistTrackItem;
 import org.kansei.wirehood.dto.ReorderPlaylistRequest;
 import org.kansei.wirehood.dto.UpdatePlaylistRequest;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.Playlist;
 import org.kansei.wirehood.model.PlaylistCollaborator;
 import org.kansei.wirehood.model.PlaylistTrack;
@@ -40,6 +41,7 @@ public class PlaylistService {
     private final TrackRepository trackRepository;
     private final ShieldwallUserClient shieldwallUserClient;
     private final AdminAuthService adminAuthService;
+    private final AuditPublisher auditPublisher;
 
     public PlaylistService(
             PlaylistRepository playlistRepository,
@@ -47,7 +49,8 @@ public class PlaylistService {
             PlaylistCollaboratorRepository playlistCollaboratorRepository,
             TrackRepository trackRepository,
             ShieldwallUserClient shieldwallUserClient,
-            AdminAuthService adminAuthService
+            AdminAuthService adminAuthService,
+            AuditPublisher auditPublisher
     ) {
         this.playlistRepository = playlistRepository;
         this.playlistTrackRepository = playlistTrackRepository;
@@ -55,6 +58,7 @@ public class PlaylistService {
         this.trackRepository = trackRepository;
         this.shieldwallUserClient = shieldwallUserClient;
         this.adminAuthService = adminAuthService;
+        this.auditPublisher = auditPublisher;
     }
 
     // ownerUsername is always null here, not "Unknown user" - the owner IS the caller, who already knows their own username client-side, so there's no reason to round-trip to shieldwall for it
@@ -119,23 +123,34 @@ public class PlaylistService {
     // Owner OR an admin, ownerUsername left null when the caller IS the owner, an admin editing someone else's playlist pays the lookup instead
     public Mono<PlaylistResponse> update(UUID playlistId, UUID userId, String userRole, UpdatePlaylistRequest request) {
         return requireOwnerOrAdmin(playlistId, userId, userRole)
-                .map(playlist -> {
+                .flatMap(playlist -> {
+                    boolean isAdminOverride = !playlist.getOwnerId().equals(userId);
                     playlist.setName(request.name());
                     playlist.setShared(request.shared());
-                    return playlist;
-                })
-                .flatMap(playlistRepository::save)
-                .flatMap(saved -> playlistTrackRepository.countByPlaylistId(playlistId)
-                        .flatMap(count -> saved.getOwnerId().equals(userId)
-                                // caller IS the owner - raw null, not the factory's "Unknown user" fallback, they already know their own name
-                                ? Mono.just(new PlaylistResponse(saved.getId(), saved.getOwnerId(), null, saved.getName(), saved.isShared(), saved.getCreatedAt(), count))
-                                : shieldwallUserClient.resolveUsernames(List.of(saved.getOwnerId()))
-                                        .map(usernames -> PlaylistResponse.from(saved, usernames.get(saved.getOwnerId()), count))));
+                    return playlistRepository.save(playlist)
+                            .flatMap(saved -> (isAdminOverride
+                                    ? auditPublisher.publishWithResolvedUsername("EDIT_PLAYLIST", userId, "PLAYLIST", playlistId.toString(),
+                                            Map.of("name", saved.getName()))
+                                    : Mono.<Void>empty())
+                                    .then(playlistTrackRepository.countByPlaylistId(playlistId)
+                                            .flatMap(count -> isAdminOverride
+                                                    ? shieldwallUserClient.resolveUsernames(List.of(saved.getOwnerId()))
+                                                            .map(usernames -> PlaylistResponse.from(saved, usernames.get(saved.getOwnerId()), count))
+                                                    // caller IS the owner - raw null, not the factory's "Unknown user" fallback, they already know their own name
+                                                    : Mono.just(new PlaylistResponse(saved.getId(), saved.getOwnerId(), null, saved.getName(), saved.isShared(), saved.getCreatedAt(), count)))));
+                });
     }
 
     public Mono<Void> delete(UUID playlistId, UUID userId, String userRole) {
         return requireOwnerOrAdmin(playlistId, userId, userRole)
-                .flatMap(playlistRepository::delete);
+                .flatMap(playlist -> {
+                    boolean isAdminOverride = !playlist.getOwnerId().equals(userId);
+                    return playlistRepository.delete(playlist)
+                            .then(isAdminOverride
+                                    ? auditPublisher.publishWithResolvedUsername("DELETE_PLAYLIST", userId, "PLAYLIST", playlistId.toString(),
+                                            Map.of("name", playlist.getName(), "ownerId", playlist.getOwnerId().toString()))
+                                    : Mono.empty());
+                });
     }
 
     public Mono<Void> addTrack(UUID playlistId, UUID userId, AddTrackRequest request) {

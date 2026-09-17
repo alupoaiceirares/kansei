@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -41,6 +42,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final MailEventPublisher mailEventPublisher;
+    private final AuditPublisher auditPublisher;
     private final StringRedisTemplate redisTemplate;
 
     @Value("${account.deactivation.retention-months:3}")
@@ -54,12 +56,13 @@ public class UserService {
 
     public UserService(UserRepository userRepository, VerificationTokenRepository verificationTokenRepository,
                         PasswordEncoder passwordEncoder, JwtService jwtService, MailEventPublisher mailEventPublisher,
-                        StringRedisTemplate redisTemplate) {
+                        AuditPublisher auditPublisher, StringRedisTemplate redisTemplate) {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.mailEventPublisher = mailEventPublisher;
+        this.auditPublisher = auditPublisher;
         this.redisTemplate = redisTemplate;
     }
 
@@ -86,6 +89,7 @@ public class UserService {
 
         User saved = userRepository.save(user);
         createAndSendToken(saved, TokenType.EMAIL_VERIFICATION);
+        auditPublisher.publish("REGISTER", saved.getId(), saved.getUsername(), "USER", saved.getId().toString(), null);
 
         // No JWT here - login is blocked until the confirmation link is clicked.
         return new MessageResponse("Registration successful. Check your email to verify your account before logging in.");
@@ -93,32 +97,40 @@ public class UserService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(normalizeEmail(request.email()))
-                .orElseThrow(InvalidCredentialsException::new);
+        String email = normalizeEmail(request.email());
+        try {
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(InvalidCredentialsException::new);
 
-        // Password checked before touching active/deactivatedAt - never reveal account state to someone who isn't logged in
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new InvalidCredentialsException();
-        }
-
-        if (!user.isActive()) {
-            if (user.getDeactivatedAt() != null && withinRetentionWindow(user.getDeactivatedAt())) {
-                // Still within the retention window - logging back in undoes the deactivation
-                user.setActive(true);
-                user.setDeactivatedAt(null);
-                userRepository.save(user);
-            } else {
+            // Password checked before touching active/deactivatedAt - never reveal account state to someone who isn't logged in
+            if (!passwordEncoder.matches(request.password(), user.getPassword())) {
                 throw new InvalidCredentialsException();
             }
-        }
 
-        // Same generic error as wrong-password/unknown-email/disabled - don't reveal that the password was actually correct to someone probing an unverified account
-        if (!user.isEmailVerified()) {
-            throw new InvalidCredentialsException();
-        }
+            if (!user.isActive()) {
+                if (user.getDeactivatedAt() != null && withinRetentionWindow(user.getDeactivatedAt())) {
+                    // Still within the retention window - logging back in undoes the deactivation
+                    user.setActive(true);
+                    user.setDeactivatedAt(null);
+                    userRepository.save(user);
+                } else {
+                    throw new InvalidCredentialsException();
+                }
+            }
 
-        String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getId(), user.getUsername());
+            // Same generic error as wrong-password/unknown-email/disabled - don't reveal that the password was actually correct to someone probing an unverified account
+            if (!user.isEmailVerified()) {
+                throw new InvalidCredentialsException();
+            }
+
+            String token = jwtService.generateToken(user);
+            auditPublisher.publish("LOGIN", user.getId(), user.getUsername(), "USER", user.getId().toString(), null);
+            return new AuthResponse(token, user.getId(), user.getUsername());
+        } catch (InvalidCredentialsException ex) {
+            // Actor is null here on purpose - whichever case this was (unknown email, wrong password, disabled, unverified), the login itself never succeeded, and login()'s own generic error already avoids telling the caller which. Never log the password.
+            auditPublisher.publish("LOGIN_FAILED", null, null, null, null, Map.of("attemptedEmail", email));
+            throw ex;
+        }
     }
 
     public UserResponse getCurrentUser(UUID userId) {
@@ -167,6 +179,8 @@ public class UserService {
         User saved = userRepository.save(user);
         if (credentialsBumped) {
             publishCredentialsVersion(saved);
+            auditPublisher.publish("CHANGE_EMAIL", saved.getId(), saved.getUsername(), "USER", saved.getId().toString(),
+                    Map.of("newEmail", saved.getEmail()));
         }
         return toUserResponse(saved);
     }
@@ -187,6 +201,7 @@ public class UserService {
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
         publishCredentialsVersion(user);
+        auditPublisher.publish("CHANGE_PASSWORD", user.getId(), user.getUsername(), "USER", user.getId().toString(), null);
     }
 
     @Transactional
@@ -206,6 +221,7 @@ public class UserService {
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
         publishCredentialsVersion(user);
+        auditPublisher.publish("DEACTIVATE_ACCOUNT", user.getId(), user.getUsername(), "USER", user.getId().toString(), null);
     }
 
     /**
@@ -216,6 +232,9 @@ public class UserService {
         Instant cutoff = Instant.now().atZone(ZoneOffset.UTC).minusMonths(retentionMonths).toInstant();
         List<User> expired = userRepository.findByActiveFalseAndDeactivatedAtBefore(cutoff);
         userRepository.deleteAll(expired);
+        // Actor is null - this is the scheduler acting, not a user or admin
+        expired.forEach(user -> auditPublisher.publish("ACCOUNT_PURGED", null, null, "USER", user.getId().toString(),
+                Map.of("email", user.getEmail())));
 
         verificationTokenRepository.deleteByExpiresAtBefore(Instant.now());
     }
@@ -246,6 +265,7 @@ public class UserService {
 
         verificationToken.setUsedAt(Instant.now());
         verificationTokenRepository.save(verificationToken);
+        auditPublisher.publish("VERIFY_EMAIL", user.getId(), user.getUsername(), "USER", user.getId().toString(), null);
 
         // Clicking the link proves email ownership - log them straight in
         String token = jwtService.generateToken(user);
@@ -266,7 +286,10 @@ public class UserService {
     public MessageResponse requestPasswordReset(PasswordResetRequest request) {
         // Same response regardless of match - don't reveal whether the email is registered
         userRepository.findByEmail(normalizeEmail(request.email()))
-                .ifPresent(user -> createAndSendToken(user, TokenType.PASSWORD_RESET));
+                .ifPresent(user -> {
+                    createAndSendToken(user, TokenType.PASSWORD_RESET);
+                    auditPublisher.publish("PASSWORD_RESET_REQUESTED", user.getId(), user.getUsername(), "USER", user.getId().toString(), null);
+                });
 
         return new MessageResponse("If that email is registered, a password reset link has been sent.");
     }
@@ -286,6 +309,7 @@ public class UserService {
         user.setCredentialsVersion(user.getCredentialsVersion() + 1);
         userRepository.save(user);
         publishCredentialsVersion(user);
+        auditPublisher.publish("PASSWORD_RESET_COMPLETED", user.getId(), user.getUsername(), "USER", user.getId().toString(), null);
 
         verificationToken.setUsedAt(Instant.now());
         verificationTokenRepository.save(verificationToken);
@@ -309,6 +333,8 @@ public class UserService {
         if (remaining.isPositive()) {
             redisTemplate.opsForValue().set(BLACKLISTED_JTI_KEY_PREFIX + jti, "1", remaining);
         }
+        UUID userId = jwtService.extractUserId(token);
+        auditPublisher.publish("LOGOUT", userId, jwtService.extractUsername(token), "USER", userId.toString(), null);
     }
 
     private void createAndSendToken(User user, TokenType type) {

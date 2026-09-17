@@ -48,6 +48,9 @@ class UserServiceTest {
     private JwtService jwtService;
     @Mock
     private MailEventPublisher mailEventPublisher;
+    // Never stubbed - publish() swallows anything an unstubbed call could throw, so tests don't need to care about it
+    @Mock
+    private AuditPublisher auditPublisher;
     // Never stubbed - publishCredentialsVersion swallows any exception, including the NPE an unstubbed
     // opsForValue() chain would throw, so tests don't need to care about Redis at all
     @Mock
@@ -59,7 +62,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, verificationTokenRepository, passwordEncoder, jwtService, mailEventPublisher, redisTemplate);
+        userService = new UserService(userRepository, verificationTokenRepository, passwordEncoder, jwtService, mailEventPublisher, auditPublisher, redisTemplate);
         ReflectionTestUtils.setField(userService, "retentionMonths", RETENTION_MONTHS);
         ReflectionTestUtils.setField(userService, "verificationExpiryHours", 24);
         ReflectionTestUtils.setField(userService, "passwordResetExpiryMinutes", 60);
@@ -133,7 +136,11 @@ class UserServiceTest {
     void register_mixedCaseEmail_normalizedToLowercaseBeforeCheckAndSave() {
         RegisterRequest request = new RegisterRequest("  User@EXAMPLE.com  ", "newuser", "supersecretpw", null, null);
         when(userRepository.existsByEmail("user@example.com")).thenReturn(false);
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            u.setId(UUID.randomUUID());
+            return u;
+        });
 
         userService.register(request);
 
@@ -641,6 +648,8 @@ class UserServiceTest {
         Instant expiresAt = Instant.now().plusSeconds(120);
         when(jwtService.extractJti(token)).thenReturn("jti-123");
         when(jwtService.extractExpiration(token)).thenReturn(expiresAt);
+        when(jwtService.extractUserId(token)).thenReturn(UUID.randomUUID());
+        when(jwtService.extractUsername(token)).thenReturn("someuser");
         org.springframework.data.redis.core.ValueOperations<String, String> valueOperations = mock(org.springframework.data.redis.core.ValueOperations.class);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
@@ -656,6 +665,8 @@ class UserServiceTest {
         String token = "some.jwt.token";
         when(jwtService.extractJti(token)).thenReturn("jti-123");
         when(jwtService.extractExpiration(token)).thenReturn(Instant.now().minusSeconds(5));
+        when(jwtService.extractUserId(token)).thenReturn(UUID.randomUUID());
+        when(jwtService.extractUsername(token)).thenReturn("someuser");
 
         userService.logout(token);
 

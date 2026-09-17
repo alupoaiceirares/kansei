@@ -2,6 +2,7 @@ package org.kansei.wirehood.service;
 
 import org.kansei.wirehood.dto.GenreProposalResponse;
 import org.kansei.wirehood.dto.PageResponse;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.Genre;
 import org.kansei.wirehood.model.GenreProposal;
 import org.kansei.wirehood.model.GenreProposalStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -28,15 +30,18 @@ public class GenreProposalService {
     private final GenreProposalRepository genreProposalRepository;
     private final GenreRepository genreRepository;
     private final AdminAuthService adminAuthService;
+    private final AuditPublisher auditPublisher;
 
     public GenreProposalService(
             GenreProposalRepository genreProposalRepository,
             GenreRepository genreRepository,
-            AdminAuthService adminAuthService
+            AdminAuthService adminAuthService,
+            AuditPublisher auditPublisher
     ) {
         this.genreProposalRepository = genreProposalRepository;
         this.genreRepository = genreRepository;
         this.adminAuthService = adminAuthService;
+        this.auditPublisher = auditPublisher;
     }
 
     // Any wirehood user - rejects up front if the name already exists as a real genre or as
@@ -80,13 +85,17 @@ public class GenreProposalService {
                 .then(findPendingOr409(proposalId))
                 .flatMap(proposal -> genreRepository.existsByNameIgnoreCase(proposal.getName())
                         .flatMap(alreadyExists -> alreadyExists ? Mono.empty() : genreRepository.save(Genre.builder().name(proposal.getName()).build()))
-                        .then(markReviewed(proposal, GenreProposalStatus.APPROVED, adminUserId)));
+                        .then(markReviewed(proposal, GenreProposalStatus.APPROVED, adminUserId))
+                        .then(auditPublisher.publishWithResolvedUsername("APPROVE_GENRE_PROPOSAL", adminUserId, "GENRE_PROPOSAL", proposalId.toString(),
+                                Map.of("name", proposal.getName()))));
     }
 
     public Mono<Void> reject(UUID proposalId, UUID adminUserId, String adminRole) {
         return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findPendingOr409(proposalId))
-                .flatMap(proposal -> markReviewed(proposal, GenreProposalStatus.REJECTED, adminUserId));
+                .flatMap(proposal -> markReviewed(proposal, GenreProposalStatus.REJECTED, adminUserId)
+                        .then(auditPublisher.publishWithResolvedUsername("REJECT_GENRE_PROPOSAL", adminUserId, "GENRE_PROPOSAL", proposalId.toString(),
+                                Map.of("name", proposal.getName()))));
     }
 
     private Mono<Void> markReviewed(GenreProposal proposal, GenreProposalStatus status, UUID adminUserId) {

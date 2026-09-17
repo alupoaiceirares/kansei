@@ -2,6 +2,7 @@ package org.kansei.wirehood.service;
 
 import org.kansei.wirehood.dto.PageResponse;
 import org.kansei.wirehood.dto.ThumbnailSubmissionResponse;
+import org.kansei.wirehood.messaging.AuditPublisher;
 import org.kansei.wirehood.model.ThumbnailSubmissionStatus;
 import org.kansei.wirehood.model.Track;
 import org.kansei.wirehood.model.TrackThumbnailSubmission;
@@ -30,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -41,6 +43,7 @@ public class ThumbnailSubmissionService {
     private final TrackRepository trackRepository;
     private final TrackThumbnailSubmissionRepository submissionRepository;
     private final AdminAuthService adminAuthService;
+    private final AuditPublisher auditPublisher;
     private final Path storageRoot;
     private final Path submissionsDir;
 
@@ -48,11 +51,13 @@ public class ThumbnailSubmissionService {
             TrackRepository trackRepository,
             TrackThumbnailSubmissionRepository submissionRepository,
             AdminAuthService adminAuthService,
+            AuditPublisher auditPublisher,
             @Value("${wirehood.storage.root-dir}") String storageRootDir
     ) {
         this.trackRepository = trackRepository;
         this.submissionRepository = submissionRepository;
         this.adminAuthService = adminAuthService;
+        this.auditPublisher = auditPublisher;
         this.storageRoot = Path.of(storageRootDir);
         this.submissionsDir = this.storageRoot.resolve("thumbnail-submissions");
     }
@@ -109,7 +114,9 @@ public class ThumbnailSubmissionService {
                 .then(findPendingOr409(submissionId))
                 .flatMap(submission -> trackRepository.findById(submission.getTrackId())
                         .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Track not found")))
-                        .flatMap(track -> applyApproval(track, submission, adminUserId)));
+                        .flatMap(track -> applyApproval(track, submission, adminUserId))
+                        .then(auditPublisher.publishWithResolvedUsername("APPROVE_THUMBNAIL", adminUserId, "THUMBNAIL_SUBMISSION", submissionId.toString(),
+                                Map.of("trackId", submission.getTrackId().toString()))));
     }
 
     private Mono<Void> applyApproval(Track track, TrackThumbnailSubmission submission, UUID adminUserId) {
@@ -129,7 +136,9 @@ public class ThumbnailSubmissionService {
         return adminAuthService.requireAdmin(adminUserId, adminRole)
                 .then(findPendingOr409(submissionId))
                 .flatMap(submission -> deleteFileIfPresent(Path.of(submission.getFilePath()))
-                        .then(markReviewed(submission, ThumbnailSubmissionStatus.REJECTED, adminUserId)));
+                        .then(markReviewed(submission, ThumbnailSubmissionStatus.REJECTED, adminUserId))
+                        .then(auditPublisher.publishWithResolvedUsername("REJECT_THUMBNAIL", adminUserId, "THUMBNAIL_SUBMISSION", submissionId.toString(),
+                                Map.of("trackId", submission.getTrackId().toString()))));
     }
 
     // concatMap, not flatMap - same R2DBC concurrent-write binding issue documented in GenreTagService.tag
