@@ -1,4 +1,4 @@
-# Local dev infra for shieldwall + control-tower + wirehood + fdr + courier-one
+# Local dev infra for shieldwall + control-tower + wirehood + fdr + tailwind + courier-one
 
 services:
   # Dedicated to shieldwall - not a shared project-wide Postgres. Each service that needs a DB gets its own container/volume/env-var namespace
@@ -61,6 +61,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # Dedicated to tailwind
+  postgres-tailwind:
+    image: postgres:17-alpine
+    environment:
+      # TAILWIND_DB_USERNAME/PASSWORD/NAME read from repo-root .env - must match DB_USERNAME/DB_PASSWORD/DB_NAME in services/tailwind/.env
+      POSTGRES_USER: ${TAILWIND_DB_USERNAME}
+      POSTGRES_PASSWORD: ${TAILWIND_DB_PASSWORD}
+      POSTGRES_DB: ${TAILWIND_DB_NAME}
+    ports:
+      # Host-side port from .env - container-side 5432 is fixed by the postgres image itself
+      - "${TAILWIND_DB_PORT}:5432"
+    volumes:
+      - tailwind-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TAILWIND_DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   # Shared across services, wirehood's SSE tickets + username cache, control-tower/wirehood's credentials_version cache default user keeps REDIS_PASSWORD + full access, used for redis-cli/manual debugging and this healthcheck
   # Each app service now authenticates as its own scoped ACL user instead (see spring.data.redis.username in each service's application.properties), not default
   redis:
@@ -93,6 +112,14 @@ services:
       - ">${WIREHOOD_REDIS_PASSWORD}"
       - "~wirehood:*"
       - "~shieldwall:credentials-version:*"
+      - "+@all"
+      - "-@dangerous"
+      - "+info"
+      - "--user"
+      - "tailwind"
+      - "on"
+      - ">${TAILWIND_REDIS_PASSWORD}"
+      - "~tailwind:*"
       - "+@all"
       - "-@dangerous"
       - "+info"
@@ -182,6 +209,7 @@ services:
       # Inside the compose network, shieldwall/wirehood are reached by service name, not localhost - same reasoning as shieldwall's DB_HOST override above
       SHIELDWALL_URI: http://shieldwall:${SHIELDWALL_PORT}
       WIREHOOD_URI: http://wirehood:${WIREHOOD_PORT}
+      TAILWIND_URI: http://tailwind:${TAILWIND_PORT}
       REDIS_HOST: redis
       LOG_FILE: /app/logs/control-tower.json
     volumes:
@@ -194,6 +222,8 @@ services:
       shieldwall:
         condition: service_healthy
       wirehood:
+        condition: service_healthy
+      tailwind:
         condition: service_healthy
     restart: unless-stopped
 
@@ -258,6 +288,36 @@ services:
         condition: service_healthy
       rabbitmq-init:
         condition: service_completed_successfully
+    restart: unless-stopped
+
+  tailwind:
+    profiles: ["full"]
+    build:
+      context: ./services
+      dockerfile: tailwind/Dockerfile
+    env_file:
+      - ./services/tailwind/.env
+    environment:
+      DB_HOST: postgres-tailwind
+      DB_PORT: "5432" # container-internal, fixed by the postgres image - not the host-published TAILWIND_DB_PORT from .env
+      DB_USERNAME: ${TAILWIND_DB_USERNAME}
+      DB_PASSWORD: ${TAILWIND_DB_PASSWORD}
+      DB_NAME: ${TAILWIND_DB_NAME}
+      REDIS_HOST: redis
+      SHIELDWALL_INTERNAL_URI: http://shieldwall:${SHIELDWALL_PORT}
+      STORAGE_ROOT: /app/storage
+      LOG_FILE: /app/logs/tailwind.json
+    volumes:
+      # Bind mount, not a named volume - aircraft photos survive `docker-compose down -v` and stay browsable directly on the host
+      - ${TAILWIND_STORAGE_HOST_DIR}:/app/storage
+      - ./logs/tailwind:/app/logs
+    ports:
+      - "${TAILWIND_PORT}:${TAILWIND_PORT}"
+    depends_on:
+      postgres-tailwind:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   # Log store fed by alloy, filesystem storage, 30d retention via the compactor - see infra/loki/config.yaml
@@ -335,5 +395,6 @@ volumes:
   shieldwall-postgres-data:
   wirehood-postgres-data:
   fdr-postgres-data:
+  tailwind-postgres-data:
   loki-data:
   grafana-data:
