@@ -66,9 +66,9 @@ create_user "courier-one" "$COURIER_ONE_RABBITMQ_PASSWORD" \
   '^(mail\\.events|mail\\.events\\.retry\\.dlx|mail\\.events\\.dlx|courier-one\\.queue|courier-one\\.queue\\.retry|courier-one\\.queue\\.dlq)$'
 
 # fdr: sole consumer of fdr.audit, owns its dlx/dlq, never publishes a real message itself.
-# Still needs read on both source exchanges (binding) and write on fdr.audit.dlx (its own
-# dead-letter-exchange argument).
+# queue.bind needs write on the queue plus read on the source exchange, so both queues land in
+# write_re too even though fdr never calls basic.publish on them.
 create_user "fdr" "$FDR_RABBITMQ_PASSWORD" \
   '^(audit\\.events|fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$' \
-  '^(fdr\\.audit\\.dlx)$' \
+  '^(fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$' \
   '^(audit\\.events|fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$'
