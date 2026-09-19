@@ -72,3 +72,9 @@ create_user "fdr" "$FDR_RABBITMQ_PASSWORD" \
   '^(audit\\.events|fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$' \
   '^(fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$' \
   '^(audit\\.events|fdr\\.audit|fdr\\.audit\\.dlx|fdr\\.audit\\.dlq)$'
+
+# tailwind: publishes audit.events (admin actions) and later mail.events (disable requests, yearly recap), never reads a queue
+create_user "tailwind" "$TAILWIND_RABBITMQ_PASSWORD" \
+  '^(mail\\.events|audit\\.events)$' \
+  '^(mail\\.events|audit\\.events)$' \
+  '^$'
