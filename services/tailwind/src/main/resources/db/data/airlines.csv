@@ -1,0 +1,1409 @@
+icao,iata,name,country_code,active
+AAA,AN,Ansett Australia,AU,true
+AAB,W9,Abelag Aviation,BE,false
+AAF,ZI,Aigle Azur,FR,true
+AAG,KI,Air Atlantique,GB,false
+AAH,AQ,Aloha Airlines,US,true
+AAL,AA,American Airlines,US,true
+AAN,WD,Amsterdam Airlines,NL,true
+AAQ,,Copterline,FI,true
+AAR,OZ,Asiana Airlines,KR,true
+AAS,4K,Askari Aviation,PK,true
+AAW,8U,Afriqiyah Airways,LY,true
+AAY,G4,Allegiant Air,US,true
+ABD,CC,Air Atlanta Icelandic,IS,true
+ABE,K5,Aban Air,IR,false
+ABI,U1,Aviabus,RU,true
+ABL,BX,Air Busan,KR,true
+ABQ,ED,Airblue,PK,true
+ABR,AG,Air Contractors,IE,false
+ABS,9T,Transwest Air,CA,true
+ABV,04,Antrak Air,GH,false
+ABW,RU,AirBridge Cargo,RU,false
+ABX,GB,Airborne Express,US,false
+ABY,G9,Air Arabia,AE,true
+ACA,AC,Air Canada,CA,true
+ACI,SB,Air Caledonie International,FR,true
+ACK,DV,Nantucket Airlines,US,false
+ACL,9X,Itali Airlines,IT,false
+ACP,8V,Astral Aviation,KE,true
+ACQ,N6,Nuevo Continente,PE,false
+ADE,ZY,Ada Air,AL,true
+ADH,AP,Air One,IT,true
+ADK,Z7,ADC Airlines,NG,false
+ADO,HD,Hokkaido International Airlines,JP,true
+ADR,JP,Adria Airways,SI,true
+AEA,UX,Air Europa,ES,true
+AEB,EM,Aero Benin,BJ,true
+AEE,A3,Aegean Airlines,GR,true
+AEF,YP,Aero Lloyd (YP),DE,false
+AEH,RX,Aviaexpress,HU,false
+AEL,PE,Air Europe,IT,true
+AER,KO,Alaska Central Express,US,true
+AES,,ACES Colombia,CO,true
+AEU,5W,Astraeus,GB,true
+AEW,VV,Aerosvit Airlines,UA,true
+AEY,I9,Air Italy,IT,true
+AFB,WK,American Falcon,AR,false
+AFG,FG,Ariana Afghan Airlines,AF,true
+AFL,SU,Aeroflot Russian Airlines,RU,true
+AFR,AF,Air France,FR,true
+AFU,Q9,Afrinat International Airlines,GM,false
+AGB,G8,Air Service Gabon,GA,false
+AGN,GN,Air Gabon,GA,false
+AGT,1A,Amadeus Global Travel Distribution,ES,false
+AGV,7T,Air Glaciers,CH,true
+AGX,,Aviogenex,RS,true
+AHA,GD,Air Alpha Greenland,DK,false
+AHK,LD,Air Hong Kong,HK,false
+AHO,HH,Air Hamburg (AHO),DE,true
+AHW,HT,Aeromist-Kharkiv,UA,false
+AHY,J2,Azerbaijan Airlines,AZ,true
+AIA,U3,Avies,EE,true
+AIB,AP,Airbus Industrie,FR,false
+AIC,AI,Air India Limited,IN,true
+AIO,,United States Air Force,US,true
+AIP,5A,Alpine Air Express,US,false
+AIQ,FD,Thai AirAsia,TH,true
+AIR,,Airlift International,US,true
+AIZ,IZ,Arkia Israel Airlines,IL,true
+AJM,JM,Air Jamaica,JM,true
+AJT,M6,Amerijet International,US,false
+AJX,NQ,Air Japan,JP,true
+AKA,,Air Korea Co. Ltd.,KR,true
+AKL,4A,Air Kiribati,KI,true
+AKT,V2,Karat,RU,false
+AKX,EH,Air Nippon Network Co. Ltd.,JP,false
+ALK,UL,SriLankan Airlines,LK,true
+ALO,,Allegheny Commuter Airlines,US,true
+ALS,NV,Naka Nihon Airlines Service,JP,false
+ALX,EO,Hewa Bora Airways,CD,false
+AMB,1I,Deutsche Rettungsflugwacht,DE,false
+AMC,KM,Air Malta,MT,true
+AML,QM,Air Malawi,MW,true
+AMT,,ATA Airlines,US,true
+AMU,NX,Air Macau,MO,true
+AMV,,AMC Airlines,EG,true
+AMW,ZV,Air Midwest,US,false
+AMX,AM,AeroMéxico,MX,true
+ANA,NH,All Nippon Airways,JP,true
+ANE,YW,Air Nostrum,ES,true
+ANG,PX,Air Niugini,PG,true
+ANK,EL,Air Nippon,JP,true
+ANO,TL,Airnorth,AU,true
+ANT,4N,Air North Charter - Canada,CA,true
+ANU,,Andalus Lineas Aereas,ES,true
+ANZ,NZ,Air New Zealand,NZ,true
+AOC,J6,AVCOM,RU,false
+AOG,2D,Aero VIP,AR,false
+AOM,IW,AOM French Airlines,FR,false
+AOT,OE,Asia Overnight Express,PH,false
+AOW,2Y,Air Andaman (2Y),TH,false
+APW,JW,Arrow Air,US,true
+ARA,W3,Arik Air,NG,false
+ARD,2B,Aerocondor,PT,true
+ARE,4C,Aires,,true
+ARF,GV,Aero Flight,DE,true
+ARG,AR,Aerolineas Argentinas,AR,true
+ARR,QN,Air Armenia,AM,false
+ARU,,Aruba Airlines,AW,true
+ASA,AS,Alaska Airlines,,true
+ASD,4D,Air Sinai,EG,true
+ASE,PL,Airstars,RU,false
+ASH,YV,Mesa Airlines,US,true
+ASL,JU,Air Serbia,RS,true
+ASQ,EV,Atlantic Southeast Airlines,US,true
+ASZ,OB,Astrakhan Airlines,RU,true
+ATC,TC,Air Tanzania,TZ,true
+ATI,HC,Aero-Tropics Air Services,AU,false
+ATM,FO,Airlines Of Tasmania,AU,true
+ATN,8C,Air Transport International,US,false
+AUA,OS,Austrian Airlines,AT,true
+AUB,IQ,Augsburg Airways,DE,true
+AUH,MO,Abu Dhabi Amiri Flight,AE,true
+AUI,PS,Ukraine International Airlines,UA,true
+AUL,5N,Aeroflot-Nord,RU,true
+AUR,GR,Aurigny Air Services,GB,true
+AUS,NO,Aus-Air,AU,false
+AUT,AU,Austral Lineas Aereas,AR,true
+AUZ,AO,Australian Airlines,AU,false
+AVA,AV,Avianca - Aerovias Nacionales de Colombia,,true
+AVE,VE,Avensa,VE,false
+AVN,NF,Air Vanuatu,VU,true
+AWA,Y5,Asia Wings,KZ,true
+AWC,ZT,Titan Airways,GB,false
+AWE,HP,America West Airlines,US,true
+AWI,ZW,Air Wisconsin,US,true
+AWM,AW,Asian Wings Airways,MM,true
+AWQ,QZ,Indonesia AirAsia,ID,true
+AWU,7E,Aeroline GmbH,DE,true
+AWW,6G,Air Wales,GB,true
+AXB,IX,Air India Express,IN,true
+AXC,,Indochina Airlines,VN,true
+AXE,,Air Explore,SK,true
+AXF,HJ,Asian Express Airlines,AU,false
+AXL,XT,Air Exel,NL,true
+AXM,AK,AirAsia,MY,true
+AXY,6V,Axis Airways,FR,false
+AXZ,JY,Aereonautica militare,IT,true
+AYZ,3G,Atlant-Soyuz Airlines,RU,true
+AZA,AZ,Alitalia,IT,false
+AZE,ZE,Arcus-Air Logistic,DE,false
+AZN,Z8,Amaszonas,BO,true
+AZQ,ZP,Silk Way Airlines,AZ,false
+AZU,AD,Azul,BR,true
+AZW,UM,Air Zimbabwe,ZW,true
+BAG,DI,dba,DE,true
+BAJ,8Q,Baker Aviation,US,false
+BAW,BA,British Airways,GB,true
+BBB,VD,SwedJet Airways,SE,false
+BBC,BG,Biman Bangladesh Airlines,BD,true
+BBD,BF,Bluebird Cargo,IS,false
+BBG,,Bluebird Airways (BZ),GR,true
+BBO,F7,Flybaboo,CH,true
+BBR,S3,Santa Barbara Airlines,VE,true
+BCC,8B,BusinessAir,TH,true
+BCF,B4,BACH Flugbetriebsges,AT,false
+BCN,,Ocean Air,MR,true
+BCS,QY,European Air Transport,BE,false
+BCY,WX,CityJet,IE,true
+BDA,BZ,Blue Dart Aviation,IN,false
+BEE,BE,Flybe,GB,true
+BER,AB,Air Berlin,DE,true
+BES,W4,Aero Services Executive,FR,false
+BEU,,Bateleur Air,ZA,true
+BFL,J4,Buffalo Airways,CA,false
+BGD,B9,Air Bangladesh,BD,true
+BGL,A8,Benin Golf Air,BJ,false
+BGY,,Bingo Airways,PL,true
+BHP,4T,Belair Airlines,CH,true
+BHS,UP,Bahamasair,BS,true
+BIE,DR,Air Mediterranee,FR,true
+BIH,BS,British International Helicopters,GB,true
+BKA,B4,Bankair,US,false
+BKF,,BF-Lento OY,FI,true
+BKP,PG,Bangkok Airways,TH,true
+BKY,BU,Blue Sky America,US,false
+BLF,KF,Blue1,FI,true
+BLL,,Baltic Airlines,RU,true
+BLS,JV,Bearskin Lake Air Service,CA,true
+BLV,B3,Bellview Airlines,NG,true
+BLX,6B,TUIfly Nordic,SE,true
+BMA,BD,bmi,GB,true
+BMI,WW,bmibaby,GB,true
+BMJ,CH,Bemidji Airlines,US,true
+BML,5Z,Bismillah Airlines,BD,false
+BMM,8A,Atlas Blue,MA,true
+BMR,,British Midland Regional,GB,true
+BNF,BN,Braniff International Airways,US,false
+BNX,KG,LAI - Linea Aerea IAACA,VE,false
+BON,JA,Air Bosna,BA,true
+BOT,BP,Air Botswana,BW,true
+BOU,BO,Bouraq Indonesia Airlines,ID,false
+BOV,,Boliviana de Aviacion (OB),BO,true
+BPA,BV,Blue Panorama Airlines,IT,true
+BPS,,Budapest Aircraft Services/Manx2,HU,true
+BQB,BQ,Buquebus Líneas Aéreas,UY,true
+BRA,BU,Braathens,NO,false
+BRB,7R,BRA-Transportes Aereos,BR,false
+BRG,8E,Bering Air,US,true
+BRQ,UZ,El-Buraq Air Transport,LY,true
+BRS,,Brazilian Air Force,BR,true
+BRU,B2,Belavia Belarusian Airlines,BY,true
+BRV,K6,Bravo Air Congo,CD,false
+BRZ,E5,Samara Airlines,RU,false
+BSA,BZ,Black Stallion Airways,US,true
+BSK,GL,Miami Air International,US,false
+BSR,G6,Guine Bissaur Airlines,GW,false
+BSX,5B,Bassaka airlines,KH,true
+BSY,GQ,Big Sky Airlines,US,false
+BTA,XE,ExpressJet,US,true
+BTC,V9,BAL Bashkirian Airlines,RU,false
+BTI,BT,Air Baltic,LV,true
+BTM,,Air Batumi,GE,true
+BTQ,4B,Boutique Air (Priv),US,true
+BTV,7P,Metro Batavia,ID,true
+BUB,ZB,Air Bourbon,RE,true
+BUR,,Air Bucharest,RO,true
+BUU,BU,Baikotovitchestrian Airlines ,AS,true
+BVT,J8,Berjaya Air,MY,true
+BWA,BW,Caribbean Airlines,TT,true
+BWG,QW,Blue Wings,DE,true
+BYE,BM,Bayu Indonesia Air,ID,false
+BZE,GB,BRAZIL AIR,BR,true
+BZH,DB,Brit Air,FR,true
+BZL,BZ,Aero Brazil,BR,false
+CAI,,Corendon Airlines,TR,true
+CAL,CI,China Airlines,TW,true
+CAM,R9,Camai Air,US,false
+CAN,,Crest Aviation,GB,true
+CAP,C2,CanXplorer,CA,true
+CAT,CT,Civil Air Transport,TW,false
+CAV,MO,Calm Air,CA,false
+CAW,MN,Comair,ZA,true
+CAY,KX,Cayman Airways,KY,true
+CBF,CJ,China Northern Airlines,CN,false
+CBG,,GX Airlines,CN,true
+CCA,CA,Air China,CN,true
+CCB,,CARICOM AIRWAYS (BARBADOS) INC.,BB,true
+CCC,CB,CCML Airlines,CO,true
+CCG,,Central Connect Airlines,CZ,true
+CCI,PT,Capital Cargo International Airlines,US,false
+CCM,XK,Corse-Mediterranee,FR,true
+CCP,MG,Champion Air,US,false
+CDG,SC,Shandong Airlines,CN,true
+CDN,CP,Canadian Airlines,CA,true
+CDP,Q6,Aero Condor Peru,PE,true
+CEA,3C,RegionsAir,US,false
+CEB,5J,Cebu Pacific,PH,true
+CEL,,CEIBA Intercontinental,GQ,true
+CEO,,Comfort Express Virtual Charters,US,true
+CES,MU,China Eastern Airlines,CN,true
+CEY,,Air Century,DO,true
+CFE,CJ,BA CityFlyer,GB,true
+CFG,DE,Condor Flugdienst,DE,true
+CFS,EM,Empire Airlines,US,false
+CGK,,Click Airways,KG,true
+CGN,2Z,Changan Airlines,CN,false
+CGP,8L,Cargo Plus Aviation,AE,true
+CHB,PN,West Air China,CN,true
+CHF,X7,Chitaavia,RU,false
+CHH,HU,Hainan Airlines,CN,true
+CHK,OP,Chalk's Ocean Airways,US,false
+CHP,6A,Consorcio Aviaxsa,MX,true
+CHQ,RP,Chautauqua Airlines,US,true
+CHW,,Charter Air,AT,true
+CIF,1F,CB Airways UK ( Interliging Flights ),GB,true
+CIM,QI,Cimber Air,DK,true
+CIR,5F,Arctic Circle Air Service,US,false
+CIU,A2,Cielos Airlines,PE,false
+CIX,G3,City Connexion Airlines,BI,true
+CJA,C6,CanJet,CA,false
+CJC,9L,Colgan Air,US,true
+CJT,W8,Cargojet Airways,CA,false
+CKK,CK,China Cargo Airlines,CN,false
+CKS,K4,Kalitta Air,US,false
+CLH,CL,Lufthansa CityLine,DE,true
+CLI,XG,Calima Aviacion,ES,true
+CLJ,,Cello Aviation,GB,true
+CLW,C0,Centralwings,PL,true
+CLX,CV,Cargolux,LU,false
+CMI,CS,Continental Micronesia,US,true
+CMP,CM,Copa Airlines,PA,true
+CNA,7N,Centavia,RS,false
+CNF,,Canaryfly,ES,true
+CNN,10,Canadian World,CA,false
+CNO,,SAS Braathens,NO,true
+CNW,WH,China Northwest Airlines,CN,false
+COA,CO,Continental Airlines,US,true
+COE,,Comtel Air,AT,true
+COM,OH,Comair,US,true
+COZ,F5,Cosmic Air,NP,false
+CPA,CX,Cathay Pacific,HK,true
+CPN,RV,Caspian Airlines,IR,true
+CPZ,CP,Compass Airlines,US,true
+CQH,9S,Spring Airlines,CN,true
+CQN,OQ,Chongqing Airlines,CN,true
+CRD,QC,Air Corridor,MZ,false
+CRF,NV,Air Central,JP,false
+CRG,2G,Cargoitalia,IT,false
+CRK,HX,Hong Kong Airlines,HK,true
+CRL,SS,Corsairfly,FR,true
+CRO,,Crown Airways,US,true
+CSA,OK,Czech Airlines,CZ,true
+CSC,3U,Sichuan Airlines,CN,true
+CSH,FM,Shanghai Airlines,CN,true
+CSN,CZ,China Southern Airlines,CN,true
+CSQ,II,IBC Airways,US,false
+CST,BX,Coast Air,NO,false
+CSU,S8,Chari Aviation Services,TD,false
+CSX,,Choice Airways,US,true
+CSZ,ZH,Shenzhen Airlines,CN,true
+CTN,OU,Croatia Airlines,HR,true
+CUA,HR,China United Airlines,CN,true
+CUB,CU,Cubana de Aviación,CU,true
+CUD,,Air Cudlua,GB,true
+CVA,CV,Air Chathams,NZ,true
+CVC,J7,Centre-Avia,RU,false
+CWA,W2,Canadian Western Airlines,CA,false
+CWC,WE,Centurion Air Cargo,US,false
+CWK,KR,Comores Airlines,KM,true
+CWM,CW,Air Marshall Islands,MH,true
+CWS,KT,California Western,US,false
+CXA,MF,Xiamen Airlines,CN,true
+CXH,XO,China Xinhua Airlines,CN,false
+CXI,8C,Shanxi Airlines,CN,false
+CXP,XP,Xtra Airways,US,false
+CXS,E9,Boston-Maine Airways,US,false
+CYD,ZA,Access Air,US,true
+CYH,3Q,Yunnan Airlines,CN,true
+CYP,CY,Cyprus Airways,CY,true
+CYZ,8Y,China Postal Airlines,CN,false
+CZV,6V,Via Conectia Airlines,UY,true
+DAG,N2,Dagestan Airlines,RU,false
+DAH,AH,Air Algerie,DZ,true
+DAK,,First Flying,JP,true
+DAL,DL,Delta Air Lines,US,true
+DAO,D3,Daallo Airlines,DJ,true
+DAT,SN,Brussels Airlines,BE,true
+DAU,D5,Dauair,DE,false
+DBK,,Dubrovnik Air,HR,true
+DCD,,Air 26,AO,true
+DEA,,Delta Aerotaxi,IT,true
+DHI,KI,Adam Air,ID,true
+DHL,ER,Astar Air Cargo,US,false
+DHX,ES,DHL International,BH,false
+DIR,AW,Dirgantara Air Service,ID,false
+DJA,HO,Antinea Airlines,DZ,false
+DJB,D8,Djibouti Airlines,DJ,true
+DKH,HO,Juneyao Airlines,CN,true
+DLA,EN,Air Dolomiti,IT,true
+DLH,LH,Lufthansa,DE,true
+DLT,DW,Deutsche Luftverkehrsgesellschaft,DE,false
+DME,,Royal Flight,RU,true
+DMO,E3,Domodedovo Airlines,RU,true
+DNL,,Dutch Antilles Express,,true
+DNM,,Denim Air,NL,true
+DNV,D9,Aeroflot-Don,RU,true
+DOA,DO,Dominicana de Aviaci,DO,true
+DOB,QD,Dobrolet,RU,true
+DRD,NM,Air Madrid,ES,true
+DRK,KB,Druk Air,BT,true
+DRU,6R,Alrosa Mirny Air Enterprise,RU,true
+DSM,4M,LAN Argentina,AR,true
+DSR,WD,DAS Air Cargo,UG,false
+DSV,,Direct Aero Services,RO,true
+DSY,DH,Dennis Sky,IL,true
+DTA,DT,TAAG Angola Airlines,AO,true
+DTH,SF,Tassili Airlines,DZ,false
+DTR,DX,DAT Danish Air Transport,DK,true
+DVA,DH,Discovery Airways,US,false
+DWA,KP,Dense Airways,US,true
+DWD,DW,Deutsche Luftverkehrsgesellschaft (DLT),DE,false
+DWT,0D,Darwin Airline,CH,true
+DYA,,Dynamic Airways,US,true
+EAA,,Eastok Avia,KG,true
+EAF,E7,European Aviation Air Charter,GB,false
+EAL,EA,European Air Express,DE,true
+EAV,13,Eastern Atlantic Virtual Airlines,US,true
+EAY,EE,Aero Airlines,EE,false
+ECA,UI,Eurocypria Airlines,CY,true
+ECC,QE,Crossair Europe,CH,false
+ECE,4F,Air City,DE,false
+ECU,,Ecuavia,EC,true
+EDW,WK,Edelweiss Air,CH,true
+EEA,EU,Empresa Ecuatoriana De Aviacion,EC,true
+EEU,GJ,Eurofly Service,IT,true
+EFA,EF,Far Eastern Air Transport,TW,true
+EFY,,EasyFly,CO,true
+EGF,MQ,American Eagle Airlines,US,true
+EGH,,BBN-Airways,GB,true
+EGS,,Eagles Airlines,IT,true
+EHM,EH,Euro Harmony,PT,false
+EHN,,East Horizon,AF,true
+EIA,EZ,Evergreen International Airlines,US,true
+EIN,EI,Aer Lingus,IE,true
+EJA,1I,NetJets,US,true
+ELA,DK,Eastland Air,AU,true
+ELC,,Small Planet Airlines,LT,true
+ELG,E8,Alpi Eagles,IT,false
+ELK,,ELK Airways,EE,true
+ELL,OV,Estonian Air,EE,true
+ELO,K2,Eurolot,PL,true
+ELY,LY,El Al Israel Airlines,IL,true
+EMX,3W,Euromanx Airways,AT,false
+ENJ,,Enerjet,CA,true
+ENK,G8,Enkor JSC,,false
+ENY,,Envoy Air,US,true
+ENZ,,Jota Aviation,GB,true
+EQL,KY,Air S,,false
+ERO,7L,Sun D'Or,IL,true
+ERR,7H,Era Alaska,US,true
+ERT,B8,Eritrean Airlines,ER,true
+ESF,E7,Estafeta Carga Aerea,MX,false
+ESK,NE,SkyEurope,SK,true
+ESL,P7,Russian Sky Airlines,RU,false
+ESR,ZE,Eastar Jet,KR,true
+ESS,E0,Eos Airlines,US,false
+ETD,EY,Etihad Airways,AE,true
+ETH,ET,Ethiopian Airlines,ET,true
+EUD,,Air Italy Egypt,EG,true
+EUJ,VE,EUjet,IE,false
+EUV,ES,EuropeSky,DE,true
+EVA,BR,EVA Air,TW,true
+EVC,,Comfort Express Virtual Charters Albany,US,true
+EWG,EW,Eurowings,DE,true
+EXA,MB,Execair Aviation,CA,false
+EXK,OW,Executive Airlines,US,false
+EXL,CQ,Sunshine Express Airlines,AU,false
+EXS,LS,Jet2.com,GB,true
+EXV,8D,Expo Aviation,LK,false
+EZA,,Eznis Airways,MN,true
+EZE,T3,Eastern Airways,GB,true
+EZY,U2,easyJet,GB,true
+FAB,7F,First Air,CA,true
+FAJ,PC,Air Fiji,FJ,false
+FBL,F1,Fly Brasil,BR,true
+FCA,DP,First Choice Airways,GB,true
+FCB,,COBALT,CY,true
+FCL,PA,Florida Coastal Airlines,US,false
+FCM,,Flybe Finland Oy,FI,true
+FDB,FZ,Fly Dubai,AE,true
+FDD,,Feeder Airlines,SD,true
+FDX,FX,Federal Express,US,false
+FEG,,FlyEgypt,EG,true
+FFM,FY,Firefly,MY,true
+FFR,8F,Fischer Air,CZ,false
+FFT,F9,Frontier Airlines,US,true
+FFV,5H,Fly540,KE,true
+FHE,HW,Hello,CH,true
+FHI,FH,FlyHigh Airlines Ireland (FH),IE,true
+FIF,OF,Air Finland,FI,true
+FIN,AY,Finnair,FI,true
+FIX,,Airfix Aviation,FI,true
+FJI,FJ,Air Pacific,FJ,true
+FJM,,Fly Jamaica Airways,JM,true
+FKA,,Flying kangaroo Airline,AU,true
+FLB,,German Air Force - FLB,DE,true
+FLG,9E,Pinnacle Airlines,US,true
+FLI,RC,Atlantic Airways,FO,true
+FLM,F2,Fly Air,TR,false
+FLT,B5,Flightline,GB,true
+FLY,SH,Fly Me Sweden,SE,false
+FLZ,QH,Air Florida,US,true
+FNA,,Norlandair,IS,true
+FNC,4S,Finalair Congo,CG,false
+FOS,VY,Formosa Airlines,TW,true
+FOX,FX,FOX Linhas Aereas,BR,true
+FPT,PO,FlyPortugal,PT,true
+FQR,WL,CheapFlyingInternational,FR,false
+FRE,FP,Freedom Air,US,true
+FRF,FF,Fly France,FR,true
+FRL,,Freedom Airlines,US,true
+FSC,HK,Four Star Aviation / Four Star Cargo,US,false
+FSW,F3,Faso Airways,BF,false
+FTA,2F,Frontier Flying Service,US,true
+FUA,FH,Futura International Airways,ES,false
+FVM,,Flugfelag Vestmannaeyja,IS,true
+FWA,I4,Interstate Airline,NL,false
+FWI,TX,Air Caraïbes,FR,true
+FWL,RF,Florida West International Airways,US,true
+FXI,NY,Air Iceland,IS,true
+FXX,FU,Felix Airways,YE,true
+FYH,,Flyhy Cargo Airlines,TH,true
+FYJ,,FLYJET,PL,true
+FZA,,Fuzhou Airlines,CN,true
+FZW,,Fly Africa Zimbabwe,ZW,true
+GAI,3R,Moskovia Airlines,RU,true
+GAL,7O,Galaxy Air,KG,false
+GAO,DC,Golden Air,SE,true
+GAP,2P,Air Philippines,PH,true
+GBA,GF,Gulf Air Bahrain,BH,true
+GBK,GY,Gabon Airlines,GA,true
+GBL,GT,GB Airways,GB,true
+GCA,,Grand Cru Airlines,LT,true
+GCO,GR,Gemini Air Cargo,US,false
+GCR,,Tianjin Airlines,CN,true
+GDC,,Grand China Air,CN,true
+GDR,GP,Gadair European Airlines,ES,true
+GEC,LH,Lufthansa Cargo,DE,true
+GER,GM,German International Air Lines,DE,true
+GES,GP,Gestair,ES,false
+GFA,,Gulf Air,OM,true
+GFG,QB,Georgian National Airlines,GE,true
+GFI,8B,Caribbean Star Airlines,AG,false
+GFT,,Gulfstream International Airlines,US,true
+GFY,XX,Greenfly,ES,true
+GGC,GG,Cargo 360,US,false
+GGN,ZX,Air Georgian,CA,false
+GHB,G0,Ghana International Airlines,GH,true
+GIA,GA,Garuda Indonesia,ID,true
+GIE,E4,Elysian Airlines,CM,true
+GIF,J9,Guinee Airlines,GN,false
+GIP,2U,Air Guinee Express,GN,true
+GJS,G7,GoJet Airlines,US,true
+GLA,ZK,Great Lakes Airlines,US,true
+GLG,2K,Aerolineas Galapagos (Aerogal),EC,true
+GLO,G3,Gol Transportes Aéreos,BR,true
+GLP,GH,Globus,RU,true
+GMI,ST,Germania,DE,true
+GMR,,Golden Myanmar Airlines,MM,true
+GNF,G7,Gandalf Airlines,IT,false
+GNN,,Georgian International Airlines,GE,true
+GNR,GC,Gambia International Airlines,GM,false
+GNT,0A,Amber Air,LT,false
+GOD,GD,GoDutch,NL,false
+GOW,G8,Go Air,IN,true
+GRG,DA,Air Georgia,GE,false
+GRL,GL,Air Greenland,DK,true
+GRN,E2,Rio Grande Air,US,false
+GRO,LL,Allegro,MX,false
+GSM,B4,Flyglobespan,GB,true
+GTA,E8,City Airways,TH,true
+GTI,5Y,Atlas Air,US,true
+GUI,3X,Aguilar Connect,CL,false
+GUJ,G8,Gujarat Airways,IN,false
+GUN,GS,Grant Aviation,US,false
+GUY,GG,Air Guyane,GF,true
+GWI,4U,Germanwings,DE,true
+GWL,IJ,Great Wall Airlines,CN,false
+GWY,U5,USA3000 Airlines,US,true
+GXG,GX,GermanXL,DE,true
+GZP,4G,Gazpromavia,RU,true
+HAD,H9,Air D'Ayiti,HT,false
+HAG,H6,Hageland Aviation Services,US,true
+HAH,GG,Air Comores International,KM,false
+HAL,HA,Hawaiian Airlines,US,true
+HAM,2T,Haiti Ambassador Airlines,HT,true
+HAR,HB,Harbor Airlines,US,false
+HAY,,Hamburg Airways,DE,true
+HBH,,Hebei Airlines,CN,true
+HBR,,Hebradran Air Services,GB,true
+HCC,,Holidays Czech Airlines,CZ,true
+HCW,V9,Star1 Airlines,LT,true
+HCY,ZU,Helios Airways,CY,false
+HDA,KA,Dragonair,,true
+HEJ,T4,Hellas Jet,GR,true
+HER,UD,Hex'Air,FR,true
+HEY,1H,Hellenic Airways,GR,false
+HFR,8H,Heli France,FR,true
+HFY,5K,Hi Fly,PT,false
+HGK,N8,Fika Salaama Airlines,UG,false
+HHI,4R,Hamburg International,DE,true
+HHN,HR,Hahn Air,DE,false
+HKA,SO,Superior Aviation,US,false
+HKE,UO,Hong Kong Express Airways,HK,true
+HLF,HF,Hapagfly,DE,true
+HLX,X3,TUIfly,DE,true
+HMR,,North American Charters,CA,true
+HMS,DU,Hemus Air,BG,false
+HMY,HQ,Harmony Airways,CA,false
+HNX,HN,Hankook Airline,KR,true
+HOA,H5,Hola Airlines,ES,false
+HPA,HP,Pearl Airways,HT,false
+HPY,,Happy Air,TH,true
+HRH,WR,Royal Tongan Airlines,TO,false
+HRM,,Hermes Airlines,GR,true
+HSA,S9,East African Safari Air,KE,false
+HSK,,Sky Europe Airlines,SK,true
+HTH,,Helitt Líneas Aéreas,ES,true
+HVK,,Turkish Air Force,TR,true
+HVN,VN,Vietnam Airlines,VN,true
+HVY,HN,Heavylift Cargo Airlines,AU,false
+HWY,,Highland Airways,GB,true
+HYM,HC,Himalayan Airlines,NP,true
+HZA,BN,Horizon Airlines,AU,true
+HZT,8C,Air Horizon,TG,false
+IAA,IO,Indonesian Airlines,ID,true
+IAC,IC,Indian Airlines,IN,true
+IAM,,Aeronautica Militare,IT,true
+IAW,IA,Iraqi Airways,IQ,true
+IBB,NT,Binter Canarias,ES,true
+IBE,IB,Iberia Airlines,ES,true
+IBK,,Norwegian Air International (D8),NO,true
+IBS,I2,Iberia Express,ES,true
+IBU,I9,Indigo,US,true
+IBX,FW,Ibex Airlines,JP,true
+IBZ,6I,International Business Air,SE,false
+ICE,FI,Icelandair,IS,true
+ICL,5C,CAL Cargo Air Lines,IL,true
+ICT,RS,Intercontinental de Aviaci,CO,false
+IDE,DH,Independence Air,US,false
+IDS,I5,Indonesia Sky,ID,true
+IDX,,Indonesa Air Aisa X,ID,true
+IGO,6E,IndiGo Airlines,IN,true
+IIA,,AIR INDOCHINE,VN,true
+IIN,H4,Inter Islands Airlines,CV,false
+IIR,Z5,INAVIA Internacional,AR,true
+IJT,IJ,InteliJet Airways,CO,false
+IKA,GI,Itek Air,KG,true
+ILN,D6,Interair South Africa,ZA,true
+ILW,IL,Illinois Airways,US,false
+ILY,IL,Fly Illi,US,false
+IMP,HT,Hellenic Imperial Airways,GR,true
+IMX,C4,Zimex Aviation,CH,false
+INE,9I,International Europe,ES,true
+IPV,PA,Parmiss Airlines (IPV),IR,true
+IRA,IR,Iran Air,IR,true
+IRC,EP,Iran Aseman Airlines,IR,true
+IRK,Y9,Kish Air,IR,true
+IRM,W5,Mahan Air,IR,true
+ISG,6P,Club Air,IT,false
+ISK,3L,Intersky,AT,true
+ISR,6H,Israir,IL,true
+ISS,IG,Meridiana,IT,true
+ISV,WC,Islena De Inversiones,HN,true
+ISW,IF,Islas Airways,ES,true
+ISX,IP,Island Spirit,IS,true
+ITK,ID,Interlink Airlines,ZA,true
+ITX,IK,Imair Airlines,AZ,true
+ITY,AZ,ITA Airways,IT,true
+IWA,ZM,Apache Air,US,true
+IWD,TY,Iberworld,ES,true
+IXO,,OCEAN AIR CARGO,IN,true
+IYE,IY,Yemenia,YE,true
+IZM,H9,Izair,TR,false
+JAA,EG,Japan Asia Airways,JP,true
+JAB,W9,Air Bagan,MM,true
+JAF,JF,Jetairfly,BE,true
+JAI,9W,Jet Airways,IN,true
+JAL,JL,Japan Airlines,JP,true
+JAS,JD,Japan Air System,JP,true
+JAT,JU,Jat Airways,RS,false
+JAV,R5,Jordan Aviation,JO,false
+JAZ,JO,JALways,JP,true
+JBA,JB,Helijet,CA,true
+JBU,B6,JetBlue Airways,US,true
+JCS,0J,Jetclub,CH,false
+JEC,JX,Jett8 Airlines Cargo,SG,false
+JEF,,Jetflite,FI,true
+JET,IV,Wind Jet,IT,true
+JEV,N6,Lagun Air,ES,false
+JEX,JC,JAL Express,JP,true
+JFU,8J,Jet4You,MA,true
+JGN,,Jagson Airlines,IN,true
+JGO,SG,JetsGo,CA,false
+JJA,7C,Jeju Air,KR,true
+JJP,,Jetstar Japan ,JP,true
+JKK,JK,Spanair,ES,true
+JNA,LJ,Jin Air,KR,true
+JOL,IP,Atyrau Air Ways,KZ,false
+JOR,0B,Blue Air,RO,true
+JOS,L3,DHL de Guatemala,GT,false
+JOY,JR,Joy Air,CN,true
+JPU,,Jupiter Airlines,AE,true
+JRB,,Jc royal.britannica,GB,true
+JSA,3K,Jetstar Asia Airways,SG,true
+JSR,JX,Jusur airways,EG,true
+JST,JQ,Jetstar Airways,AU,true
+JTA,NU,Japan Transocean Air,JP,true
+JTO,NR,Jettor Airlines,HK,true
+JTY,VJ,Jatayu Airlines,ID,false
+JUS,U7,USA Jet Airlines,US,false
+JXX,GX,Jetx Airlines,IS,false
+JZA,QK,Air Canada Jazz,CA,true
+JZR,J9,Jazeera Airways,KW,true
+KAC,KU,Kuwait Airways,KW,true
+KAL,KE,Korean Air,KR,true
+KAP,9K,Cape Air,US,true
+KBR,K7,KoralBlue Airlines,EG,true
+KBZ,,Air KBZ,MM,true
+KCU,,Skyline Ulasim Ticaret A.S.,TR,true
+KDA,,Kendell Airlines,AU,true
+KEA,,Korea Express Air,KR,true
+KEE,BZ,Keystone Air Services,CA,false
+KEN,M5,Kenmore Air,US,true
+KFR,IT,Kingfisher Airlines,IN,true
+KGA,R8,Kyrgyzstan Airlines,KG,false
+KGL,7K,Kogalymavia Air Company,RU,true
+KGO,ZC,Korongo Airlines,CD,true
+KGZ,N5,Kyrgyz Airlines,KG,false
+KHB,H8,Dalavia,RU,true
+KHK,KH,Kharkiv Airlines,UA,true
+KIA,KP,Kiwi International Air Lines,US,false
+KIL,GW,Kuban Airlines,RU,true
+KIN,,Kinloss Flying Training Unit,GB,true
+KIS,C3,Contact Air,DE,true
+KJC,7B,Krasnojarsky Airlines,RU,true
+KKK,KK,Atlasjet,TR,true
+KLA,TT,Air Lithuania,LT,false
+KLC,WA,KLM Cityhopper,NL,true
+KLM,KL,KLM Royal Dutch Airlines,NL,true
+KLS,,Kal Star Aviation,ID,true
+KMF,RQ,Kam Air,AF,true
+KMP,E2,Kampuchea Airlines,KH,false
+KMV,8J,Komiinteravia,RU,false
+KND,,Kan Air,TH,true
+KNE,XY,Nas Air,SA,true
+KNI,KD,KD Avia,RU,true
+KOL,CQ,SOCHI AIR,RU,true
+KOQ,K1,Kostromskie avialinii,RU,true
+KOR,JS,Air Koryo,,true
+KPA,VD,Kunpeng Airlines,CN,false
+KQA,KQ,Kenya Airways,KE,true
+KRI,K9,Krylo Airlines,RU,false
+KRP,V3,Carpatair,RO,true
+KRY,,Russkie Krylya,RU,true
+KSM,,Kosmos,RU,true
+KSY,KY,KSY,GR,true
+KSZ,,Sunrise Airways,HT,true
+KUH,,Kush Air,SS,true
+KYA,,Alghanim,US,true
+KYV,KY,Kibris T,TR,false
+KZK,9Y,Air Kazakhstan,KZ,true
+KZR,KC,Air Astana,KZ,true
+KZU,GO,Kuzu Airlines Cargo,TR,true
+LAA,LN,Libyan Arab Airlines,LY,true
+LAB,JF,L.A.B. Flying Service,US,false
+LAJ,KJ,British Mediterranean Airways,GB,true
+LAM,LM,Linhas A,MZ,true
+LAN,LA,LAN Airlines,CL,true
+LAO,QV,Lao Airlines,LA,true
+LAP,PZ,TAM Mercosur,PY,true
+LAQ,LQ,Lebanese Air Transport,LB,false
+LAV,,AlbaStar,ES,true
+LBC,LV,Albanian Airlines,AL,true
+LBL,L8,Line Blue,DE,true
+LBT,BJ,Nouvel Air Tunisie,TN,true
+LCD,ZE,Lineas Aereas Azteca,MX,false
+LDA,NG,Lauda Air,AT,true
+LFA,,Air Alfa,TR,true
+LGL,LG,Luxair,LU,true
+LGW,HE,Luftfahrtgesellschaft Walter,DE,true
+LHN,EO,Express One International,US,true
+LIA,LI,Leeward Islands Air Transport,AG,true
+LID,D4,Alidaunia,IT,false
+LIL,TE,FlyLal,LT,true
+LIX,C4,LionXpress,CM,true
+LJJ,L4,Luchsh Airlines ,RU,true
+LKN,IK,Lankair,LK,false
+LLB,LB,Lloyd Aereo Boliviano,BO,false
+LLC,,FlyLAL Charters,LT,true
+LLM,YL,Yamal Airlines,RU,true
+LLR,CD,Alliance Air,IN,false
+LMM,LQ,LCM AIRLINES,RU,true
+LMU,UJ,AlMasria Universal Airlines,EG,true
+LNE,XL,Aerolane,EC,true
+LNI,JT,Lion Mentari Airlines,ID,true
+LNP,L7,Linea Aerea SAPSA,CL,false
+LOC,ZQ,Locair,US,true
+LOF,AX,Trans States Airlines,US,true
+LOO,PQ,LSM Airlines,RU,true
+LOT,LO,LOT Polish Airlines,PL,true
+LPE,LP,LAN Peru,PE,true
+LPN,L7,Laoag International Airlines,PH,false
+LPR,MJ,L,AR,true
+LPV,A6,Air Alps Aviation,AT,false
+LRC,LR,LACSA,CR,true
+LTC,,LatCharter,LV,true
+LTD,,Southern Airways Express,US,true
+LTE,XO,LTE International Airways,ES,true
+LTF,DV,Lufttaxi Fluggesellschaft,DE,false
+LTO,L3,LTU Austria,AT,true
+LTR,L5,Lufttransport,NO,true
+LTU,LT,Air Lituanica,LT,true
+LTY,LE,Liberty Airways,US,true
+LUR,TD,Atlantis European Airways,AM,true
+LVG,LM,Livingston,IT,false
+LXG,L8,Air Luxor GB,GW,false
+LXP,LU,LAN Express,CL,true
+LXR,LK,Air Luxor,PT,true
+LYC,L2,Lynden Air Cargo,US,false
+LYN,QH,Kyrgyzstan,KG,false
+LZB,FB,Bulgaria Air,BG,true
+MAA,M7,MasAir,MX,true
+MAC,R5,Malta Air Charter,MT,true
+MAH,MA,Malév,HU,true
+MAI,L6,Mauritania Airlines International,MR,true
+MAK,IN,MAT Macedonian Airlines,MK,true
+MAL,,Morningstar Air Express,CA,true
+MAS,MH,Malaysia Airlines,MY,true
+MAU,MK,Air Mauritius,MU,true
+MAV,ML,Maldivo Airlines,MV,true
+MBN,Q3,Zambian Airways,ZM,false
+MCA,,MCA Airlines,SE,true
+MCK,CC,Macair Airlines,AU,true
+MDA,AE,Mandarin Airlines,TW,true
+MDG,MD,Air Madagascar,MG,true
+MDL,RI,Mandala Airlines,ID,true
+MDO,D1,Domenican Airlines,DO,true
+MDP,,Medallion Air,RO,true
+MDV,2M,Moldavian Airlines,MD,true
+MDW,JI,Midway Airlines,US,true
+MEA,ME,Middle East Airlines,LB,true
+MEP,YX,Midwest Airlines,US,true
+MES,XJ,Mesaba Airlines,US,true
+MGL,OM,MIAT Mongolian Airlines,MN,true
+MGX,YM,Montenegro Airlines,ME,true
+MIC,,Mint Airways,ES,true
+MJG,DF,Michael Airlines,PR,true
+MJN,RS,Royal Air Force of Oman,OM,false
+MJP,,Air Majoro,PE,true
+MJX,4L,Euroline,GE,true
+MKD,6F,MAT Airways,MK,true
+MKG,P8,Air Mekong,VN,true
+MKU,WP,Island Air (WP),US,true
+MLA,Q5,40-Mile Air,US,true
+MLD,9U,Air Moldova,MD,true
+MMM,8M,Myanmar Airways International,MM,true
+MNA,MZ,Merpati Nusantara Airlines,ID,true
+MNB,MB,MNG Airlines,TR,true
+MNG,M0,Aero Mongolia,MN,false
+MNJ,IM,Menajet,LB,false
+MNO,JE,Mango,ZA,true
+MNP,SM,Spirit of Manila Airlines,PH,true
+MON,ZB,Monarch Airlines,GB,true
+MOV,NN,VIM Airlines,RU,true
+MPD,A7,Air Plus Comet,ES,true
+MPE,5T,Canadian North,CA,true
+MPH,MP,Martinair,NL,true
+MPX,QO,Aeromexpress,MX,false
+MRR,2G,San Juan Airlines,US,false
+MRS,Y8,Marusya Airways,RU,true
+MRT,MR,Air Mauritanie,MR,false
+MRW,6V,Mars RK,UA,false
+MSE,,EgyptAir Express,EG,true
+MSI,M9,Motor Sich,UA,true
+MSL,M7,Marsland Aviation,SD,false
+MSR,MS,Egyptair,EG,true
+MTC,N4,Mountain Air Company,SL,false
+MTW,,Mauritania Airways,MR,true
+MVD,KV,Kavminvodyavia,RU,true
+MVL,H5,Mavial Magadan Airlines,RU,false
+MWA,MY,Midwest Airlines (Egypt),EG,true
+MWI,,Malaysia Wings,MY,true
+MXA,MX,Mexicana de Aviaci,MX,true
+MXC,GJ,Compania Mexicargo,MX,false
+MXD,OD,Malindo Air,MY,true
+MXI,I6,MexicanaLink,MX,true
+MXJ,MY,Maxjet Airways,US,false
+MXL,8M,Maxair,SE,true
+MYA,,Myflug,IS,true
+MYD,MW,Maya Island Air,BZ,true
+MYP,,Mann Yadanarpon Airlines,MM,true
+MYT,VZ,MyTravel Airways,GB,true
+MZS,M2,Mahfooz Aviation,GM,false
+NAC,NC,Northern Air Cargo,US,false
+NAK,Q9,Arik Niger,NE,true
+NAL,NA,National Airlines,US,false
+NAS,UE,Nasair,ER,true
+NAX,DY,Norwegian Air Shuttle,NO,true
+NBK,F4,Albarka Air,NG,false
+NCA,KZ,Nippon Cargo Airlines,JP,false
+NCF,,Norfolk County Flight College,GB,true
+NCN,N4,National Airlines,CL,false
+NCR,N8,National Air Cargo,US,true
+NDC,LF,FlyNordic,SE,true
+NDN,,Transportes Aereos Cielos Andinos,PE,true
+NEA,EJ,New England Airlines,US,true
+NES,JH,Nordeste Linhas Aereas Regionais,BR,false
+NFA,M3,North Flying,DK,false
+NGB,NJ,Nordic Global Airlines,FI,true
+NIA,NP,Nile Air,EG,true
+NIG,AJ,Aero Contractors,NG,true
+NJS,NC,National Jet Systems,AU,true
+NKF,8N,Barents AirLink,SE,true
+NKS,NK,Spirit Airlines,US,true
+NLH,DU,Norwegian Long Haul AS,NO,true
+NLY,HG,Niki,AT,true
+NMA,,Nesma Airlines,EG,true
+NMB,SW,Air Namibia,NA,true
+NMI,LW,Pacific Wings,US,true
+NOK,DD,Nok Air,TH,true
+NOS,NO,Neos,IT,false
+NOV,M4,Nova Airline,SD,false
+NRD,6N,Nordic Regional,SE,false
+NSE,9R,SATENA,CO,true
+NTJ,2N,NextJet,SE,true
+NTM,,North American Airlines,CA,true
+NTW,CE,Nationwide Airlines,ZA,true
+NVR,1I,Novair,SE,true
+NWA,NW,Northwest Airlines,US,true
+NWL,HW,North-Wright Airways,CA,false
+NWR,FY,Northwest Regional Airlines,AU,false
+NXB,XB,NEXT Brasil,BR,true
+NYT,,Yeti Airlines ,NP,true
+NZM,NM,Mount Cook Airlines,NZ,false
+OAB,O1,Orbit Airlines Azerbaijan,AZ,true
+OAE,OY,Omni Air International,US,true
+OAI,,Orbit International Airlines,US,true
+OAL,OA,Olympic Airlines,GR,true
+OAN,,Orbit Atlantic Airways,US,true
+OAR,,Orbit Regional Airlines,US,true
+OAW,2L,Helvetic Airways,CH,true
+OBS,,Orbest,PT,true
+OBT,,Orbit Airlines,US,true
+OCA,R7,Aserca Airlines,VE,true
+OCM,UQ,O'Connor Airlines,AU,false
+OEA,OX,Orient Thai Airlines,TH,true
+OGN,QO,Origin Pacific Airways,NZ,true
+OHK,O8,Oasis Hong Kong Airlines,HK,true
+OHY,8Q,Onur Air,TR,true
+OKS,S0,Slok Air Gambia,GM,false
+OLA,OJ,Overland Airways,NG,true
+OLS,,Sol Lineas Aereas,AR,true
+OLT,OL,Ostfriesische Lufttransport,DE,true
+OMA,WY,Oman Air,OM,true
+OME,MR,Homer Air,DE,true
+OMS,N3,Omskavia Airline,RU,false
+ONE,O6,Oceanair,BR,true
+OOM,Z4,Zoom Airlines,CA,true
+ORB,R2,Orenburg Airlines,RU,true
+ORC,OI,Orchid Airlines,AU,true
+ORG,,Orenburzhie,RU,true
+OSL,SO,Sosoliso Airlines,NG,false
+OSY,1L,Open Skies Consultative Commission,US,false
+OTG,,One Two Go Airlines,TH,true
+OTJ,X5,Fly Romania,RO,true
+OZJ,O7,Ozjet Airlines,AU,true
+OZR,OZ,Ozark Air Lines,US,false
+OZW,,Skywest Airlines,AU,true
+PAA,PA,Pan American Airways,US,false
+PAC,PO,Polar Air Cargo,US,false
+PAL,PR,Philippine Airlines,PH,true
+PAO,PH,Polynesian Airlines,WS,true
+PBA,9Q,PB Air,TH,true
+PBD,,Pobeda,RU,true
+PBN,DJ,Pacific Blue,NZ,false
+PBU,8Y,Air Burundi,BI,false
+PCE,Y5,Pace Airlines,US,false
+PCO,8P,Pacific Coastal Airline,CA,true
+PDC,BK,Potomac Air,US,true
+PDT,PI,Piedmont Airlines (1948-1989),US,true
+PEC,Q8,Pacific East Asia Cargo Airlines,PH,true
+PEL,OT,Aeropelican Air Services,AU,true
+PEN,KS,Peninsula Airways,US,true
+PFL,,Pacific Flier,PW,true
+PGA,NI,Portugalia,PT,true
+PGP,P9,Perm Airlines,RU,false
+PGT,PC,Pegasus Airlines,TR,true
+PIA,PK,Pakistan International Airlines,PK,true
+PIC,BL,Jetstar Pacific,VN,true
+PIR,NR,Pamir Airways,AF,false
+PKV,,Псковавиа,RU,true
+PLB,DJ,Polynesian Blue,NZ,false
+PLI,PL,Aeroper,PE,true
+PLR,J3,Northwestern Air,CA,true
+PMK,3D,Palair Macedonia,MK,false
+PMT,U4,PMTair,KH,true
+PMW,I7,Paramount Airways,IN,true
+PNF,PQ,Panafrican Airways,CI,false
+PNR,PV,PAN Air,ES,true
+PNW,PF,Palestinian Airlines,EG,false
+POE,PD,Porter Airlines,CA,true
+POT,,Polet,RU,true
+PPL,OP,Air Pegasus,IN,true
+PPW,,Royal Phnom Penh Airways,KH,true
+PQW,WQ,PanAm World Airways,US,true
+PRF,PW,Precision Air,TZ,true
+PRZ,AD,Air Paradise International,ID,false
+PSA,,Pacific Island Aviation,US,true
+PSB,,Syrian Pearl Airlines,SY,true
+PSD,TO,President Airlines,KH,false
+PSX,PS,Pacific Southwest Airlines,US,false
+PTB,,Passaredo Transportes Aereos,BR,true
+PTI,,Privatair,CH,true
+PTN,P8,Pantanal Linhas Aéreas,BR,false
+PTP,GP,Palau Trans Pacific Airline,PW,false
+PUA,PU,PLUNA,UY,true
+PVV,PC,Continental Airways,RU,false
+PWF,8W,Private Wings Flugcharter,DE,false
+PYA,,Pouya Air,IR,true
+PYB,0P,All America BOPY,PY,true
+PZR,1I,Sky Trek International Airlines,US,false
+PZY,,Zapolyarie Airlines,RU,true
+QAX,C3,QatXpress,QA,true
+QCL,QD,Air Class Lineas Aereas,UY,false
+QER,Q3,SOCHI AIR CHATER,RU,true
+QFA,QF,Qantas,AU,true
+QFZ,,Fars Air Qeshm,IR,true
+QNK,N2,Kabo Air,NG,false
+QQQ,,ENTERair,PL,true
+QSC,QS,African Safari Airways,KE,false
+QTR,QR,Qatar Airways,QA,true
+QXE,QX,Horizon Air,US,true
+RAB,RN,Rainbow Air (RAI),US,true
+RAC,,Icar Air,BA,true
+RAE,YS,Régional,FR,true
+RAM,AT,Royal Air Maroc,MA,true
+RAR,GZ,Air Rarotonga,CK,true
+RAW,KG,Royal Airways,US,true
+RAY,RY,Rainbow Air Canada,CA,true
+RBA,BI,Royal Brunei Airlines,BN,true
+RBG,E5,Air Arabia Egypt,EG,true
+RBU,4Y,Airbus France,FR,false
+RBY,V2,Vision Airlines (V2),US,true
+RCH,MC,Air Mobility Command,US,false
+RCK,F6,Faroejet,FO,false
+RDN,D7,Dinar,AR,false
+REA,RE,Aer Arann,IE,true
+REK,V4,Reem Air,KG,false
+REP,P7,Regional Paraguaya,PY,true
+REU,UU,Air Austral,FR,true
+RFJ,RL,Royal Falcon,JO,true
+RFR,RR,Royal Air Force,GB,false
+RGG,1E,TransRussiaAirlines,RU,true
+RHC,8L,Redhill Aviation,GB,false
+RIT,6K,Asian Spirit,PH,true
+RJA,RJ,Royal Jordanian,JO,true
+RJD,,Rotana Jet,AE,true
+RKA,RK,Air Afrique,CI,true
+RKH,RK,Royal Khmer Airlines,KH,false
+RLA,A5,Airlinair,FR,true
+RLE,C7,Rico Linhas A,BR,false
+RLN,QL,Aero Lanka,LK,true
+RLU,,Rusline,RU,true
+RLX,,Go2Sky,SK,true
+RMK,,Simrik Airlines,NP,true
+RML,MV,Armenian International Airways,AM,false
+RNA,RA,Nepal Airlines,NP,true
+RNE,20,Air Salone,SL,true
+RNV,U8,Armavia,AM,true
+RNX,1T,1Time Airline,ZA,true
+RNY,RM,Rainbow Air US,US,true
+ROA,QQ,Reno Air,US,false
+ROB,7V,ROYAL BRITAIN,GB,false
+ROK,N7,National Airlines,US,false
+ROM,BQ,Aeromar,DO,false
+RON,ON,Nauru Air Corporation,NR,true
+ROT,RO,Tarom,RO,true
+RPA,RW,Republic Airlines,US,true
+RPB,P5,AeroRep,CO,true
+RPH,RH,Republic Express Airlines,ID,true
+RPK,R0,Royal Airlines,PK,false
+RPO,RX,Rainbow Air Polynesia,US,true
+RRJ,R8,AirRussia,RU,true
+RSD,,Russia State Transport,RU,true
+RSH,S2,Air Sahara,IN,true
+RSI,,Air Sunshine,US,true
+RSJ,,RusJet,RU,true
+RSL,SL,Rio Sul Servi,BR,false
+RSO,E4,Aero Asia International,PK,false
+RSP,,Jet Suite,US,true
+RSR,BF,Aero-Service,CG,true
+RSU,5L,Aerosur,BO,true
+RSY,H5,I-Fly,RU,true
+RTE,,Aeronorte,PT,true
+RUE,RU,Rainbow Air Euro,GB,true
+RUS,C9,Cirrus Airlines,DE,true
+RWD,WB,Rwandair Express,RW,true
+RWW,ER,Fly Europa,ES,true
+RWZ,WZ,Red Wings,RU,true
+RXA,ZL,Regional Express,AU,true
+RXR,RR,REXAIR VIRTUEL,FR,true
+RYA,,Ryan Air Services,US,true
+RYL,V5,Royal Aruban Airline,AW,false
+RYN,RD,Ryan International Airlines,US,true
+RYR,FR,Ryanair,IE,true
+RZO,S4,SATA International,PT,true
+SAA,SA,South African Airways,ZA,true
+SAE,Q4,SOCHI AIR EXPRESS,RU,true
+SAI,NL,Shaheen Air International,PK,true
+SAL,S0,Spike Airlines,US,true
+SAS,SK,Scandinavian Airlines System,SE,true
+SAT,SP,SATA Air Acores,PT,true
+SAY,,ScotAirways,GB,true
+SBD,S8,Snowbird Airlines,FI,true
+SBI,S7,S7 Airlines,RU,true
+SBK,RB,Air Srpska,BA,false
+SBS,BB,Seaborne Airlines,US,true
+SCE,,Scenic Airlines,US,true
+SCH,AW,CHC Airways,NL,false
+SCO,TZ,Scoot,SG,true
+SCW,,Malmo Aviation,SE,true
+SCX,SY,Sun Country Airlines,US,true
+SDI,,San Dima Air,US,true
+SDM,FV,Rossiya-Russian Airlines,RU,true
+SDO,EX,Air Santo Domingo,DO,false
+SDR,CF,City Airline,SE,true
+SDY,2S,Island Express,US,false
+SEA,,Southeast Air,US,true
+SEH,G3,Sky Express,GR,true
+SEJ,SG,Spicejet,IN,true
+SEN,,Sevenair,TN,true
+SEQ,I6,Sky Eyes,TH,false
+SER,JR,Aero California,MX,false
+SET,EH,SAETA,EC,false
+SEU,SE,XL Airways France,FR,true
+SEY,HM,Air Seychelles,SC,true
+SFJ,7G,Star Flyer,JP,true
+SFR,FA,Safair,ZA,false
+SGG,DN,Senegal Airlines,SN,true
+SGR,W9,Eastwind Airlines,US,false
+SGY,N5,Skagway Air Service,US,true
+SHA,SH,Sharp Airlines,AU,true
+SHD,,Sahara Airlines,DZ,true
+SIA,SQ,Singapore Airlines,SG,true
+SIB,5M,Sibaviatrans,RU,true
+SIH,SI,Skynet Airlines,IE,true
+SIT,XS,SITA,BE,false
+SJM,7R,Svyaz Rossiya,RU,true
+SJO,IJ,Spring Airlines Japan,JP,true
+SJS,76,Southjet,US,true
+SJU,UQ,Skyjet Airlines,UG,true
+SJY,SJ,Sriwijaya Air,ID,true
+SKB,SX,Skybus Airlines,US,false
+SKU,H2,Sky Airline,CL,true
+SKV,RS,Sky Regional,CA,true
+SKW,OO,SkyWest,US,true
+SKX,JZ,Skyways Express,SE,true
+SKY,BC,Skymark Airlines,JP,true
+SLA,LJ,Sierra National Airlines,SL,false
+SLC,SO,Salsa d\\'Haiti,HT,true
+SLI,5D,Aerolitoral,MX,true
+SLK,MI,SilkAir,SG,true
+SLL,6Q,Slovak Airlines,SK,false
+SLM,PY,Surinam Airways,SR,true
+SMJ,Z3,Avient Aviation,ZW,true
+SMW,,Carpatair Flight Training,RO,true
+SMX,XM,Alitalia Express,IT,true
+SMY,ZS,Sama Airlines,SA,true
+SNB,NB,Sterling Airlines,DK,true
+SNC,2Q,Air Cargo Carriers,US,true
+SNG,V7,Air Senegal International,SN,false
+SNJ,6J,Skynet Asia Airways,JP,true
+SOA,,Southern Air Charter,BS,true
+SOL,IE,Solomon Airlines,SB,true
+SOU,,Southern Airways,US,true
+SOV,6W,Saratov Aviation Division,RU,true
+SOZ,HZ,Sat Airlines,KZ,true
+SPI,,South Pacific Island Airways,US,true
+SPJ,M3,Air Service,MK,false
+SPM,PJ,Air Saint Pierre,FR,true
+SQC,SQ,Singapore Airlines Cargo,SG,true
+SQH,K5,SeaPort Airlines,US,true
+SRB,,Solar Air,TH,true
+SRH,FT,Siem Reap Airways,KH,true
+SRK,SX,Sky Work Airlines,CH,false
+SRL,SM,Swedline Express,SE,false
+SRN,,Sprintair,PL,true
+SRQ,DG,South East Asian Airlines,PH,true
+SRY,,ViaAir,US,true
+SSA,AG,All America US,US,true
+SSV,5G,Skyservice Airlines,CA,true
+STP,8F,STP Airways,ST,true
+STS,SX,Starling Airlines Spain,ES,false
+STU,FS,Servicios de Transportes A,AR,true
+SUD,SD,Sudan Airways,SD,true
+SUF,PI,Sun Air (Fiji),FJ,false
+SUS,EZ,Sun Air of Scandinavia,DK,false
+SUW,ZA,Interavia Airlines,RU,true
+SVA,SV,Saudi Arabian Airlines,SA,true
+SVG,,SVG Air,VC,true
+SVK,GM,Air Slovakia,SK,false
+SVR,U6,Ural Airlines,RU,true
+SWA,WN,Southwest Airlines,US,true
+SWD,A4,Southern Winds Airlines,AR,true
+SWG,WG,Sunwing Airlines,CA,false
+SWM,,Sky Angkor Airlines (ZA),KH,true
+SWN,PT,West Air Sweden,SE,false
+SWR,LX,Swiss International Air Lines,CH,true
+SWU,,Swiss European Air Lines,CH,true
+SWV,WV,Swe Fly,SE,true
+SWW,S8,Shovkoviy Shlyah,UA,false
+SXR,XW,Sky Express,RU,true
+SXS,XQ,SunExpress,TR,true
+SYL,R3,Aircompany Yakutia,RU,true
+SYR,RB,Syrian Arab Airlines,SY,true
+SYX,AL,Skywalk Airlines,US,true
+SZB,,Aerolineas heredas santa maria,DO,true
+SZZ,,SUR Lineas Aereas,AR,true
+TAE,EQ,TAME,EC,true
+TAH,,Air Moorea,FR,true
+TAK,U9,Tatarstan Airlines,RU,true
+TAM,JJ,TAM Brazilian Airlines,BR,true
+TAN,,Zanair,TZ,true
+TAO,VW,Aeromar,MX,true
+TAP,TP,TAP Portugal,PT,true
+TAR,TU,Tunisair,TN,true
+TAT,TA,Grupo TACA,CR,true
+TAY,3V,TNT Airways,BE,false
+TBG,M7,Tropical Airways,HT,false
+TBZ,TB,TrasBrasil,BR,true
+TCF,S5,Shuttle America,US,true
+TCG,T2,Thai Air Cargo,TH,true
+TCI,JY,Air Turks and Caicos,TC,false
+TCV,VR,TACV,PT,true
+TCW,FQ,Thomas Cook Airlines,BE,true
+TCX,MT,Thomas Cook Airlines,GB,true
+TDK,,Transavia Denmark,DK,true
+TDM,TQ,Tandem Aero,MD,false
+TEP,UE,Transeuropean Airlines,RU,false
+TEZ,,Tez Jet Airlines,KG,true
+TFL,OR,Arkefly,NL,true
+TFN,,Norwegian Aviation College,NO,true
+TGA,YT,Air Togo,TG,false
+TGN,,Trigana Air Service,ID,true
+TGW,TR,Tiger Airways,SG,true
+TGZ,A9,Georgian Airways,GE,true
+THA,TG,Thai Airways International,TH,true
+THI,TI,TransHolding,BR,true
+THK,,Turk Hava Kurumu Hava Taksi Isletmesi,TR,true
+THS,TH,TransBrasil Airlines,BR,true
+THT,TN,Air Tahiti Nui,FR,true
+THY,TK,Turkish Airlines,TR,true
+TIB,8R,TRIP Linhas A,BR,true
+TIL,,Tajikistan International Airlines,TJ,true
+TJA,TJ,T.J. Air,US,true
+TJT,T7,Twin Jet,FR,true
+TKS,,Tomsk-Avia,RU,true
+TKY,9I,Thai Sky Airlines,TH,false
+TLA,,Translift Airways,IE,true
+TLM,9F,Tramm Airlines,,false
+TLP,TD,Tulip Air,NL,false
+TLW,L9,Teamline Air,AT,false
+TMA,TL,Trans Mediterranean Airlines,LB,true
+TMG,GY,Tri-MG Intra Asia Airlines,ID,false
+TMW,M8,Trans Maldivian Airways,MV,false
+TNA,GE,TransAsia Airways,TW,true
+TNM,3P,Tiara Air,AW,true
+TNS,,Transilvania,RO,true
+TNU,M8,TransNusa Air,ID,true
+TOB,7T,Tobruk Air,LY,false
+TOK,CG,Airlines PNG,PG,true
+TOL,TI,Tol-Air Services,US,false
+TOM,BY,Thomsonfly,GB,true
+TOS,PM,Tropic Air,BZ,true
+TOW,FF,Tower Air,US,false
+TPA,QT,TAMPA,CO,true
+TPC,TY,Air Cal,FR,false
+TRA,HV,Transavia Holland,NL,true
+TRK,,Turkuaz Airlines,TR,true
+TRS,FL,AirTran Airways,US,true
+TRZ,T9,TransMeridian Airlines,US,false
+TSC,TS,Air Transat,CA,true
+TSE,TH,Transmile Air Services,MY,false
+TSJ,S5,Trast Aero,KG,false
+TSO,UN,Transaero Airlines,RU,true
+TSX,T9,Thai Star Airlines,TH,false
+TTZ,,Transair,CA,true
+TUA,T5,Turkmenistan Airlines,TM,true
+TUB,TB,TUI Airlines Belgium,BE,false
+TUI,UG,Tuninter,TN,true
+TUR,,ATUR,EC,true
+TUS,M3,ABSA - Aerolinhas Brasileiras,BR,true
+TUY,LD,Linea Turistica Aerotuy,VE,false
+TVF,TO,Transavia France,FR,true
+TVJ,,Thai Vietjet Air,TH,true
+TVR,T6,Tavrey Airlines,UA,false
+TVS,QS,Travel Service,CZ,true
+TWA,TW,Trans World Airlines,US,false
+TWB,TW,Tway Airlines,KR,true
+TWD,,Turkish Wings Domestic,TR,true
+TWN,EC,Avialeasing Aviation Company,UZ,true
+TXC,AL,Transaviaexport,BY,false
+TXP,XS,Texas Spirit,US,false
+TXW,TQ,Texas Wings,US,true
+TYR,VO,Tyrolean Airways,AT,true
+TYS,YO,TransHolding System,BR,true
+UAC,,United Air Charters,ZW,true
+UAE,EK,Emirates,AE,true
+UAL,UA,United Airlines,US,true
+UAT,,Ukraine Atlantic,UA,true
+UAY,,University of Birmingham Air Squadron (RAF),GB,true
+UBA,UB,Myanma Airways,MM,true
+UBD,4H,United Airways,BD,true
+UBG,,US-Bangla Airlines,BD,true
+UCA,C5,CommutAir,US,true
+UCR,DW,Aero-Charter Ukraine,UA,false
+UDC,5D,DonbassAero,UA,true
+UDN,,Dniproavia,UA,true
+UGX,QU,East African,UG,true
+UIA,B7,Uni Air,TW,true
+UJX,,AtlasGlobal Ukraine,UA,true
+UKM,UF,UM Airlines,UA,true
+UKR,6U,Air Ukraine,UA,false
+UKS,6Z,Ukrainian Cargo Airways,UA,false
+UKW,5V,Lviv Airlines,UA,false
+ULA,OD,Zuliana de Aviacion,VE,false
+UMK,,Yuzhmashavia,UA,true
+UPA,GS,Air Foyle,GB,true
+UPS,5X,United Parcel Service,US,false
+URG,3N,Air Urga,UA,false
+URN,3T,Turan Air,AZ,true
+USA,US,US Airways,US,true
+USH,,US Helicopter,US,true
+UTA,UT,UTair Aviation,RU,true
+UTY,QQ,Alliance Airlines,AU,true
+UWW,II,LSM International ,RU,true
+UYC,UY,Cameroon Airlines,CM,false
+UZB,HY,Uzbekistan Airways,UZ,true
+VAL,VC,Voyageur Airways,CA,false
+VAP,9R,Phuket Air,TH,false
+VAS,V8,ATRAN Cargo Airlines,RU,true
+VAU,VA,V Australia Airlines,AU,false
+VAX,ZV,V Air,TW,true
+VBI,DJ,Virgin Blue,AU,false
+VBW,2J,Air Burkina,BF,true
+VCV,V0,Conviasa,VE,true
+VCX,VC,Ocean Airlines,IT,false
+VDA,VI,Volga-Dnepr Airlines,RU,true
+VEX,TV,Virgin Express,BE,true
+VFC,,Vasco Air,VN,true
+VGA,6V,Air Vegas,US,false
+VGN,VK,Virgin Nigeria Airways,NG,true
+VIA,V1,VIA Líneas Aéreas,AR,true
+VIM,VL,Air VIA,BG,true
+VIR,VS,Virgin Atlantic Airways,GB,true
+VIS,,Vision Air International,PK,true
+VJA,J7,ValueJet,US,false
+VJC,,VietJet Air,VN,true
+VKH,VQ,Viking Hellas,GR,true
+VKJ,KT,VickJet,FR,true
+VLE,VE,Volare Airlines,IT,true
+VLG,VY,Vueling Airlines,ES,true
+VLI,V5,Avolar Aerolineas,MX,false
+VLK,XF,Vladivostok Air,RU,true
+VLM,VG,VLM Airlines,BE,true
+VLO,LC,Varig Log,BR,true
+VLU,VF,Valuair,SG,true
+VNP,VH,Virgin Pacific,FJ,true
+VOA,VM,Viaggio Air,BG,false
+VOE,V7,VOLOTEA Airways,ES,true
+VOI,Y4,Volaris,MX,true
+VOO,,Volotea,ES,true
+VOZ,VA,Virgin Australia,AU,true
+VQI,,Flyme (VP),MV,true
+VRD,VX,Virgin America,US,true
+VRN,RG,VRG Linhas Aereas,BR,true
+VSP,VP,VASP,BR,true
+VSV,DV,Scat Air,KZ,true
+VTA,VT,Air Tahiti,PF,true
+VTI,UK,Air Vistara,IN,true
+VUE,,AD Aviation,GB,true
+VUN,VU,Air Ivoire,CI,true
+VVC,5Z,VivaColombia,CO,true
+VVM,ZG,Viva Macau,MO,true
+VVN,47,88,CY,true
+VWA,YY,Virginwings,DE,true
+VXG,G2,Avirex,GA,false
+WAJ,,AirAsia Japan,JP,true
+WAK,K5,Wings of Alaska,US,false
+WAL,WA,Western Airlines,US,true
+WAU,WU,Wizz Air Ukraine,UA,true
+WBA,FC,Finncomm Airlines,FI,true
+WCP,FE,Primaris Airlines,US,false
+WDY,C8,Chicago Express,US,false
+WEB,WJ,WebJet Linhas A,BR,true
+WEN,WR,WestJet Encore,CA,true
+WER,W4,AeroWorld ,RU,true
+WFX,,Westfalia Express VA,DE,true
+WGC,WG,Worldways,CA,false
+WIF,WF,Widerøe,NO,true
+WJA,WS,WestJet,CA,true
+WLC,2W,Welcome Air,AT,true
+WOA,WO,World Airways,US,true
+WON,IW,Wings Air,ID,true
+WOW,,Air Southwest,GB,true
+WRC,,Wind Rose Aviation,UA,true
+WRF,8V,Wright Air Service,US,false
+WSS,W3,World Scale Airlines,US,true
+WTA,FK,Africa West,TG,true
+WTJ,,Whitejets,BR,true
+WVL,8Z,Wizz Air Hungary,BG,true
+WWD,CN,Westward Airways,US,false
+WZP,3J,Zip,CA,false
+WZZ,W6,Wizz Air,HU,true
+XAN,78,Southjet cargo,US,true
+XAU,XA,XAIR USA,US,true
+XAX,D7,AirAsia X,MY,true
+XBM,,CBM America,US,true
+XEL,,Excel Charter,GB,true
+XLA,JN,Excel Airways,GB,true
+XOJ,,XOJET,US,true
+XPT,XP,XPTO,PT,true
+XSR,,Executive AirShare,US,true
+YCC,YC,Ciel Canadien,CA,true
+YCP,CN,Canadian National Airways,CA,true
+YEL,YE,Yellowtail,US,true
+YEP,,YES Airways,PL,true
+YZR,Y8,Yangtze River Express,CN,false
+YZZ,YZ,LSM AIRLINES ,RU,true
+ZAK,K8,Airlink Zambia,ZM,false
+ZCS,77,Southjet connect,US,true
+ZNA,ZN,Zenith International Airline,TH,true
+ZTF,7M,Mongolian International Air Lines ,MN,true
+ZTT,Z6,ZABAIKAL AIRLINES,RU,true
+ZXY,ZX,Japan Regio,JP,true
+ZYZ,XP,Caribbean Wings,TC,false
+ZZZ,ZP,Zabaykalskii Airlines,RU,true

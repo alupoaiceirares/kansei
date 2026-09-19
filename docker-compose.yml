@@ -163,6 +163,7 @@ services:
       WIREHOOD_RABBITMQ_PASSWORD: ${WIREHOOD_RABBITMQ_PASSWORD}
       COURIER_ONE_RABBITMQ_PASSWORD: ${COURIER_ONE_RABBITMQ_PASSWORD}
       FDR_RABBITMQ_PASSWORD: ${FDR_RABBITMQ_PASSWORD}
+      TAILWIND_RABBITMQ_PASSWORD: ${TAILWIND_RABBITMQ_PASSWORD}
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -303,10 +304,14 @@ services:
       DB_USERNAME: ${TAILWIND_DB_USERNAME}
       DB_PASSWORD: ${TAILWIND_DB_PASSWORD}
       DB_NAME: ${TAILWIND_DB_NAME}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: tailwind
+      RABBITMQ_PASSWORD: ${TAILWIND_RABBITMQ_PASSWORD}
       REDIS_HOST: redis
       SHIELDWALL_INTERNAL_URI: http://shieldwall:${SHIELDWALL_PORT}
       STORAGE_ROOT: /app/storage
       LOG_FILE: /app/logs/tailwind.json
+      AUDIT_FALLBACK_FILE: /app/logs/audit-fallback.jsonl
     volumes:
       # Bind mount, not a named volume - aircraft photos survive `docker-compose down -v` and stay browsable directly on the host
       - ${TAILWIND_STORAGE_HOST_DIR}:/app/storage
@@ -316,6 +321,8 @@ services:
     depends_on:
       postgres-tailwind:
         condition: service_healthy
+      rabbitmq-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     restart: unless-stopped
