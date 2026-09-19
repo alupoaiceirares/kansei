@@ -20,6 +20,7 @@
         <module>shieldwall</module>
         <module>wirehood</module>
         <module>fdr</module>
+        <module>tailwind</module>
     </modules>
 
     <properties>
