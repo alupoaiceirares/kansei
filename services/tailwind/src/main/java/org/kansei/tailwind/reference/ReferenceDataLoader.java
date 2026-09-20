@@ -1,6 +1,7 @@
 package org.kansei.tailwind.reference;
 
 import lombok.extern.slf4j.Slf4j;
+import org.kansei.tailwind.aircraft.AircraftAliasSeeder;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
@@ -26,9 +27,11 @@ public class ReferenceDataLoader implements ApplicationRunner {
 
     private final JdbcTemplate jdbcTemplate;
     private final TransactionTemplate transactionTemplate;
+    private final AircraftAliasSeeder aircraftAliasSeeder;
 
-    public ReferenceDataLoader(JdbcTemplate jdbcTemplate, PlatformTransactionManager transactionManager) {
+    public ReferenceDataLoader(JdbcTemplate jdbcTemplate, PlatformTransactionManager transactionManager, AircraftAliasSeeder aircraftAliasSeeder) {
         this.jdbcTemplate = jdbcTemplate;
+        this.aircraftAliasSeeder = aircraftAliasSeeder;
         this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
@@ -55,6 +58,8 @@ public class ReferenceDataLoader implements ApplicationRunner {
                 r -> new Object[]{r.get("icao_code"), r.get("manufacturer"), r.get("model"), r.get("name"), r.get("family"),
                         r.get("body_type"), r.get("engine_type"), blankToNull(r.get("engine_count")) == null ? null : Short.parseShort(r.get("engine_count")),
                         blankToNull(r.get("wake_category"))});
+
+        aircraftAliasSeeder.seedIfEmpty();
     }
 
     private void loadIfEmpty(String table, String file, String insertSql, Function<Map<String, String>, Object[]> mapper) throws IOException {

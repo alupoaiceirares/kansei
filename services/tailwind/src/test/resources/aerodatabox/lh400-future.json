@@ -1,0 +1,74 @@
+[
+  {
+    "greatCircleDistance": {
+      "meter": 6204692.34,
+      "km": 6204.69,
+      "mile": 3855.42,
+      "nm": 3350.27,
+      "feet": 20356602.16
+    },
+    "departure": {
+      "airport": {
+        "icao": "EDDF",
+        "iata": "FRA",
+        "name": "Frankfurt-am-Main",
+        "shortName": "Frankfurt-am-Main",
+        "municipalityName": "Frankfurt-am-Main",
+        "location": {
+          "lat": 50.0264,
+          "lon": 8.543129
+        },
+        "countryCode": "DE",
+        "timeZone": "Europe/Berlin"
+      },
+      "scheduledTime": {
+        "utc": "2026-11-19 10:00Z",
+        "local": "2026-11-19 11:00+01:00"
+      },
+      "terminal": "1",
+      "quality": [
+        "Basic"
+      ]
+    },
+    "arrival": {
+      "airport": {
+        "icao": "KJFK",
+        "iata": "JFK",
+        "name": "New York John F Kennedy",
+        "shortName": "John F Kennedy",
+        "municipalityName": "New York",
+        "location": {
+          "lat": 40.6398,
+          "lon": -73.7789
+        },
+        "countryCode": "US",
+        "timeZone": "America/New_York"
+      },
+      "scheduledTime": {
+        "utc": "2026-11-19 18:35Z",
+        "local": "2026-11-19 13:35-05:00"
+      },
+      "predictedTime": {
+        "utc": "2026-11-19 18:21Z",
+        "local": "2026-11-19 13:21-05:00"
+      },
+      "terminal": "1",
+      "quality": [
+        "Basic"
+      ]
+    },
+    "lastUpdatedUtc": "2026-02-06 12:29Z",
+    "number": "LH 400",
+    "status": "Expected",
+    "codeshareStatus": "Unknown",
+    "isCargo": false,
+    "aircraft": {
+      "model": "Boeing 747-400"
+    },
+    "airline": {
+      "name": "Lufthansa",
+      "iata": "LH",
+      "icao": "DLH"
+    }
+  }
+]

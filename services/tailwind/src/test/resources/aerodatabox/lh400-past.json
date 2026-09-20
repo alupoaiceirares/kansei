@@ -1,0 +1,95 @@
+[
+  {
+    "greatCircleDistance": {
+      "meter": 6204692.34,
+      "km": 6204.69,
+      "mile": 3855.42,
+      "nm": 3350.27,
+      "feet": 20356602.16
+    },
+    "departure": {
+      "airport": {
+        "icao": "EDDF",
+        "iata": "FRA",
+        "name": "Frankfurt-am-Main",
+        "shortName": "Frankfurt-am-Main",
+        "municipalityName": "Frankfurt-am-Main",
+        "location": {
+          "lat": 50.0264,
+          "lon": 8.543129
+        },
+        "countryCode": "DE",
+        "timeZone": "Europe/Berlin"
+      },
+      "scheduledTime": {
+        "utc": "2026-09-12 08:55Z",
+        "local": "2026-09-12 10:55+02:00"
+      },
+      "revisedTime": {
+        "utc": "2026-09-12 08:55Z",
+        "local": "2026-09-12 10:55+02:00"
+      },
+      "runwayTime": {
+        "utc": "2026-09-12 09:35Z",
+        "local": "2026-09-12 11:35+02:00"
+      },
+      "terminal": "1",
+      "checkInDesk": "259-335",
+      "gate": "Z50",
+      "runway": "25C",
+      "quality": [
+        "Basic",
+        "Live"
+      ]
+    },
+    "arrival": {
+      "airport": {
+        "icao": "KJFK",
+        "iata": "JFK",
+        "name": "New York John F Kennedy",
+        "shortName": "John F Kennedy",
+        "municipalityName": "New York",
+        "location": {
+          "lat": 40.6398,
+          "lon": -73.7789
+        },
+        "countryCode": "US",
+        "timeZone": "America/New_York"
+      },
+      "scheduledTime": {
+        "utc": "2026-09-12 17:35Z",
+        "local": "2026-09-12 13:35-04:00"
+      },
+      "revisedTime": {
+        "utc": "2026-09-12 17:39Z",
+        "local": "2026-09-12 13:39-04:00"
+      },
+      "runwayTime": {
+        "utc": "2026-09-12 17:36Z",
+        "local": "2026-09-12 13:36-04:00"
+      },
+      "terminal": "1",
+      "runway": "13L",
+      "quality": [
+        "Basic",
+        "Live"
+      ]
+    },
+    "lastUpdatedUtc": "2026-09-12 17:39Z",
+    "number": "LH 400",
+    "callSign": "DLH400",
+    "status": "Arrived",
+    "codeshareStatus": "IsOperator",
+    "isCargo": false,
+    "aircraft": {
+      "reg": "D-AIHX",
+      "modeS": "3C6518",
+      "model": "Airbus A340"
+    },
+    "airline": {
+      "name": "Lufthansa",
+      "iata": "LH",
+      "icao": "DLH"
+    }
+  }
+]

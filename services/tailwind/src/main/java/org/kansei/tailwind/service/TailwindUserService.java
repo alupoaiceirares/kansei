@@ -26,10 +26,12 @@ public class TailwindUserService {
     private static final int ANOMALY_MIN_CHUNK_SIZE = 5;
 
     private final TailwindUserRepository tailwindUserRepository;
+    private final UserDataCleaner userDataCleaner;
     private final ShieldwallUserClient shieldwallUserClient;
 
-    public TailwindUserService(TailwindUserRepository tailwindUserRepository, ShieldwallUserClient shieldwallUserClient) {
+    public TailwindUserService(TailwindUserRepository tailwindUserRepository, ShieldwallUserClient shieldwallUserClient, UserDataCleaner userDataCleaner) {
         this.tailwindUserRepository = tailwindUserRepository;
+        this.userDataCleaner = userDataCleaner;
         this.shieldwallUserClient = shieldwallUserClient;
     }
 
@@ -46,8 +48,8 @@ public class TailwindUserService {
     }
 
     /**
-     * Removes tailwind rows for users shieldwall no longer has (purged accounts). Later phases must delete
-     * their journeys, legs and friendships in the same place, keyed by user id.
+     * Removes everything tailwind holds for users shieldwall no longer has (purged accounts), see UserDataCleaner
+     * for the per-user tables.
      */
     public int purgeOrphanedUsers() {
         List<UUID> allIds = tailwindUserRepository.findAllUserIds();
@@ -71,7 +73,7 @@ public class TailwindUserService {
                 log.warn("account reconcile skipped a chunk of {}, shieldwall knows none of them", chunk.size());
                 continue;
             }
-            tailwindUserRepository.deleteAllById(orphans);
+            userDataCleaner.deleteAllFor(orphans);
             deleted += orphans.size();
         }
         if (deleted > 0) {
