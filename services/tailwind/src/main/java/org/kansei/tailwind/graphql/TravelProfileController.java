@@ -27,11 +27,17 @@ public class TravelProfileController {
         this.travelProfileService = travelProfileService;
     }
 
-    // No work here beyond the checks, the field resolvers below do the loading
+    /**
+     * Without userId this is the caller's own profile. With one it is that user's, already narrowed to what the
+     * caller may see: a friend's friends-only flights, a stranger's public ones.
+     */
     @QueryMapping
-    public TravelProfileRoot travelProfile(@ContextValue("userId") UUID userId, @Argument PeriodInput period) {
-        travelProfileService.requireAccess(userId);
-        return new TravelProfileRoot(userId, userId, toPeriod(period));
+    public TravelProfileRoot travelProfile(@ContextValue("userId") UUID callerId, @Argument("userId") UUID profileUserId,
+                                           @Argument PeriodInput period) {
+        travelProfileService.requireAccess(callerId);
+        UUID owner = profileUserId == null ? callerId : profileUserId;
+        travelProfileService.requireProfileExists(owner);
+        return new TravelProfileRoot(callerId, owner, toPeriod(period));
     }
 
     @SchemaMapping(typeName = "TravelProfile")

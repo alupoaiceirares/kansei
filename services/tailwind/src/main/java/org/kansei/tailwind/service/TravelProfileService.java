@@ -4,13 +4,16 @@ import org.kansei.tailwind.model.Country;
 import org.kansei.tailwind.model.Journey;
 import org.kansei.tailwind.repository.CountryRepository;
 import org.kansei.tailwind.repository.JourneyRepository;
+import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.kansei.tailwind.stats.StatsFlight;
 import org.kansei.tailwind.stats.StatsFlightLoader;
 import org.kansei.tailwind.stats.StatsModels;
 import org.kansei.tailwind.stats.TravelStatsCalculator;
 import org.kansei.tailwind.stats.VisitedCountriesCalculator;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -33,18 +36,28 @@ public class TravelProfileService {
     private final StatsFlightLoader statsFlightLoader;
     private final CountryRepository countryRepository;
     private final JourneyRepository journeyRepository;
+    private final TailwindUserRepository tailwindUserRepository;
     private final OptInGuard optInGuard;
 
     public TravelProfileService(StatsFlightLoader statsFlightLoader, CountryRepository countryRepository,
-                                JourneyRepository journeyRepository, OptInGuard optInGuard) {
+                                JourneyRepository journeyRepository, TailwindUserRepository tailwindUserRepository,
+                                OptInGuard optInGuard) {
         this.statsFlightLoader = statsFlightLoader;
         this.countryRepository = countryRepository;
         this.journeyRepository = journeyRepository;
+        this.tailwindUserRepository = tailwindUserRepository;
         this.optInGuard = optInGuard;
     }
 
     public void requireAccess(UUID viewerId) {
         optInGuard.require(viewerId);
+    }
+
+    // A profile only exists for someone who opted in, and saying so is not a leak: opting in is not private
+    public void requireProfileExists(UUID ownerId) {
+        if (!tailwindUserRepository.existsById(ownerId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "That user has not opted into tailwind");
+        }
     }
 
     @Transactional(readOnly = true)

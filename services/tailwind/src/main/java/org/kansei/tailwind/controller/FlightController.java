@@ -74,6 +74,12 @@ public class FlightController {
         return journeyService.list(userId).stream().flatMap(j -> j.flights().stream()).toList();
     }
 
+    // Someone else's flights, only the ones this viewer may see
+    @GetMapping("/users/{ownerId}")
+    public List<UserFlightResponse> ofUser(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID ownerId) {
+        return journeyService.listVisible(userId, ownerId).stream().flatMap(j -> j.flights().stream()).toList();
+    }
+
     @PatchMapping("/{userFlightId}")
     public UserFlightResponse update(
             @RequestHeader("X-User-Id") UUID userId,

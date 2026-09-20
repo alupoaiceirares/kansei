@@ -1,6 +1,7 @@
 package org.kansei.tailwind.service;
 
 import org.kansei.tailwind.repository.FlightRepository;
+import org.kansei.tailwind.repository.FriendshipRepository;
 import org.kansei.tailwind.repository.JourneyRepository;
 import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.kansei.tailwind.repository.UserFlightRepository;
@@ -22,13 +23,15 @@ public class UserDataCleaner {
     private final JourneyRepository journeyRepository;
     private final FlightRepository flightRepository;
     private final TailwindUserRepository tailwindUserRepository;
+    private final FriendshipRepository friendshipRepository;
 
     public UserDataCleaner(UserFlightRepository userFlightRepository, JourneyRepository journeyRepository, FlightRepository flightRepository,
-                           TailwindUserRepository tailwindUserRepository) {
+                           TailwindUserRepository tailwindUserRepository, FriendshipRepository friendshipRepository) {
         this.userFlightRepository = userFlightRepository;
         this.journeyRepository = journeyRepository;
         this.flightRepository = flightRepository;
         this.tailwindUserRepository = tailwindUserRepository;
+        this.friendshipRepository = friendshipRepository;
     }
 
     @Transactional
@@ -42,6 +45,7 @@ public class UserDataCleaner {
         if (!flightIds.isEmpty()) {
             flightRepository.deleteManualByIds(flightIds);
         }
+        friendshipRepository.deleteByUserIds(userIds);
         tailwindUserRepository.deleteAllById(userIds);
     }
 }

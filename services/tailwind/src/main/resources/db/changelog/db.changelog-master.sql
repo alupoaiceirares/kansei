@@ -6,7 +6,7 @@ CREATE TABLE tailwind_users (
     user_id UUID PRIMARY KEY,
     joined_at TIMESTAMPTZ NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    default_visibility VARCHAR(16) NOT NULL DEFAULT 'PUBLIC'
+    default_visibility VARCHAR(16) NOT NULL DEFAULT 'FRIENDS'
 );
 
 --changeset kansei:002-create-countries-table
@@ -144,3 +144,18 @@ CREATE TABLE aircraft_photos (
     source_url VARCHAR(1000),
     created_at TIMESTAMPTZ NOT NULL
 );
+
+--changeset kansei:010-create-friendships-table
+-- user_id_a/b are order-independent (always the smaller UUID first) so A-requests-B and B-requests-A cannot
+-- both exist as separate rows. requested_by is the real requester, needed so accept and decline know who may act.
+CREATE TABLE friendships (
+    user_id_a UUID NOT NULL,
+    user_id_b UUID NOT NULL,
+    requested_by UUID NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'ACCEPTED')),
+    requested_at TIMESTAMPTZ NOT NULL,
+    responded_at TIMESTAMPTZ,
+    CHECK (user_id_a <> user_id_b),
+    PRIMARY KEY (user_id_a, user_id_b)
+);
+CREATE INDEX friendships_user_id_b ON friendships (user_id_b);
