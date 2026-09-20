@@ -121,6 +121,26 @@ public class ShieldwallUserClient {
         }
     }
 
+    // Friend-search typeahead, same fail-soft shape as resolveUsernames: shieldwall down means no matches, never an error
+    public List<UserMatch> searchUsers(String query, int limit) {
+        try {
+            List<UserMatch> body = restClient.get()
+                    .uri(uriBuilder -> uriBuilder.path("/api/internal/users/search")
+                            .queryParam("query", query).queryParam("limit", limit).build())
+                    .header("X-Internal-Secret", internalServiceSecret)
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<>() {
+                    });
+            return body == null ? List.of() : body;
+        } catch (RuntimeException ex) {
+            log.warn("shieldwall user search failed: {}", ex.toString());
+            return List.of();
+        }
+    }
+
     private record UserSummary(UUID id, String username) {
+    }
+
+    public record UserMatch(UUID id, String username) {
     }
 }

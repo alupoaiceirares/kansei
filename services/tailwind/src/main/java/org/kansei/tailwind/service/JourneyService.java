@@ -5,6 +5,7 @@ import org.kansei.tailwind.dto.JourneyResponse;
 import org.kansei.tailwind.model.Journey;
 import org.kansei.tailwind.model.UserFlight;
 import org.kansei.tailwind.model.Visibility;
+import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.kansei.tailwind.repository.FlightRepository;
 import org.kansei.tailwind.repository.JourneyRepository;
 import org.kansei.tailwind.repository.UserFlightRepository;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -33,15 +35,20 @@ public class JourneyService {
     private final FlightRepository flightRepository;
     private final JourneyViews journeyViews;
     private final OptInGuard optInGuard;
+    private final ViewerAccess viewerAccess;
+    private final TailwindUserRepository tailwindUserRepository;
     private final Clock clock;
 
     public JourneyService(JourneyRepository journeyRepository, UserFlightRepository userFlightRepository, FlightRepository flightRepository,
-                          JourneyViews journeyViews, OptInGuard optInGuard, Clock clock) {
+                          JourneyViews journeyViews, OptInGuard optInGuard, ViewerAccess viewerAccess,
+                          TailwindUserRepository tailwindUserRepository, Clock clock) {
         this.journeyRepository = journeyRepository;
         this.userFlightRepository = userFlightRepository;
         this.flightRepository = flightRepository;
         this.journeyViews = journeyViews;
         this.optInGuard = optInGuard;
+        this.viewerAccess = viewerAccess;
+        this.tailwindUserRepository = tailwindUserRepository;
         this.clock = clock;
     }
 
@@ -62,6 +69,36 @@ public class JourneyService {
     @Transactional(readOnly = true)
     public JourneyResponse get(UUID userId, Long journeyId) {
         return view(requireOwned(userId, journeyId));
+    }
+
+    /**
+     * Someone else's journeys, cut down to the flights this viewer may see. A journey whose flights are all
+     * hidden is left out entirely, so its very existence stays private.
+     */
+    @Transactional(readOnly = true)
+    public List<JourneyResponse> listVisible(UUID viewerId, UUID ownerId) {
+        optInGuard.require(viewerId);
+        if (viewerId.equals(ownerId)) {
+            return list(ownerId);
+        }
+        if (!tailwindUserRepository.existsById(ownerId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "That user has not opted into tailwind");
+        }
+        Set<Visibility> allowed = viewerAccess.visibleTo(viewerId, ownerId);
+        Map<Long, List<UserFlight>> flightsByJourney = userFlightRepository.findDetailedByUserId(ownerId).stream()
+                .filter(flight -> allowed.contains(flight.getVisibility()))
+                .collect(Collectors.groupingBy(UserFlight::getJourneyId));
+
+        List<JourneyResponse> journeys = new ArrayList<>();
+        for (Journey journey : journeyRepository.findByUserIdOrderByCreatedAtDescIdDesc(ownerId)) {
+            List<UserFlight> visible = flightsByJourney.get(journey.getId());
+            if (visible != null && !visible.isEmpty()) {
+                journeys.add(journeyViews.journey(journey, visible));
+            }
+        }
+        journeys.sort(Comparator.comparing((JourneyResponse j) -> j.flights().isEmpty() ? null : j.flights().get(0).flight().flightDate(),
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return journeys;
     }
 
     public JourneyResponse create(UUID userId, JourneyRequest request) {

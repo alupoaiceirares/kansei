@@ -38,6 +38,12 @@ public class JourneyController {
         return journeyService.list(userId);
     }
 
+    // Someone else's journeys, each cut down to the flights this viewer may see
+    @GetMapping("/users/{ownerId}")
+    public List<JourneyResponse> ofUser(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID ownerId) {
+        return journeyService.listVisible(userId, ownerId);
+    }
+
     @GetMapping("/{journeyId}")
     public JourneyResponse get(@RequestHeader("X-User-Id") UUID userId, @PathVariable Long journeyId) {
         return journeyService.get(userId, journeyId);

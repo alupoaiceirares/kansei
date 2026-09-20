@@ -42,5 +42,5 @@ public class TailwindUser {
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "default_visibility", nullable = false)
-    private Visibility defaultVisibility = Visibility.PUBLIC;
+    private Visibility defaultVisibility = Visibility.FRIENDS;
 }

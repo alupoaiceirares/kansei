@@ -314,7 +314,8 @@ class FlightFlowIntegrationTest {
 
         JsonPathReader added = add(user, "{\"flightId\":" + flightId + "}", HttpStatus.CREATED);
 
-        assertThat(JsonPath.<String>read(added.body(), "$.visibility")).isEqualTo("PUBLIC");
+        // the default is FRIENDS, a new flight is never public unless the user says so
+        assertThat(JsonPath.<String>read(added.body(), "$.visibility")).isEqualTo("FRIENDS");
         assertThat(added.number("$.journeyId")).isPositive();
         lookup(user, "LH400", PAST_DAY).andExpect(jsonPath("$.flights[0].alreadyInLog").value(true));
         add(user, "{\"flightId\":" + flightId + "}", HttpStatus.CONFLICT);

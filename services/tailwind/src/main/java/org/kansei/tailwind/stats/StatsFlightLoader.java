@@ -5,6 +5,7 @@ import org.kansei.tailwind.model.UserFlight;
 import org.kansei.tailwind.model.Visibility;
 import org.kansei.tailwind.repository.UserFlightRepository;
 import org.kansei.tailwind.service.JourneyViews;
+import org.kansei.tailwind.service.ViewerAccess;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,19 @@ import java.util.stream.Collectors;
  * Loads the flights a viewer may count for an owner, already flattened. Upcoming flights are left out, they
  * only count once they have happened.
  *
- * <p>The visibility filter is applied here and nowhere else, so no aggregation can leak a hidden flight into
- * a total. Phase 6 adds friends, which is the one place this needs to change.
+ * <p>Which flights a viewer may count is decided by ViewerAccess alone, so no aggregation can leak a hidden
+ * flight into a total.
  */
 @Component
 public class StatsFlightLoader {
 
     private final UserFlightRepository userFlightRepository;
+    private final ViewerAccess viewerAccess;
     private final Clock clock;
 
-    public StatsFlightLoader(UserFlightRepository userFlightRepository, Clock clock) {
+    public StatsFlightLoader(UserFlightRepository userFlightRepository, ViewerAccess viewerAccess, Clock clock) {
         this.userFlightRepository = userFlightRepository;
+        this.viewerAccess = viewerAccess;
         this.clock = clock;
     }
 
@@ -44,7 +47,7 @@ public class StatsFlightLoader {
     @Transactional(readOnly = true)
     public List<StatsFlight> load(UUID viewerId, UUID ownerId, StatsModels.Period period) {
         List<UserFlight> flights = userFlightRepository.findDetailedByUserId(ownerId);
-        Set<Visibility> allowed = allowedVisibilities(viewerId, ownerId);
+        Set<Visibility> allowed = viewerAccess.visibleTo(viewerId, ownerId);
         LocalDate today = LocalDate.now(clock);
 
         // The stop type suggestion needs the neighbours inside the same journey, so it is worked out before filtering
@@ -71,14 +74,6 @@ public class StatsFlightLoader {
         }
         result.sort(Comparator.comparing(StatsFlight::date).thenComparing(StatsFlight::userFlightId));
         return result;
-    }
-
-    private static Set<Visibility> allowedVisibilities(UUID viewerId, UUID ownerId) {
-        if (viewerId.equals(ownerId)) {
-            return Set.of(Visibility.PRIVATE, Visibility.FRIENDS, Visibility.PUBLIC);
-        }
-        // Friends come in the social phase, until then another viewer sees only public flights
-        return Set.of(Visibility.PUBLIC);
     }
 
     // Uses the arrival time when there is one, otherwise the flight date, so a flight counts from the day after at the latest

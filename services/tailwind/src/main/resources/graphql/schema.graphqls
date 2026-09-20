@@ -1,9 +1,10 @@
 scalar Date
 
 type Query {
-    # The caller's own travel profile. Fields are resolved lazily (TravelProfileController), so a small
-    # dashboard query and the full stats page only pay for the fields they ask for.
-    travelProfile(period: PeriodInput): TravelProfile!
+    # Without userId this is the caller's own profile, with one it is that user's, narrowed to what the caller
+    # may see. Fields are resolved lazily (TravelProfileController), so a small dashboard query and the full
+    # stats page only pay for the fields they ask for.
+    travelProfile(userId: ID, period: PeriodInput): TravelProfile!
 }
 
 # Both ends are optional and inclusive, on the flight's own local departure date.
