@@ -46,6 +46,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
+        <!-- Read/profile side only, the write side stays plain REST -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-graphql</artifactId>
+        </dependency>
         <!-- Blocking client (tailwind is Tomcat/MVC), backs the username cache and later the AeroDataBox quota counter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

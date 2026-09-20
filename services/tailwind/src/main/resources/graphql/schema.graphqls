@@ -1,0 +1,159 @@
+scalar Date
+
+type Query {
+    # The caller's own travel profile. Fields are resolved lazily (TravelProfileController), so a small
+    # dashboard query and the full stats page only pay for the fields they ask for.
+    travelProfile(period: PeriodInput): TravelProfile!
+}
+
+# Both ends are optional and inclusive, on the flight's own local departure date.
+input PeriodInput {
+    from: Date
+    to: Date
+}
+
+type TravelProfile {
+    stats: TravelStats!
+    countries: VisitedCountries!
+    airports: [AirportVisit!]!
+    aircraft: [AircraftFamilyCollection!]!
+    airlines: [AirlineCount!]!
+    records: TravelRecords!
+}
+
+# Counts are distinct: 3 flights on the same A320 count once under aircraftTypes.
+type TravelStats {
+    flightCount: Int!
+    distanceKm: Float!
+    # Only flights that have both a departure and an arrival time, so it can cover fewer flights than flightCount
+    timeInAirMinutes: Int!
+    flightsWithDuration: Int!
+    countryCount: Int!
+    airportCount: Int!
+    airlineCount: Int!
+    aircraftFamilyCount: Int!
+    aircraftTypeCount: Int!
+    longestFlightKm: Float
+    averageFlightKm: Float
+    cargoFlightCount: Int!
+}
+
+# visited: countries the user was actually in (origin, final destination, STAY and LAYOVER_VISITED stops).
+# passedThrough: countries only seen from a layover, listed separately so the map can style them differently.
+type VisitedCountries {
+    visited: [CountryVisit!]!
+    passedThrough: [CountryVisit!]!
+}
+
+type CountryVisit {
+    code: String!
+    name: String!
+    continent: String!
+    visitCount: Int!
+    firstVisit: Date!
+    lastVisit: Date!
+}
+
+type AirportVisit {
+    id: ID!
+    icao: String
+    iata: String
+    name: String!
+    city: String
+    countryCode: String!
+    latitude: Float!
+    longitude: Float!
+    timesUsed: Int!
+    departures: Int!
+    arrivals: Int!
+    firstVisit: Date!
+    lastVisit: Date!
+}
+
+# One card per family. variants holds what was actually flown, including the "variant unknown" entry
+# for flights where only the family could be resolved.
+type AircraftFamilyCollection {
+    family: String!
+    flightCount: Int!
+    distanceKm: Float!
+    firstFlight: Date!
+    lastFlight: Date!
+    photoUrl: String!
+    variants: [AircraftVariantCount!]!
+}
+
+# aircraftTypeId and icaoCode are null for the "variant unknown" entry.
+type AircraftVariantCount {
+    aircraftTypeId: ID
+    icaoCode: String
+    name: String!
+    manufacturer: String
+    bodyType: String
+    flightCount: Int!
+    firstFlight: Date!
+    lastFlight: Date!
+    photoUrl: String
+}
+
+type AirlineCount {
+    id: ID!
+    icao: String!
+    iata: String
+    name: String!
+    flightCount: Int!
+    distanceKm: Float!
+}
+
+# Every field is null until there is a flight to fill it.
+type TravelRecords {
+    longestFlight: FlightRecord
+    shortestFlight: FlightRecord
+    firstFlight: FlightRecord
+    longestJourney: JourneyRecord
+    mostFlownRoute: RouteRecord
+    mostFlownAircraftFamily: NamedCount
+    mostFlownAirline: NamedCount
+    busiestMonth: PeriodCount
+    biggestYear: PeriodCount
+}
+
+type FlightRecord {
+    userFlightId: ID!
+    flightNumber: String
+    date: Date!
+    distanceKm: Float!
+    departureIata: String
+    arrivalIata: String
+    airlineName: String!
+    aircraftName: String
+}
+
+type JourneyRecord {
+    journeyId: ID!
+    title: String!
+    flightCount: Int!
+    distanceKm: Float!
+    startDate: Date!
+    endDate: Date!
+}
+
+type RouteRecord {
+    departureIata: String
+    arrivalIata: String
+    departureName: String!
+    arrivalName: String!
+    flightCount: Int!
+    distanceKm: Float!
+}
+
+type NamedCount {
+    name: String!
+    count: Int!
+}
+
+# label is the month (2026-09) or the year (2026).
+type PeriodCount {
+    label: String!
+    count: Int!
+    distanceKm: Float!
+}

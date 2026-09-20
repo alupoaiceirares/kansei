@@ -47,7 +47,7 @@ public class JourneyViews {
     }
 
     // A connection at the same airport within 12 hours is a layover, anything else counts as a stay
-    static StopType suggestStopType(UserFlight current, UserFlight next) {
+    public static StopType suggestStopType(UserFlight current, UserFlight next) {
         Airport arrival = current.getFlight().getArrivalAirport();
         Airport departure = next.getFlight().getDepartureAirport();
         if (!arrival.getId().equals(departure.getId())) {
@@ -67,7 +67,25 @@ public class JourneyViews {
         if (flights.isEmpty()) {
             return "Empty journey";
         }
-        return code(flights.get(0).getFlight().getDepartureAirport()) + " - " + code(flights.get(flights.size() - 1).getFlight().getArrivalAirport());
+        Airport origin = flights.get(0).getFlight().getDepartureAirport();
+        Airport end = flights.get(flights.size() - 1).getFlight().getArrivalAirport();
+        // A trip that ends where it started would read "OTP - OTP", the farthest airport reached says more
+        Airport destination = origin.getId().equals(end.getId()) ? farthestFrom(origin, flights) : end;
+        return code(origin) + " - " + code(destination);
+    }
+
+    private static Airport farthestFrom(Airport origin, List<UserFlight> flights) {
+        Airport farthest = origin;
+        double best = 0;
+        for (UserFlight flight : flights) {
+            Airport arrival = flight.getFlight().getArrivalAirport();
+            double distance = GeoDistance.haversineKm(origin.getLatitude(), origin.getLongitude(), arrival.getLatitude(), arrival.getLongitude());
+            if (distance > best) {
+                best = distance;
+                farthest = arrival;
+            }
+        }
+        return farthest;
     }
 
     private static String code(Airport airport) {

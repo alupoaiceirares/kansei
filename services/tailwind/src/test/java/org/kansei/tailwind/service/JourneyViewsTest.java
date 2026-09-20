@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class JourneyViewsTest {
 
-    private static Airport airport(long id, String iata) {
-        return Airport.builder().id(id).iata(iata).icao("X" + iata).build();
+    private static Airport airport(long id, String iata, double lat, double lon) {
+        return Airport.builder().id(id).iata(iata).icao("X" + iata).latitude(lat).longitude(lon).build();
     }
 
     private static UserFlight leg(Airport from, Airport to, LocalDate date, Instant departs, Instant arrives) {
@@ -23,10 +23,10 @@ class JourneyViewsTest {
                 .departureScheduledUtc(departs).arrivalScheduledUtc(arrives).build()).build();
     }
 
-    private final Airport otp = airport(1, "OTP");
-    private final Airport ist = airport(2, "IST");
-    private final Airport pek = airport(3, "PEK");
-    private final Airport fra = airport(4, "FRA");
+    private final Airport otp = airport(1, "OTP", 44.57, 26.10);
+    private final Airport ist = airport(2, "IST", 41.27, 28.73);
+    private final Airport pek = airport(3, "PEK", 40.08, 116.58);
+    private final Airport fra = airport(4, "FRA", 50.03, 8.56);
     private final LocalDate day = LocalDate.of(2026, 9, 12);
 
     @Test
@@ -73,6 +73,15 @@ class JourneyViewsTest {
         UserFlight before = leg(ist, pek, day, Instant.parse("2026-09-12T07:00:00Z"), Instant.parse("2026-09-12T20:00:00Z"));
 
         assertThat(JourneyViews.suggestStopType(first, before)).isEqualTo(StopType.STAY);
+    }
+
+    @Test
+    void aRoundTripIsTitledAfterTheFarthestAirport() {
+        UserFlight out = leg(otp, ist, day, null, null);
+        UserFlight onward = leg(ist, pek, day.plusDays(3), null, null);
+        UserFlight home = leg(pek, otp, day.plusDays(10), null, null);
+
+        assertThat(JourneyViews.autoTitle(List.of(out, onward, home))).isEqualTo("OTP - PEK");
     }
 
     @Test
