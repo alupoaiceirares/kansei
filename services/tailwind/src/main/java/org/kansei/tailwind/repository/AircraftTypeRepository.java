@@ -23,6 +23,8 @@ public interface AircraftTypeRepository extends JpaRepository<AircraftType, Long
 
     boolean existsByIcaoCode(String icaoCode);
 
+    boolean existsByFamily(String family);
+
     Optional<AircraftType> findByIcaoCode(String icaoCode);
 
     @Query("select distinct t.manufacturer from AircraftType t")

@@ -66,21 +66,25 @@ class RateLimitFilterTest {
         verify(redisTemplate).expire(any(), any(Duration.class));
     }
 
+    // The TTL is re-asserted on every hit on purpose: one failed expire() would otherwise leave the key
+    // without a TTL forever, turning "429 for a minute" into "429 forever" with no way to recover
     @Test
-    void subsequentRequestInWindow_doesNotResetExpiry() {
+    void subsequentRequestInWindow_reassertsExpiry() {
         when(chain.filter(any())).thenReturn(Mono.empty());
         when(valueOperations.increment(anyString())).thenReturn(Mono.just(2L));
+        when(redisTemplate.expire(anyString(), any(Duration.class))).thenReturn(Mono.just(true));
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/wirehood/search"));
 
         filter.filter(exchange, chain).block();
 
-        verify(redisTemplate, never()).expire(any(), any(Duration.class));
+        verify(redisTemplate).expire(any(), any(Duration.class));
         verify(chain).filter(any());
     }
 
     @Test
     void overLimit_returns429WithRetryAfter() {
         when(valueOperations.increment(anyString())).thenReturn(Mono.just(6L));
+        when(redisTemplate.expire(anyString(), any(Duration.class))).thenReturn(Mono.just(true));
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/wirehood/search"));
 
         filter.filter(exchange, chain).block();

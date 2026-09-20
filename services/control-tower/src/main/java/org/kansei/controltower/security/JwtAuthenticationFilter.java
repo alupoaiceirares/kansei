@@ -60,6 +60,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     // routes like GET/PATCH/DELETE /wirehood/tracks/{trackId} - matched by exact shape instead.
     private static final Pattern THUMBNAIL_PATH = Pattern.compile("^/wirehood/tracks/[0-9a-fA-F-]{36}/thumbnail$");
 
+    // Same reasoning for tailwind's aircraft photos: shared cosmetic images with no per-user data, loaded
+    // by a plain <img src>. Exact shapes only, so the sibling /photo/info and /aircraft-types/{id} routes
+    // (and everything under /tailwind/admin) still need a token.
+    private static final Pattern AIRCRAFT_PHOTO_PATH = Pattern.compile("^/tailwind/aircraft-types/\\d+/photo$|^/tailwind/aircraft-families/photo$");
+
     private final SecretKey signingKey;
     private final ObjectMapper objectMapper;
     private final ReactiveStringRedisTemplate redisTemplate;
@@ -148,7 +153,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublic(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith) || THUMBNAIL_PATH.matcher(path).matches();
+        return PUBLIC_PATHS.stream().anyMatch(path::startsWith)
+                || THUMBNAIL_PATH.matcher(path).matches()
+                || AIRCRAFT_PHOTO_PATH.matcher(path).matches();
     }
 
     /**
