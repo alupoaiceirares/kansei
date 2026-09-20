@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AirlineRepository extends JpaRepository<Airline, Long> {
 
@@ -21,4 +22,8 @@ public interface AirlineRepository extends JpaRepository<Airline, Long> {
     List<Airline> search(@Param("code") String code, @Param("contains") String contains, Pageable pageable);
 
     boolean existsByIcao(String icao);
+
+    Optional<Airline> findByIcao(String icao);
+
+    List<Airline> findByIataAndActiveTrue(String iata);
 }

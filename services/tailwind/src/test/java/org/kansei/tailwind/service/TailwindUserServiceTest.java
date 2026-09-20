@@ -28,11 +28,14 @@ class TailwindUserServiceTest {
     @Mock
     private ShieldwallUserClient shieldwallUserClient;
 
+    @Mock
+    private UserDataCleaner userDataCleaner;
+
     private TailwindUserService service;
 
     @BeforeEach
     void setUp() {
-        service = new TailwindUserService(tailwindUserRepository, shieldwallUserClient);
+        service = new TailwindUserService(tailwindUserRepository, shieldwallUserClient, userDataCleaner);
     }
 
     private static List<UUID> ids(int count) {
@@ -50,7 +53,7 @@ class TailwindUserServiceTest {
         int deleted = service.purgeOrphanedUsers();
 
         assertThat(deleted).isEqualTo(2);
-        verify(tailwindUserRepository).deleteAllById(gone);
+        verify(userDataCleaner).deleteAllFor(gone);
     }
 
     @Test
@@ -61,7 +64,7 @@ class TailwindUserServiceTest {
         int deleted = service.purgeOrphanedUsers();
 
         assertThat(deleted).isZero();
-        verify(tailwindUserRepository, never()).deleteAllById(anyCollection());
+        verify(userDataCleaner, never()).deleteAllFor(anyCollection());
     }
 
     @Test
@@ -72,7 +75,7 @@ class TailwindUserServiceTest {
         int deleted = service.purgeOrphanedUsers();
 
         assertThat(deleted).isZero();
-        verify(tailwindUserRepository, never()).deleteAllById(anyCollection());
+        verify(userDataCleaner, never()).deleteAllFor(anyCollection());
     }
 
     @Test
@@ -84,6 +87,6 @@ class TailwindUserServiceTest {
         int deleted = service.purgeOrphanedUsers();
 
         assertThat(deleted).isEqualTo(1);
-        verify(tailwindUserRepository).deleteAllById(all);
+        verify(userDataCleaner).deleteAllFor(all);
     }
 }

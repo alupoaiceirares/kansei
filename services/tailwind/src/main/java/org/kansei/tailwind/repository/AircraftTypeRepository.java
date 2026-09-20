@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AircraftTypeRepository extends JpaRepository<AircraftType, Long> {
 
@@ -21,4 +22,12 @@ public interface AircraftTypeRepository extends JpaRepository<AircraftType, Long
     List<AircraftType> search(@Param("code") String code, @Param("contains") String contains, Pageable pageable);
 
     boolean existsByIcaoCode(String icaoCode);
+
+    Optional<AircraftType> findByIcaoCode(String icaoCode);
+
+    @Query("select distinct t.manufacturer from AircraftType t")
+    List<String> findDistinctManufacturers();
+
+    @Query("select distinct t.family from AircraftType t")
+    List<String> findDistinctFamilies();
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AirportRepository extends JpaRepository<Airport, Long> {
 
@@ -26,4 +27,8 @@ public interface AirportRepository extends JpaRepository<Airport, Long> {
     boolean existsByIcao(String icao);
 
     boolean existsByIata(String iata);
+
+    Optional<Airport> findByIcao(String icao);
+
+    Optional<Airport> findByIata(String iata);
 }
