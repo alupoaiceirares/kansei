@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-label="No photo yet">
+  <rect width="800" height="450" fill="#e6eaf0"/>
+  <g fill="#9aa5b5" transform="translate(400 225) rotate(-20)">
+    <ellipse cx="0" cy="0" rx="230" ry="26"/>
+    <polygon points="-40,-8 -150,-120 -110,-120 30,-8"/>
+    <polygon points="-40,8 -150,120 -110,120 30,8"/>
+    <polygon points="-200,-6 -250,-70 -222,-70 -160,-6"/>
+    <polygon points="-205,6 -245,50 -225,50 -170,6"/>
+  </g>
+</svg>

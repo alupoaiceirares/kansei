@@ -355,6 +355,32 @@ class JwtAuthenticationFilterTest {
         assertThat(exchange.getResponse().getStatusCode()).isNull();
     }
 
+    @Test
+    void aircraftPhotoPaths_noToken_passThrough() {
+        when(chain.filter(any())).thenReturn(Mono.empty());
+        for (String path : new String[]{"/tailwind/aircraft-types/42/photo", "/tailwind/aircraft-families/photo"}) {
+            MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path));
+
+            filter.filter(exchange, chain).block();
+
+            assertThat(exchange.getResponse().getStatusCode()).as(path).isNull();
+        }
+        verify(chain, org.mockito.Mockito.times(2)).filter(any());
+    }
+
+    @Test
+    void aircraftPhotoSiblingPaths_noToken_return401() {
+        for (String path : new String[]{"/tailwind/aircraft-types/42/photo/info", "/tailwind/aircraft-types/42",
+                "/tailwind/admin/aircraft-types/42/photo/candidates", "/tailwind/aircraft-families/photo/info"}) {
+            MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path));
+
+            filter.filter(exchange, chain).block();
+
+            assertThat(exchange.getResponse().getStatusCode()).as(path).isEqualTo(HttpStatus.UNAUTHORIZED);
+        }
+        verify(chain, never()).filter(any());
+    }
+
     private static byte[] bytes(int length, byte fill) {
         byte[] result = new byte[length];
         Arrays.fill(result, fill);
