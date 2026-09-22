@@ -63,6 +63,9 @@ export default function Header({
   const wirehoodHref = loggedIn
     ? `${process.env.NEXT_PUBLIC_SOUNDWAVE_URL}/landing#token=${encodeURIComponent(getToken() ?? "")}`
     : "/login";
+  const wtwHref = loggedIn
+    ? `${process.env.NEXT_PUBLIC_BLACKBIRD_URL}/#token=${encodeURIComponent(getToken() ?? "")}`
+    : "/login";
 
   const showLogin = rightVariant === "both" || rightVariant === "loginOnly" || (rightVariant === "auto" && !loggedIn);
   const showRegister = rightVariant === "both" || rightVariant === "registerOnly" || (rightVariant === "auto" && !loggedIn);
@@ -172,8 +175,16 @@ export default function Header({
                   </span>
                 </span>
               </a>
-              <a href="#" className="ks-svc-ring ks-svc-ring--2">
-                <span className="ks-svc-ring__inner">Service 2</span>
+              <a href={wtwHref} className="ks-svc-ring ks-svc-ring--wtw">
+                <span
+                  className="ks-svc-ring__inner"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}
+                >
+                  <span>WTW</span>
+                  <span style={{ fontWeight: 500, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "oklch(48% 0.13 220)" }}>
+                    Travel
+                  </span>
+                </span>
               </a>
               <a href="#" className="ks-svc-ring ks-svc-ring--3">
                 <span className="ks-svc-ring__inner">Service 3</span>

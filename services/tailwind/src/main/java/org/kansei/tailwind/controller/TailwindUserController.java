@@ -4,14 +4,19 @@ import jakarta.validation.Valid;
 import org.kansei.tailwind.dto.TailwindUserResponse;
 import org.kansei.tailwind.dto.UiPreferencesRequest;
 import org.kansei.tailwind.dto.UiPreferencesResponse;
+import org.kansei.tailwind.dto.UpdateTailwindUserRequest;
 import org.kansei.tailwind.service.TailwindUserService;
 import org.kansei.tailwind.service.UiPreferencesService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -47,6 +52,23 @@ public class TailwindUserController {
             @RequestHeader(value = "X-User-Role", required = false) String role
     ) {
         return tailwindUserService.me(userId, role);
+    }
+
+    // Only applies to flights added from here on
+    @PatchMapping("/me")
+    public TailwindUserResponse update(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Valid @RequestBody UpdateTailwindUserRequest request
+    ) {
+        return tailwindUserService.updateDefaultVisibility(userId, request.defaultVisibility(), role);
+    }
+
+    // The user deleting their own log, their shieldwall account is untouched
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteOwnLog(@RequestHeader("X-User-Id") UUID userId) {
+        tailwindUserService.deleteOwnLog(userId);
     }
 
     // Display choices, so the map looks the same on another device

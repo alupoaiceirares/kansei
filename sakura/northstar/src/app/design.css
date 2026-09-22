@@ -98,6 +98,20 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Same panel for WTW, in its own cyan and orange over its dark ground */
+.ks-timeline-wtw-panel {
+  display: flex;
+  justify-content: center;
+  padding: 10px 14px;
+  margin: 0 0 14px;
+  border-radius: 13px;
+  background:
+    radial-gradient(ellipse 60% 80% at 14% 0%, rgba(43, 179, 217, 0.2), transparent 70%),
+    radial-gradient(ellipse 55% 80% at 90% 100%, rgba(255, 122, 24, 0.16), transparent 70%),
+    #06212b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* Form inputs - focus color defaults to the brand pink, overridden per profile section via
    the --focus-color custom property. !important: the input's resting border-color is set
    inline (inputStyle/inputStyleWhite), and an inline style beats a plain :focus rule on the
@@ -135,6 +149,10 @@
 }
 .ks-svc-ring--2:hover {
   background: linear-gradient(90deg, oklch(62% 0.13 200), oklch(65% 0.2 340));
+}
+/* WTW's own cyan-to-orange, so the ring matches the service it opens */
+.ks-svc-ring--wtw:hover {
+  background: linear-gradient(90deg, oklch(62% 0.13 220), oklch(70% 0.17 55));
 }
 .ks-svc-ring--3:hover {
   background: linear-gradient(90deg, oklch(70% 0.15 80), oklch(62% 0.13 200));

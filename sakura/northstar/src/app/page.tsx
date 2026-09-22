@@ -7,6 +7,7 @@ import Header from "@/components/design/Header";
 import HexLatticeBackground from "@/components/design/HexLatticeBackground";
 import SakuraMark from "@/components/design/SakuraMark";
 import WirehoodMark from "@/components/design/WirehoodMark";
+import WtwMark from "@/components/design/WtwMark";
 import { getToken, subscribeToken } from "@/lib/auth";
 import { useViewportWidth } from "@/lib/design/useViewportWidth";
 import {
@@ -29,8 +30,9 @@ const TIMELINE_BOTTOM = 2560;
 const TIMELINE_HALF_W = 360;
 
 const SOUNDWAVE_URL = process.env.NEXT_PUBLIC_SOUNDWAVE_URL;
+const BLACKBIRD_URL = process.env.NEXT_PUBLIC_BLACKBIRD_URL;
 
-type TimelineEntry = { title: string; text: string; isApp?: boolean };
+type TimelineEntry = { title: string; text: string; isApp?: boolean; isWtw?: boolean };
 
 const TIMELINE_COPY: TimelineEntry[] = [
   {
@@ -38,7 +40,11 @@ const TIMELINE_COPY: TimelineEntry[] = [
     text: "Search, download and play music and video from one archive the whole community builds — plus shared playlists, friends and listening stats.",
     isApp: true,
   },
-  { title: "Service 2", text: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Placeholder description." },
+  {
+    title: "WTW",
+    text: "World Travel Watch keeps a log of every flight you have taken, and turns it into a map of where you have been, the aircraft you have flown and records to hold over your friends.",
+    isWtw: true,
+  },
   { title: "Service 3", text: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. Placeholder description." },
   { title: "Service 4", text: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum. Placeholder description." },
 ];
@@ -69,6 +75,7 @@ function LandingInner() {
   );
   // Not logged in yet -> send through login first; the real handoff (#token=) only makes sense with a session
   const wirehoodHref = token ? `${SOUNDWAVE_URL}/landing#token=${encodeURIComponent(token)}` : "/login";
+  const wtwHref = token ? `${BLACKBIRD_URL}/#token=${encodeURIComponent(token)}` : "/login";
 
   function closeConfirm() {
     router.replace("/");
@@ -225,7 +232,7 @@ function LandingInner() {
             transform: "translateX(-1px)",
           }}
         />
-        {TIMELINE_COPY.map(({ title, text, isApp }, i) => {
+        {TIMELINE_COPY.map(({ title, text, isApp, isWtw }, i) => {
           const isLeft = i % 2 === 0;
           const color = PALETTE[i % PALETTE.length];
           const tintStyle = {
@@ -243,6 +250,21 @@ function LandingInner() {
                 </div>
                 <p style={{ fontSize: 14, lineHeight: 1.6, color: "oklch(45% 0.01 60)", margin: "0 0 12px" }}>{text}</p>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontWeight: 600, fontSize: 13.5, color: "oklch(42% 0.14 152)" }}>
+                  Open {title}
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+                    <path d="M5 12h14M14 7l5 5-5 5" />
+                  </svg>
+                </span>
+              </div>
+            </a>
+          ) : isWtw ? (
+            <a href={wtwHref} style={{ display: "block", textAlign: "left" }}>
+              <div style={tintStyle}>
+                <div className="ks-timeline-wtw-panel">
+                  <WtwMark />
+                </div>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: "oklch(45% 0.01 60)", margin: "0 0 12px" }}>{text}</p>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontWeight: 600, fontSize: 13.5, color: "oklch(45% 0.13 220)" }}>
                   Open {title}
                   <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
                     <path d="M5 12h14M14 7l5 5-5 5" />
