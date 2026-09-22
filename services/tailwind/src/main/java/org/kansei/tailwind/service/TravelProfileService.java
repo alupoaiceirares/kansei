@@ -1,7 +1,9 @@
 package org.kansei.tailwind.service;
 
+import org.kansei.tailwind.model.BodyType;
 import org.kansei.tailwind.model.Country;
 import org.kansei.tailwind.model.Journey;
+import org.kansei.tailwind.repository.AircraftTypeRepository;
 import org.kansei.tailwind.repository.CountryRepository;
 import org.kansei.tailwind.repository.JourneyRepository;
 import org.kansei.tailwind.repository.TailwindUserRepository;
@@ -33,19 +35,24 @@ public class TravelProfileService {
     private static final String TYPE_PHOTO_PATH = "/tailwind/aircraft-types/%d/photo";
     private static final String FAMILY_PHOTO_PATH = "/tailwind/aircraft-families/photo?name=%s";
 
+    // What counts as collectible: the seed also holds military and general aviation types
+    private static final List<BodyType> COLLECTIBLE_BODY_TYPES = List.of(BodyType.NARROW, BodyType.WIDE);
+
     private final StatsFlightLoader statsFlightLoader;
     private final CountryRepository countryRepository;
     private final JourneyRepository journeyRepository;
     private final TailwindUserRepository tailwindUserRepository;
+    private final AircraftTypeRepository aircraftTypeRepository;
     private final OptInGuard optInGuard;
 
     public TravelProfileService(StatsFlightLoader statsFlightLoader, CountryRepository countryRepository,
                                 JourneyRepository journeyRepository, TailwindUserRepository tailwindUserRepository,
-                                OptInGuard optInGuard) {
+                                AircraftTypeRepository aircraftTypeRepository, OptInGuard optInGuard) {
         this.statsFlightLoader = statsFlightLoader;
         this.countryRepository = countryRepository;
         this.journeyRepository = journeyRepository;
         this.tailwindUserRepository = tailwindUserRepository;
+        this.aircraftTypeRepository = aircraftTypeRepository;
         this.optInGuard = optInGuard;
     }
 
@@ -85,6 +92,31 @@ public class TravelProfileService {
     @Transactional(readOnly = true)
     public List<StatsModels.AircraftFamilyCollection> aircraft(UUID viewerId, UUID ownerId, StatsModels.Period period) {
         return TravelStatsCalculator.aircraft(load(viewerId, ownerId, period), familyPhotoUrl(), typePhotoUrl());
+    }
+
+    @Transactional(readOnly = true)
+    public StatsModels.TravelBreakdowns breakdowns(UUID viewerId, UUID ownerId, StatsModels.Period period) {
+        return TravelStatsCalculator.breakdowns(load(viewerId, ownerId, period));
+    }
+
+    /**
+     * Every airliner family tailwind knows, with the owner's flight count against it. A family they have never
+     * flown comes back with zero, which is how the collection shows what is still missing.
+     */
+    @Transactional(readOnly = true)
+    public List<StatsModels.AircraftFamilyOption> aircraftCatalog(UUID viewerId, UUID ownerId, StatsModels.Period period) {
+        Map<String, Integer> flown = TravelStatsCalculator.aircraft(load(viewerId, ownerId, period), familyPhotoUrl(), typePhotoUrl()).stream()
+                .collect(Collectors.toMap(StatsModels.AircraftFamilyCollection::family, StatsModels.AircraftFamilyCollection::flightCount));
+
+        return aircraftTypeRepository.findAirlinerFamilies(COLLECTIBLE_BODY_TYPES).stream()
+                .map(row -> new StatsModels.AircraftFamilyOption(
+                        (String) row[0],
+                        (String) row[1],
+                        row[2] == null ? null : row[2].toString(),
+                        ((Number) row[3]).intValue(),
+                        flown.getOrDefault((String) row[0], 0),
+                        familyPhotoUrl().apply((String) row[0])))
+                .toList();
     }
 
     @Transactional(readOnly = true)

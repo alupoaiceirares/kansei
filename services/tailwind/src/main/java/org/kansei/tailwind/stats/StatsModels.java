@@ -59,8 +59,48 @@ public final class StatsModels {
 
     public record TravelRecords(FlightRecord longestFlight, FlightRecord shortestFlight, FlightRecord firstFlight,
                                 JourneyRecord longestJourney, RouteRecord mostFlownRoute, NamedCount mostFlownAircraftFamily,
-                                NamedCount mostFlownAirline, PeriodCount busiestMonth, PeriodCount biggestYear) {
-        public static final TravelRecords EMPTY = new TravelRecords(null, null, null, null, null, null, null, null, null);
+                                NamedCount mostFlownAirline, PeriodCount busiestMonth, PeriodCount biggestYear,
+                                FurthestPoint furthestPoint, LongestGap longestGap, JourneyAircraftRecord mostAircraftInAJourney,
+                                CabinRecord highestCabin) {
+        public static final TravelRecords EMPTY =
+                new TravelRecords(null, null, null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * The airport furthest from home, where home is the airport used most often.
+     */
+    public record FurthestPoint(String iata, String name, String city, String countryCode, double distanceFromHomeKm,
+                                String homeIata, LocalDate date) {
+    }
+
+    /**
+     * The longest stretch with no flying, between two flights that are actually in the log.
+     */
+    public record LongestGap(int days, LocalDate from, LocalDate to) {
+    }
+
+    public record JourneyAircraftRecord(Long journeyId, String title, int aircraftCount, int flightCount) {
+    }
+
+    public record CabinRecord(String cabinClass, int flightCount, LocalDate firstFlight) {
+    }
+
+    /**
+     * Counts of what the user recorded per flight, left out entirely when nothing was filled in.
+     */
+    public record TravelBreakdowns(List<NamedCount> cabinClasses, List<NamedCount> seatPositions, List<NamedCount> reasons,
+                                   List<PeriodCount> flightsPerYear, int flightsWithCabin, int flightsWithReason,
+                                   int flightsWithSeatPosition) {
+        public static final TravelBreakdowns EMPTY =
+                new TravelBreakdowns(List.of(), List.of(), List.of(), List.of(), 0, 0, 0);
+    }
+
+    /**
+     * Every airliner family tailwind knows, with what the user has flown of it. flightCount 0 is a family they
+     * have never been on, which is what the collection shows as locked.
+     */
+    public record AircraftFamilyOption(String family, String manufacturer, String bodyType, int variantCount,
+                                       int flightCount, String photoUrl) {
     }
 
     public record FlightRecord(Long userFlightId, String flightNumber, LocalDate date, double distanceKm,

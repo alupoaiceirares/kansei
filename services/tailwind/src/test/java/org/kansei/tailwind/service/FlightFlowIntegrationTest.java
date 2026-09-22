@@ -369,6 +369,36 @@ class FlightFlowIntegrationTest {
     }
 
     @Test
+    void manualTimesAreStoredInUtcAndAnOvernightArrivalRollsToTheNextDay() throws Exception {
+        long airline = airlineRepository.findByIcao("DLH").orElseThrow().getId();
+        long jfk = airportRepository.findByIata("JFK").orElseThrow().getId();
+        long otp = airportRepository.findByIata("OTP").orElseThrow().getId();
+        String withTimes = "{\"date\":\"2026-09-12\",\"airlineId\":" + airline + ",\"departureAirportId\":" + jfk
+                + ",\"arrivalAirportId\":" + otp + ",\"departureTime\":\"22:40\",\"arrivalTime\":\"16:05\"}";
+
+        String body = mockMvc.perform(json(as(user, post("/tailwind/flights/manual")), withTimes))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flight.departureScheduledUtc").exists())
+                .andExpect(jsonPath("$.flight.arrivalScheduledUtc").exists())
+                .andReturn().getResponse().getContentAsString();
+
+        Instant departure = Instant.parse(JsonPath.read(body, "$.flight.departureScheduledUtc").toString());
+        Instant arrival = Instant.parse(JsonPath.read(body, "$.flight.arrivalScheduledUtc").toString());
+        assertThat(arrival).isAfter(departure);
+        // 22:40 in New York is 02:40 UTC the next day, and landing at 16:05 in Bucharest is 13:05 UTC after that
+        assertThat(departure).isEqualTo(Instant.parse("2026-09-13T02:40:00Z"));
+        assertThat(arrival).isEqualTo(Instant.parse("2026-09-13T13:05:00Z"));
+    }
+
+    @Test
+    void aManualFlightWithoutTimesKeepsThemEmpty() throws Exception {
+        mockMvc.perform(json(as(user, post("/tailwind/flights/manual")), manualJfkToOtp(null)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flight.departureScheduledUtc").doesNotExist())
+                .andExpect(jsonPath("$.flight.arrivalScheduledUtc").doesNotExist());
+    }
+
+    @Test
     void journeysOrderFlightsSuggestStopTypesAndSetVisibilityForAll() throws Exception {
         long flightId = lookedUpFlightId();
         long journeyId = add(user, "{\"flightId\":" + flightId + "}", HttpStatus.CREATED).number("$.journeyId");

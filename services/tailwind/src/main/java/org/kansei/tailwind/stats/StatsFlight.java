@@ -1,6 +1,9 @@
 package org.kansei.tailwind.stats;
 
+import org.kansei.tailwind.model.CabinClass;
+import org.kansei.tailwind.model.SeatPosition;
 import org.kansei.tailwind.model.StopType;
+import org.kansei.tailwind.model.TripReason;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,7 +49,10 @@ public record StatsFlight(
         String aircraftName,
         String aircraftManufacturer,
         String aircraftBodyType,
-        String aircraftFamily
+        String aircraftFamily,
+        CabinClass cabinClass,
+        SeatPosition seatPosition,
+        TripReason reason
 ) {
 
     /**

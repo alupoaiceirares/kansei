@@ -28,7 +28,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -97,6 +102,13 @@ public class UserFlightService {
         AircraftType type = request.aircraftTypeId() == null ? null
                 : aircraftTypeRepository.findById(request.aircraftTypeId()).orElseThrow(() -> badRequest("Unknown aircraft type"));
 
+        Instant departureUtc = toUtc(request.date(), request.departureTime(), departure);
+        Instant arrivalUtc = toUtc(request.date(), request.arrivalTime(), arrival);
+        // A flight that lands after midnight local gives an arrival before its departure, so it rolls a day
+        if (departureUtc != null && arrivalUtc != null && !arrivalUtc.isAfter(departureUtc)) {
+            arrivalUtc = arrivalUtc.plus(1, ChronoUnit.DAYS);
+        }
+
         Flight flight = flightRepository.saveAndFlush(Flight.builder()
                 .source(FlightSource.MANUAL)
                 .flightNumber(request.flightNumber())
@@ -107,6 +119,8 @@ public class UserFlightService {
                 .cargo(Boolean.TRUE.equals(request.cargo()))
                 .aircraftType(type)
                 .aircraftFamily(type == null ? null : type.getFamily())
+                .departureScheduledUtc(departureUtc)
+                .arrivalScheduledUtc(arrivalUtc)
                 .distanceKm(GeoDistance.haversineKm(departure.getLatitude(), departure.getLongitude(), arrival.getLatitude(), arrival.getLongitude()))
                 .createdAt(clock.instant())
                 .build());
@@ -191,6 +205,25 @@ public class UserFlightService {
             }
         }
         throw new IllegalStateException("saved flight missing from its journey");
+    }
+
+    /**
+     * A local clock time at its own airport becomes an instant. An airport with no time zone on file falls
+     * back to UTC, which keeps the duration right whenever both ends share that fallback.
+     */
+    private static Instant toUtc(LocalDate date, LocalTime time, Airport airport) {
+        if (time == null) {
+            return null;
+        }
+        ZoneId zone = ZoneOffset.UTC;
+        if (airport.getTimeZone() != null && !airport.getTimeZone().isBlank()) {
+            try {
+                zone = ZoneId.of(airport.getTimeZone());
+            } catch (RuntimeException ex) {
+                zone = ZoneOffset.UTC;
+            }
+        }
+        return date.atTime(time).atZone(zone).toInstant();
     }
 
     private static ResponseStatusException badRequest(String message) {

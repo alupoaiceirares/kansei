@@ -1,7 +1,16 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './auth/RequireAuth';
 import { ArrivalPage } from './pages/Arrival';
+import { AddFlightPage } from './pages/AddFlight';
+import { AddFlightConfirmPage } from './pages/AddFlightConfirm';
 import { DashboardPage } from './pages/Dashboard';
+import { FlightDetailPage } from './pages/FlightDetail';
+import { JourneyDetailPage } from './pages/JourneyDetail';
+import { JourneysPage } from './pages/Journeys';
+import { MapPage } from './pages/MapPage';
+import { StatsPage } from './pages/Stats';
+import { ManualEntryPage } from './pages/ManualEntry';
+import { MyFlightsPage } from './pages/MyFlights';
 import { LandingPage } from './pages/Landing';
 import { OptInPage } from './pages/OptIn';
 import { Placeholder } from './pages/Placeholder';
@@ -32,7 +41,7 @@ export function App() {
         path="/add"
         element={
           <RequireAuth>
-            <Placeholder title="Add flight" />
+            <AddFlightPage />
           </RequireAuth>
         }
       />
@@ -40,7 +49,7 @@ export function App() {
         path="/add/confirm"
         element={
           <RequireAuth>
-            <Placeholder title="Confirm flight" />
+            <AddFlightConfirmPage />
           </RequireAuth>
         }
       />
@@ -48,7 +57,7 @@ export function App() {
         path="/add/manual"
         element={
           <RequireAuth>
-            <Placeholder title="Add a flight by hand" />
+            <ManualEntryPage />
           </RequireAuth>
         }
       />
@@ -56,7 +65,7 @@ export function App() {
         path="/flights"
         element={
           <RequireAuth>
-            <Placeholder title="My flights" />
+            <MyFlightsPage />
           </RequireAuth>
         }
       />
@@ -64,7 +73,7 @@ export function App() {
         path="/flights/:userFlightId"
         element={
           <RequireAuth>
-            <Placeholder title="Flight" />
+            <FlightDetailPage />
           </RequireAuth>
         }
       />
@@ -72,7 +81,7 @@ export function App() {
         path="/journeys"
         element={
           <RequireAuth>
-            <Placeholder title="Journeys" />
+            <JourneysPage />
           </RequireAuth>
         }
       />
@@ -80,7 +89,7 @@ export function App() {
         path="/journeys/:journeyId"
         element={
           <RequireAuth>
-            <Placeholder title="Journey" />
+            <JourneyDetailPage />
           </RequireAuth>
         }
       />
@@ -88,7 +97,7 @@ export function App() {
         path="/map"
         element={
           <RequireAuth>
-            <Placeholder title="Map" />
+            <MapPage />
           </RequireAuth>
         }
       />
@@ -96,7 +105,7 @@ export function App() {
         path="/stats"
         element={
           <RequireAuth>
-            <Placeholder title="Stats" />
+            <StatsPage />
           </RequireAuth>
         }
       />

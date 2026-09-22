@@ -1,6 +1,7 @@
 package org.kansei.tailwind.repository;
 
 import org.kansei.tailwind.model.AircraftType;
+import org.kansei.tailwind.model.BodyType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +33,18 @@ public interface AircraftTypeRepository extends JpaRepository<AircraftType, Long
 
     @Query("select distinct t.family from AircraftType t")
     List<String> findDistinctFamilies();
+
+    /**
+     * The airliner families only: a family counts when at least one of its types is a wide or narrow body.
+     * The seed also holds military and general aviation types, which have no place in a collection.
+     */
+    @Query("""
+            select t.family, min(t.manufacturer), min(t.bodyType), count(t)
+            from AircraftType t
+            where t.family is not null
+              and exists (select 1 from AircraftType w where w.family = t.family and w.bodyType in :bodyTypes)
+            group by t.family
+            order by t.family
+            """)
+    List<Object[]> findAirlinerFamilies(@Param("bodyTypes") List<BodyType> bodyTypes);
 }

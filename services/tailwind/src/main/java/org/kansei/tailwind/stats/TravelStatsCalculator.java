@@ -1,12 +1,17 @@
 package org.kansei.tailwind.stats;
 
+import org.kansei.tailwind.model.CabinClass;
+import org.kansei.tailwind.service.GeoDistance;
+
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -17,6 +22,13 @@ import java.util.function.Function;
 public final class TravelStatsCalculator {
 
     private static final String UNKNOWN_VARIANT = "Variant unknown";
+
+    // Cabins in order, so "highest flown" means the best one they actually sat in
+    private static final Map<CabinClass, Integer> CABIN_RANK = Map.of(
+            CabinClass.ECONOMY, 0,
+            CabinClass.PREMIUM_ECONOMY, 1,
+            CabinClass.BUSINESS, 2,
+            CabinClass.FIRST, 3);
 
     private TravelStatsCalculator() {
     }
@@ -161,7 +173,154 @@ public final class TravelStatsCalculator {
                 longestJourney(flights, journeyTitles), mostFlownRoute(flights),
                 topCount(flights, StatsFlight::aircraftFamily), topCount(flights, StatsFlight::airlineName),
                 topPeriod(flights, date -> String.format("%d-%02d", date.getYear(), date.getMonthValue())),
-                topPeriod(flights, date -> String.valueOf(date.getYear())));
+                topPeriod(flights, date -> String.valueOf(date.getYear())),
+                furthestPoint(flights), longestGap(flights), mostAircraftInAJourney(flights, journeyTitles),
+                highestCabin(flights));
+    }
+
+    /**
+     * Home is the airport the user passes through most often, and the record is the visited airport furthest
+     * from it as the great circle flies.
+     */
+    private static StatsModels.FurthestPoint furthestPoint(List<StatsFlight> flights) {
+        Map<Long, Integer> uses = new LinkedHashMap<>();
+        for (StatsFlight flight : flights) {
+            uses.merge(flight.departureAirportId(), 1, Integer::sum);
+            uses.merge(flight.arrivalAirportId(), 1, Integer::sum);
+        }
+        Long homeId = uses.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+        if (homeId == null) {
+            return null;
+        }
+
+        record Visit(Long id, String iata, String name, String city, String country, double lat, double lon, LocalDate date) {
+        }
+        List<Visit> visits = new ArrayList<>();
+        for (StatsFlight flight : flights) {
+            visits.add(new Visit(flight.departureAirportId(), flight.departureIata(), flight.departureName(), flight.departureCity(),
+                    flight.departureCountry(), flight.departureLatitude(), flight.departureLongitude(), flight.date()));
+            visits.add(new Visit(flight.arrivalAirportId(), flight.arrivalIata(), flight.arrivalName(), flight.arrivalCity(),
+                    flight.arrivalCountry(), flight.arrivalLatitude(), flight.arrivalLongitude(), flight.date()));
+        }
+        Visit home = visits.stream().filter(visit -> visit.id().equals(homeId)).findFirst().orElse(null);
+        if (home == null) {
+            return null;
+        }
+
+        Visit furthest = null;
+        double best = 0;
+        for (Visit visit : visits) {
+            double distance = GeoDistance.haversineKm(home.lat(), home.lon(), visit.lat(), visit.lon());
+            if (distance > best) {
+                best = distance;
+                furthest = visit;
+            }
+        }
+        if (furthest == null) {
+            return null;
+        }
+        return new StatsModels.FurthestPoint(furthest.iata(), furthest.name(), furthest.city(), furthest.country(),
+                round(best), home.iata(), furthest.date());
+    }
+
+    private static StatsModels.LongestGap longestGap(List<StatsFlight> flights) {
+        List<LocalDate> dates = flights.stream().map(StatsFlight::date).distinct().sorted().toList();
+        if (dates.size() < 2) {
+            return null;
+        }
+        LocalDate from = dates.get(0);
+        LocalDate to = dates.get(1);
+        long best = 0;
+        for (int i = 0; i + 1 < dates.size(); i++) {
+            long days = ChronoUnit.DAYS.between(dates.get(i), dates.get(i + 1));
+            if (days > best) {
+                best = days;
+                from = dates.get(i);
+                to = dates.get(i + 1);
+            }
+        }
+        return new StatsModels.LongestGap((int) best, from, to);
+    }
+
+    /** Counted by distinct aircraft type, falling back to the family when only that is known. */
+    private static StatsModels.JourneyAircraftRecord mostAircraftInAJourney(List<StatsFlight> flights, Map<Long, String> journeyTitles) {
+        Map<Long, List<StatsFlight>> byJourney = new LinkedHashMap<>();
+        for (StatsFlight flight : flights) {
+            byJourney.computeIfAbsent(flight.journeyId(), id -> new ArrayList<>()).add(flight);
+        }
+        StatsModels.JourneyAircraftRecord best = null;
+        for (Map.Entry<Long, List<StatsFlight>> entry : byJourney.entrySet()) {
+            long distinct = entry.getValue().stream()
+                    .map(flight -> flight.aircraftName() != null ? flight.aircraftName() : flight.aircraftFamily())
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .count();
+            if (distinct == 0) {
+                continue;
+            }
+            if (best == null || distinct > best.aircraftCount()) {
+                best = new StatsModels.JourneyAircraftRecord(entry.getKey(),
+                        journeyTitles.getOrDefault(entry.getKey(), autoTitle(entry.getValue())), (int) distinct, entry.getValue().size());
+            }
+        }
+        return best;
+    }
+
+    private static StatsModels.CabinRecord highestCabin(List<StatsFlight> flights) {
+        CabinClass highest = flights.stream()
+                .map(StatsFlight::cabinClass)
+                .filter(Objects::nonNull)
+                .max(Comparator.comparingInt(CABIN_RANK::get))
+                .orElse(null);
+        if (highest == null) {
+            return null;
+        }
+        List<StatsFlight> inCabin = flights.stream().filter(flight -> highest.equals(flight.cabinClass())).toList();
+        return new StatsModels.CabinRecord(highest.name(), inCabin.size(), minDate(inCabin));
+    }
+
+    /**
+     * What the user filled in per flight. Flights left blank are simply not counted, so a split of 3 economy
+     * out of 41 flights means 38 were never marked, not 38 in another cabin.
+     */
+    public static StatsModels.TravelBreakdowns breakdowns(List<StatsFlight> flights) {
+        if (flights.isEmpty()) {
+            return StatsModels.TravelBreakdowns.EMPTY;
+        }
+        return new StatsModels.TravelBreakdowns(
+                counts(flights, flight -> flight.cabinClass() == null ? null : flight.cabinClass().name()),
+                counts(flights, flight -> flight.seatPosition() == null ? null : flight.seatPosition().name()),
+                counts(flights, flight -> flight.reason() == null ? null : flight.reason().name()),
+                flightsPerYear(flights),
+                (int) flights.stream().filter(flight -> flight.cabinClass() != null).count(),
+                (int) flights.stream().filter(flight -> flight.reason() != null).count(),
+                (int) flights.stream().filter(flight -> flight.seatPosition() != null).count());
+    }
+
+    private static List<StatsModels.NamedCount> counts(List<StatsFlight> flights, java.util.function.Function<StatsFlight, String> key) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (StatsFlight flight : flights) {
+            String value = key.apply(flight);
+            if (value != null) {
+                counts.merge(value, 1, Integer::sum);
+            }
+        }
+        return counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .map(entry -> new StatsModels.NamedCount(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    private static List<StatsModels.PeriodCount> flightsPerYear(List<StatsFlight> flights) {
+        Map<Integer, List<StatsFlight>> byYear = new LinkedHashMap<>();
+        for (StatsFlight flight : flights) {
+            byYear.computeIfAbsent(flight.date().getYear(), year -> new ArrayList<>()).add(flight);
+        }
+        return byYear.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new StatsModels.PeriodCount(String.valueOf(entry.getKey()), entry.getValue().size(),
+                        round(entry.getValue().stream().mapToDouble(StatsFlight::distanceKm).sum())))
+                .toList();
     }
 
     private static StatsModels.FlightRecord flightRecord(StatsFlight flight) {

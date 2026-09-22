@@ -6,7 +6,17 @@ export class ApiError extends Error {
     readonly status: number,
     readonly body: string,
   ) {
-    super(`Request failed with ${status}`);
+    super('Request failed with ' + status);
+  }
+
+  /** The service answers with a problem detail, so prefer its own wording over a generic line. */
+  get detail(): string | null {
+    try {
+      const parsed = JSON.parse(this.body) as { detail?: string; message?: string };
+      return parsed.detail ?? parsed.message ?? null;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -69,4 +79,18 @@ export async function graphql<T>(query: string, variables: Record<string, unknow
   });
   if (payload.errors?.length) throw new Error(payload.errors[0].message);
   return payload.data;
+}
+
+/**
+ * Images live behind the gateway's JWT check, so an <img src> cannot fetch them directly.
+ * The bytes are pulled with the token and handed back as an object URL the caller revokes.
+ */
+export async function fetchImageUrl(path: string, query?: Record<string, string>): Promise<string | null> {
+  const url = new URL(CONTROL_TOWER_URL + path);
+  if (query) for (const [key, value] of Object.entries(query)) url.searchParams.set(key, value);
+  const token = getToken();
+  const response = await fetch(url.toString(), { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+  if (!response.ok) return null;
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }

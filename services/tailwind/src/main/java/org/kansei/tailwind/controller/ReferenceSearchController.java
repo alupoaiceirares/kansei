@@ -46,6 +46,15 @@ public class ReferenceSearchController {
         return referenceSearchService.searchAirlines(query, limit);
     }
 
+    // Manual entry needs an airline, so the flight number offers one: TK1044 suggests Turkish Airlines
+    @GetMapping("/airlines/for-flight-number")
+    public List<AirlineResponse> airlinesForFlightNumber(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam("flightNumber") String flightNumber
+    ) {
+        return referenceSearchService.airlinesForFlightNumber(flightNumber);
+    }
+
     @GetMapping("/aircraft-types/search")
     public List<AircraftTypeResponse> searchAircraftTypes(
             @RequestHeader("X-User-Id") UUID userId,
