@@ -1,0 +1,98 @@
+/* Only what inline styles cannot express: resets, link states, keyframes, reduced motion. */
+body {
+  margin: 0;
+  background: #06212B;
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  color: #E4F4FA;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: #2BB3D9;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #7FE3FF;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #4E7688;
+}
+
+:focus-visible {
+  outline: 2px solid #7FE3FF;
+  outline-offset: 2px;
+}
+
+@keyframes bbSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bbSkeleton {
+  0% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes bbTrace {
+  0% {
+    stroke-dashoffset: 142;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes wtwBeat {
+  0%,
+  29% {
+    transform: scale(1);
+  }
+  33% {
+    transform: scale(1.1);
+  }
+  39% {
+    transform: scale(0.985);
+  }
+  46%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  [data-planes] {
+    display: none;
+  }
+}
