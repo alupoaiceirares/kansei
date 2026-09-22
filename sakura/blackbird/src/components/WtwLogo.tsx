@@ -15,6 +15,8 @@ type Props = {
   /** animated plays the continuous ECG pulse, static is the resting mark. */
   animated?: boolean;
   eyeStroke?: string;
+  /** Dimmed with the eye on the declined and error states. */
+  wStroke?: string;
   irisColor?: string;
   title?: string;
 };
@@ -25,6 +27,7 @@ export function WtwLogo({
   height = 76,
   animated = false,
   eyeStroke = COLORS.cyan,
+  wStroke = COLORS.cyan,
   irisColor = COLORS.orange,
   title,
 }: Props) {
@@ -121,8 +124,8 @@ export function WtwLogo({
         </>
       ) : (
         <>
-          <path d={W_LEFT} fill="none" stroke={COLORS.cyan} strokeWidth={5.2} strokeLinejoin="miter" strokeMiterlimit={12} />
-          <path d={W_RIGHT} fill="none" stroke={COLORS.cyan} strokeWidth={5.2} strokeLinejoin="miter" strokeMiterlimit={12} />
+          <path d={W_LEFT} fill="none" stroke={wStroke} strokeWidth={5.2} strokeLinejoin="miter" strokeMiterlimit={12} />
+          <path d={W_RIGHT} fill="none" stroke={wStroke} strokeWidth={5.2} strokeLinejoin="miter" strokeMiterlimit={12} />
           <path d={IRIS} fill={irisColor} fillRule="evenodd" transform="translate(120 66) scale(0.85) translate(-120 -66)" />
         </>
       )}

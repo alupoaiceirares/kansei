@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Friend, FriendRequest, TailwindUser } from './types';
+import type { Friend, FriendRequest, Journey, TailwindUser, UserFlight } from './types';
 
 /** null means the user has not opted in yet, the service answers 404 for that. */
 export function fetchMe() {
@@ -16,4 +16,16 @@ export function fetchFriends() {
 
 export function fetchFriendRequests() {
   return api<FriendRequest[]>('/tailwind/friends/requests');
+}
+
+export function fetchMyFlights() {
+  return api<UserFlight[]>('/tailwind/flights/mine');
+}
+
+export function fetchUserFlights(ownerId: string) {
+  return api<UserFlight[]>('/tailwind/flights/users/' + ownerId);
+}
+
+export function fetchJourneys() {
+  return api<Journey[]>('/tailwind/journeys');
 }

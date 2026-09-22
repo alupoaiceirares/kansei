@@ -1,18 +1,21 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { RequireAuth } from './auth/RequireAuth';
 import { ArrivalPage } from './pages/Arrival';
+import { DashboardPage } from './pages/Dashboard';
+import { LandingPage } from './pages/Landing';
+import { OptInPage } from './pages/OptIn';
 import { Placeholder } from './pages/Placeholder';
 
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<Placeholder title="Landing" />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/arrival" element={<ArrivalPage />} />
       <Route
         path="/opt-in"
         element={
           <RequireAuth allowNotOptedIn>
-            <Placeholder title="Join WTW" />
+            <OptInPage />
           </RequireAuth>
         }
       />
@@ -21,7 +24,7 @@ export function App() {
         path="/dashboard"
         element={
           <RequireAuth>
-            <Placeholder title="Home" />
+            <DashboardPage />
           </RequireAuth>
         }
       />
