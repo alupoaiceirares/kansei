@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.kansei.tailwind.client.ShieldwallUserClient;
 import org.kansei.tailwind.dto.TailwindUserResponse;
 import org.kansei.tailwind.model.TailwindUser;
+import org.kansei.tailwind.model.Visibility;
 import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,26 @@ public class TailwindUserService {
     public TailwindUserResponse optIn(UUID userId, String role) {
         TailwindUser user = tailwindUserRepository.findById(userId).orElseGet(() -> create(userId));
         return toResponse(user, role);
+    }
+
+    /** Applies to flights added from here on, the ones already logged keep what they were given. */
+    public TailwindUserResponse updateDefaultVisibility(UUID userId, Visibility visibility, String role) {
+        TailwindUser user = tailwindUserRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not opted into tailwind"));
+        user.setDefaultVisibility(visibility);
+        return toResponse(tailwindUserRepository.save(user), role);
+    }
+
+    /**
+     * The user deleting their own log: flights, journeys, friendships and the tailwind_users row itself. Their
+     * shieldwall account is untouched, and opting in again starts from scratch.
+     */
+    public void deleteOwnLog(UUID userId) {
+        if (!tailwindUserRepository.existsById(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not opted into tailwind");
+        }
+        userDataCleaner.deleteAllFor(List.of(userId));
+        log.info("user {} deleted their own tailwind log", userId);
     }
 
     /**

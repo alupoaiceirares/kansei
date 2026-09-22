@@ -5,15 +5,19 @@ import { AddFlightPage } from './pages/AddFlight';
 import { AddFlightConfirmPage } from './pages/AddFlightConfirm';
 import { DashboardPage } from './pages/Dashboard';
 import { FlightDetailPage } from './pages/FlightDetail';
+import { AdminPage } from './pages/Admin';
+import { FriendsPage } from './pages/Friends';
 import { JourneyDetailPage } from './pages/JourneyDetail';
 import { JourneysPage } from './pages/Journeys';
 import { MapPage } from './pages/MapPage';
+import { ProfileMinePage } from './pages/ProfileMine';
+import { ProfileOtherPage } from './pages/ProfileOther';
+import { RecapPage } from './pages/Recap';
 import { StatsPage } from './pages/Stats';
 import { ManualEntryPage } from './pages/ManualEntry';
 import { MyFlightsPage } from './pages/MyFlights';
 import { LandingPage } from './pages/Landing';
 import { OptInPage } from './pages/OptIn';
-import { Placeholder } from './pages/Placeholder';
 
 export function App() {
   return (
@@ -113,7 +117,7 @@ export function App() {
         path="/friends"
         element={
           <RequireAuth>
-            <Placeholder title="Friends" />
+            <FriendsPage />
           </RequireAuth>
         }
       />
@@ -121,7 +125,7 @@ export function App() {
         path="/profile"
         element={
           <RequireAuth>
-            <Placeholder title="My profile" />
+            <ProfileMinePage />
           </RequireAuth>
         }
       />
@@ -129,7 +133,7 @@ export function App() {
         path="/users/:userId"
         element={
           <RequireAuth>
-            <Placeholder title="Profile" />
+            <ProfileOtherPage />
           </RequireAuth>
         }
       />
@@ -137,7 +141,7 @@ export function App() {
         path="/admin"
         element={
           <RequireAuth>
-            <Placeholder title="Admin" />
+            <AdminPage />
           </RequireAuth>
         }
       />
@@ -145,7 +149,7 @@ export function App() {
         path="/recap"
         element={
           <RequireAuth>
-            <Placeholder title="Yearly recap" />
+            <RecapPage />
           </RequireAuth>
         }
       />

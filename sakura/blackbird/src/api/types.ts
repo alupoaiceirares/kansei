@@ -179,3 +179,19 @@ export type UpdateUserFlightRequest = {
   stopType?: StopType | null;
   notes?: string | null;
 };
+
+export type UserSearchResult = {
+  userId: string;
+  username: string | null;
+  relation: 'NONE' | 'REQUEST_SENT' | 'REQUEST_RECEIVED' | 'FRIENDS';
+};
+
+export type CommonsCandidate = {
+  title: string;
+  thumbUrl: string;
+  pageUrl: string;
+  author: string | null;
+  license: string | null;
+  width: number;
+  height: number;
+};

@@ -274,3 +274,39 @@ export async function fetchStatsProfile(period?: { from?: string; to?: string })
   const data = await graphql<{ travelProfile: StatsProfile }>(STATS_QUERY, period ? { period } : {});
   return data.travelProfile;
 }
+
+export type OtherProfile = {
+  stats: Pick<
+    TravelStats,
+    'flightCount' | 'distanceKm' | 'countryCount' | 'airportCount' | 'aircraftFamilyCount' | 'timeInAirMinutes'
+  >;
+  countries: { visited: { code: string; name: string }[]; passedThrough: { code: string; name: string }[] };
+  aircraft: { family: string; flightCount: number }[];
+  records: { firstFlight: { date: string } | null };
+};
+
+const OTHER_QUERY = `
+  query OtherProfile($userId: ID!) {
+    travelProfile(userId: $userId) {
+      stats { flightCount distanceKm countryCount airportCount aircraftFamilyCount timeInAirMinutes }
+      countries {
+        visited { code name }
+        passedThrough { code name }
+      }
+      aircraft { family flightCount }
+      records { firstFlight { date } }
+    }
+  }
+`;
+
+/** Someone else's profile, already narrowed by the service to what this viewer may see. */
+export async function fetchOtherProfile(userId: string): Promise<OtherProfile> {
+  const data = await graphql<{ travelProfile: OtherProfile }>(OTHER_QUERY, { userId });
+  return data.travelProfile;
+}
+
+/** The same shape for the viewer themselves, so the two can be compared side by side. */
+export async function fetchOwnComparableProfile(): Promise<OtherProfile> {
+  const data = await graphql<{ travelProfile: OtherProfile }>(OTHER_QUERY.replace('($userId: ID!)', '').replace('(userId: $userId)', ''));
+  return data.travelProfile;
+}

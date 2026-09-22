@@ -4,16 +4,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.kansei.tailwind.client.ShieldwallUserClient;
+import org.kansei.tailwind.dto.TailwindUserResponse;
+import org.kansei.tailwind.model.TailwindUser;
+import org.kansei.tailwind.model.Visibility;
 import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -76,6 +85,41 @@ class TailwindUserServiceTest {
 
         assertThat(deleted).isZero();
         verify(userDataCleaner, never()).deleteAllFor(anyCollection());
+    }
+
+    @Test
+    void deletingYourOwnLogRemovesEverythingYouOwn() {
+        UUID user = UUID.randomUUID();
+        when(tailwindUserRepository.existsById(user)).thenReturn(true);
+
+        service.deleteOwnLog(user);
+
+        verify(userDataCleaner).deleteAllFor(List.of(user));
+    }
+
+    @Test
+    void deletingALogThatWasNeverStartedIsNotFound() {
+        UUID user = UUID.randomUUID();
+        when(tailwindUserRepository.existsById(user)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.deleteOwnLog(user))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verify(userDataCleaner, never()).deleteAllFor(anyCollection());
+    }
+
+    @Test
+    void theDefaultVisibilityIsSavedOnTheUser() {
+        UUID user = UUID.randomUUID();
+        TailwindUser row = TailwindUser.builder().userId(user).joinedAt(Instant.now()).build();
+        when(tailwindUserRepository.findById(user)).thenReturn(Optional.of(row));
+        when(tailwindUserRepository.save(row)).thenReturn(row);
+        when(shieldwallUserClient.resolveUsernames(List.of(user))).thenReturn(Map.of(user, "alexm"));
+
+        TailwindUserResponse response = service.updateDefaultVisibility(user, Visibility.PUBLIC, "USER");
+
+        assertThat(row.getDefaultVisibility()).isEqualTo(Visibility.PUBLIC);
+        assertThat(response.defaultVisibility()).isEqualTo(Visibility.PUBLIC);
     }
 
     @Test

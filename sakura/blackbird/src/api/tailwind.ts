@@ -4,6 +4,7 @@ import type {
   AircraftTypeOption,
   AirlineOption,
   AirportOption,
+  CommonsCandidate,
   Friend,
   FriendRequest,
   Journey,
@@ -13,6 +14,7 @@ import type {
   TailwindUser,
   UpdateUserFlightRequest,
   UserFlight,
+  UserSearchResult,
   Visibility,
 } from './types';
 
@@ -121,4 +123,52 @@ export function savePreferences(preferences: Record<string, unknown>) {
     method: 'PUT',
     body: { preferences },
   });
+}
+
+export function searchUsers(query: string, limit = 12) {
+  return api<UserSearchResult[]>('/tailwind/friends/search', { query: { q: query, limit } });
+}
+
+export function sendFriendRequest(targetUserId: string) {
+  return api<void>('/tailwind/friends/requests/' + targetUserId, { method: 'POST' });
+}
+
+export function acceptFriendRequest(requesterId: string) {
+  return api<void>('/tailwind/friends/requests/' + requesterId + '/accept', { method: 'POST' });
+}
+
+export function declineFriendRequest(requesterId: string) {
+  return api<void>('/tailwind/friends/requests/' + requesterId + '/decline', { method: 'POST' });
+}
+
+/** Unfriends, or withdraws a request that was sent and never answered. */
+export function removeFriend(otherUserId: string) {
+  return api<void>('/tailwind/friends/' + otherUserId, { method: 'DELETE' });
+}
+
+export function updateDefaultVisibility(defaultVisibility: Visibility) {
+  return api<TailwindUser>('/tailwind/users/me', { method: 'PATCH', body: { defaultVisibility } });
+}
+
+/** Removes the whole log. The shieldwall account is untouched and opting in again starts from scratch. */
+export function deleteOwnLog() {
+  return api<void>('/tailwind/users/me', { method: 'DELETE' });
+}
+
+/** Admin only. Wikimedia Commons images that could serve as this type's photo. */
+export function fetchPhotoCandidates(aircraftTypeId: number, query?: string) {
+  return api<CommonsCandidate[]>('/tailwind/admin/aircraft-types/' + aircraftTypeId + '/photo/candidates', {
+    query: { q: query },
+  });
+}
+
+export function selectCommonsPhoto(aircraftTypeId: number, title: string) {
+  return api<PhotoInfo>('/tailwind/admin/aircraft-types/' + aircraftTypeId + '/photo/commons', {
+    method: 'POST',
+    body: { title },
+  });
+}
+
+export function deleteAircraftPhoto(aircraftTypeId: number) {
+  return api<void>('/tailwind/admin/aircraft-types/' + aircraftTypeId + '/photo', { method: 'DELETE' });
 }
