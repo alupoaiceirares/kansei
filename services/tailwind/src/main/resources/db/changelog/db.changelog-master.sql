@@ -159,3 +159,8 @@ CREATE TABLE friendships (
     PRIMARY KEY (user_id_a, user_id_b)
 );
 CREATE INDEX friendships_user_id_b ON friendships (user_id_b);
+
+--changeset kansei:011-add-ui-preferences-to-tailwind-users
+-- Frontend display choices (map palette, shading, projection, overlays) so they follow the account instead
+-- of one browser. Opaque to the backend beyond being a JSON object under a size cap.
+ALTER TABLE tailwind_users ADD COLUMN ui_preferences JSONB;

@@ -271,6 +271,38 @@ class TravelProfileIntegrationTest {
     }
 
     @Test
+    void theExtraRecordsComeBackWithTheRest() throws Exception {
+        twoJourneys();
+
+        // Istanbul is the airport used twice, so it is home, and New York is the furthest point from it
+        query(user, "{ travelProfile { records { furthestPoint { iata homeIata distanceFromHomeKm } longestGap { days } mostAircraftInAJourney { aircraftCount flightCount } highestCabin { cabinClass } } } }")
+                .andExpect(jsonPath("$.data.travelProfile.records.furthestPoint.iata").value("JFK"))
+                .andExpect(jsonPath("$.data.travelProfile.records.furthestPoint.homeIata").value("IST"))
+
+                .andExpect(jsonPath("$.data.travelProfile.records.mostAircraftInAJourney.aircraftCount").value(2))
+                .andExpect(jsonPath("$.data.travelProfile.records.highestCabin").doesNotExist());
+    }
+
+    @Test
+    void theAircraftCatalogListsFamiliesTheUserHasNeverFlown() throws Exception {
+        twoJourneys();
+
+        query(user, "{ travelProfile { aircraftCatalog { family flightCount variantCount photoUrl } } }")
+                .andExpect(jsonPath("$.data.travelProfile.aircraftCatalog[?(@.family=='A340')].flightCount", org.hamcrest.Matchers.contains(2)))
+                .andExpect(jsonPath("$.data.travelProfile.aircraftCatalog[?(@.family=='A380')].flightCount", org.hamcrest.Matchers.contains(0)));
+    }
+
+    @Test
+    void breakdownsSayHowMuchOfTheLogTheyCover() throws Exception {
+        twoJourneys();
+
+        query(user, "{ travelProfile { breakdowns { cabinClasses { name count } reasons { name count } flightsPerYear { label count } flightsWithCabin } } }")
+                .andExpect(jsonPath("$.data.travelProfile.breakdowns.flightsWithCabin").value(0))
+                .andExpect(jsonPath("$.data.travelProfile.breakdowns.cabinClasses.length()").value(0))
+                .andExpect(jsonPath("$.data.travelProfile.breakdowns.flightsPerYear[0].count").value(3));
+    }
+
+    @Test
     void thePeriodNarrowsEveryField() throws Exception {
         twoJourneys();
 

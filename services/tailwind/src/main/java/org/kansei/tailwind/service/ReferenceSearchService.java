@@ -16,6 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class ReferenceSearchService {
@@ -23,6 +25,8 @@ public class ReferenceSearchService {
     private static final int MIN_QUERY_LENGTH = 2;
     private static final int DEFAULT_LIMIT = 10;
     private static final int MAX_LIMIT = 25;
+    // What follows the airline code in a flight number: one to four digits, sometimes a trailing letter
+    private static final Pattern FLIGHT_SUFFIX = Pattern.compile("^[0-9]{1,4}[A-Z]?$");
 
     private final AirportRepository airportRepository;
     private final AirlineRepository airlineRepository;
@@ -56,8 +60,39 @@ public class ReferenceSearchService {
                 .map(AircraftTypeResponse::of).toList();
     }
 
+    /**
+     * The airline that operates a flight number, worked out from its prefix: TK1044 is Turkish Airlines.
+     * Manual entry needs an airline, and a user often remembers the number but not the carrier.
+     */
+    public List<AirlineResponse> airlinesForFlightNumber(String flightNumber) {
+        String prefix = prefixOf(flightNumber);
+        if (prefix == null) {
+            return List.of();
+        }
+        // A two character prefix is an IATA code, three is ICAO, and both are checked either way
+        return airlineRepository.findByCode(prefix).stream().map(AirlineResponse::of).toList();
+    }
+
     public List<CountryResponse> listCountries() {
         return countryRepository.findAll(Sort.by("name")).stream().map(CountryResponse::of).toList();
+    }
+
+    /**
+     * The airline code a flight number starts with: LH400 gives LH, DLH400 gives DLH, W63021 gives W6.
+     * The two character code is tried first, so a digit never gets pulled into the code.
+     */
+    static String prefixOf(String flightNumber) {
+        String value = flightNumber == null ? "" : flightNumber.trim().toUpperCase(Locale.ROOT);
+        for (int length = 2; length <= 3 && length < value.length(); length++) {
+            String prefix = value.substring(0, length);
+            // A code holds at least one letter, so a bare 400 is a number and not an airline
+            boolean hasLetter = prefix.chars().anyMatch(Character::isLetter);
+            Matcher rest = FLIGHT_SUFFIX.matcher(value.substring(length));
+            if (hasLetter && rest.matches()) {
+                return prefix;
+            }
+        }
+        return null;
     }
 
     static String escapeLike(String value) {

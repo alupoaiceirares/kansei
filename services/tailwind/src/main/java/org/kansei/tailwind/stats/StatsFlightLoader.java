@@ -108,7 +108,7 @@ public class StatsFlightLoader {
                 arrival.getCountryCode(), arrival.getLatitude(), arrival.getLongitude(),
                 type == null ? null : type.getId(), type == null ? null : type.getIcaoCode(), type == null ? null : type.getName(),
                 type == null ? null : type.getManufacturer(), type == null || type.getBodyType() == null ? null : type.getBodyType().name(),
-                f.getAircraftFamily());
+                f.getAircraftFamily(), uf.getCabinClass(), uf.getSeatPosition(), uf.getReason());
     }
 
     LocalDate todayUtc() {

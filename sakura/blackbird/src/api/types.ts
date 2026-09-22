@@ -94,3 +94,88 @@ export type Journey = {
   createdAt: string;
   flights: UserFlight[];
 };
+
+export type AirportOption = {
+  id: number;
+  icao: string | null;
+  iata: string | null;
+  name: string;
+  city: string | null;
+  countryCode: string;
+  timeZone: string | null;
+  latitude: number;
+  longitude: number;
+};
+
+export type AirlineOption = {
+  id: number;
+  icao: string | null;
+  iata: string | null;
+  name: string;
+  countryCode: string | null;
+  active: boolean;
+};
+
+export type AircraftTypeOption = {
+  id: number;
+  icaoCode: string;
+  manufacturer: string | null;
+  model: string | null;
+  name: string;
+  family: string | null;
+};
+
+export type LookupEntry = { flight: Flight; alreadyInLog: boolean };
+
+export type PhotoInfo = {
+  hasPhoto: boolean;
+  aircraftTypeId: number | null;
+  origin: string | null;
+  title: string | null;
+  author: string | null;
+  license: string | null;
+  sourceUrl: string | null;
+};
+
+export type AddFlightRequest = {
+  flightId: number;
+  visibility?: Visibility;
+  journeyId?: number | null;
+  confirmCargo?: boolean;
+  seat?: string | null;
+  seatPosition?: SeatPosition | null;
+  cabinClass?: CabinClass | null;
+  reason?: TripReason | null;
+  notes?: string | null;
+};
+
+export type ManualFlightRequest = {
+  flightNumber?: string | null;
+  date: string;
+  airlineId: number;
+  departureAirportId: number;
+  arrivalAirportId: number;
+  aircraftTypeId?: number | null;
+  /** Local clock times at their own airport, both optional. */
+  departureTime?: string | null;
+  arrivalTime?: string | null;
+  cargo?: boolean;
+  visibility?: Visibility;
+  journeyId?: number | null;
+  seat?: string | null;
+  seatPosition?: SeatPosition | null;
+  cabinClass?: CabinClass | null;
+  reason?: TripReason | null;
+  notes?: string | null;
+};
+
+export type UpdateUserFlightRequest = {
+  visibility?: Visibility;
+  journeyId?: number | null;
+  seat?: string | null;
+  seatPosition?: SeatPosition | null;
+  cabinClass?: CabinClass | null;
+  reason?: TripReason | null;
+  stopType?: StopType | null;
+  notes?: string | null;
+};

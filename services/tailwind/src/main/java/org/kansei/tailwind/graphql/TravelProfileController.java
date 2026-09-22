@@ -61,6 +61,16 @@ public class TravelProfileController {
     }
 
     @SchemaMapping(typeName = "TravelProfile")
+    public List<StatsModels.AircraftFamilyOption> aircraftCatalog(TravelProfileRoot root) {
+        return travelProfileService.aircraftCatalog(root.viewerId(), root.ownerId(), root.period());
+    }
+
+    @SchemaMapping(typeName = "TravelProfile")
+    public StatsModels.TravelBreakdowns breakdowns(TravelProfileRoot root) {
+        return travelProfileService.breakdowns(root.viewerId(), root.ownerId(), root.period());
+    }
+
+    @SchemaMapping(typeName = "TravelProfile")
     public List<StatsModels.AirlineCount> airlines(TravelProfileRoot root) {
         return travelProfileService.airlines(root.viewerId(), root.ownerId(), root.period());
     }

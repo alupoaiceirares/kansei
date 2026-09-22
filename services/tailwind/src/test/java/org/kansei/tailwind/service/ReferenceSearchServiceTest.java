@@ -16,6 +16,28 @@ class ReferenceSearchServiceTest {
     }
 
     @Test
+    void flightNumberGivesUpTheAirlineCode() {
+        assertThat(ReferenceSearchService.prefixOf("LH400")).isEqualTo("LH");
+        assertThat(ReferenceSearchService.prefixOf("tk1044")).isEqualTo("TK");
+        assertThat(ReferenceSearchService.prefixOf("W63021")).isEqualTo("W6");
+        assertThat(ReferenceSearchService.prefixOf(" DLH400 ")).isEqualTo("DLH");
+    }
+
+    @Test
+    void somethingThatIsNotAFlightNumberHasNoAirlineCode() {
+        assertThat(ReferenceSearchService.prefixOf("Lufthansa")).isNull();
+        assertThat(ReferenceSearchService.prefixOf("400")).isNull();
+        assertThat(ReferenceSearchService.prefixOf(null)).isNull();
+    }
+
+    @Test
+    void anAirlineIsNotLookedUpForAnUnparseableNumber() {
+        ReferenceSearchService service = new ReferenceSearchService(null, null, null, null);
+
+        assertThat(service.airlinesForFlightNumber("not a flight")).isEmpty();
+    }
+
+    @Test
     void shortQueryIsRejected() {
         ReferenceSearchService service = new ReferenceSearchService(null, null, null, null);
 

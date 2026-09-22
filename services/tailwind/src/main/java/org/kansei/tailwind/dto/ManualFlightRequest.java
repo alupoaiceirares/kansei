@@ -9,6 +9,7 @@ import org.kansei.tailwind.model.TripReason;
 import org.kansei.tailwind.model.Visibility;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * A flight the provider does not have (old, private, charter, budget gone). Airline and both airports come
@@ -21,6 +22,10 @@ public record ManualFlightRequest(
         @NotNull Long departureAirportId,
         @NotNull Long arrivalAirportId,
         Long aircraftTypeId,
+        // Local clock times at their own airport, both optional. Without them the flight still counts for
+        // distance, it is only left out of time in air.
+        LocalTime departureTime,
+        LocalTime arrivalTime,
         Boolean cargo,
         Visibility visibility,
         Long journeyId,

@@ -18,8 +18,11 @@ type TravelProfile {
     countries: VisitedCountries!
     airports: [AirportVisit!]!
     aircraft: [AircraftFamilyCollection!]!
+    # Every airliner family, flown or not, so the collection can show what is still missing
+    aircraftCatalog: [AircraftFamilyOption!]!
     airlines: [AirlineCount!]!
     records: TravelRecords!
+    breakdowns: TravelBreakdowns!
 }
 
 # Counts are distinct: 3 flights on the same A320 count once under aircraftTypes.
@@ -105,6 +108,28 @@ type AirlineCount {
     distanceKm: Float!
 }
 
+# flightCount is 0 for a family the user has never flown, which the collection shows as locked.
+type AircraftFamilyOption {
+    family: String!
+    manufacturer: String
+    bodyType: String
+    variantCount: Int!
+    flightCount: Int!
+    photoUrl: String!
+}
+
+# Counts of what the user chose to record per flight. A flight left blank is not counted at all, so
+# flightsWithCabin says how much of the log the cabin split actually covers.
+type TravelBreakdowns {
+    cabinClasses: [NamedCount!]!
+    seatPositions: [NamedCount!]!
+    reasons: [NamedCount!]!
+    flightsPerYear: [PeriodCount!]!
+    flightsWithCabin: Int!
+    flightsWithReason: Int!
+    flightsWithSeatPosition: Int!
+}
+
 # Every field is null until there is a flight to fill it.
 type TravelRecords {
     longestFlight: FlightRecord
@@ -116,6 +141,41 @@ type TravelRecords {
     mostFlownAirline: NamedCount
     busiestMonth: PeriodCount
     biggestYear: PeriodCount
+    furthestPoint: FurthestPoint
+    longestGap: LongestGap
+    mostAircraftInAJourney: JourneyAircraftRecord
+    highestCabin: CabinRecord
+}
+
+# The airport furthest from home, where home is the airport the user passes through most.
+type FurthestPoint {
+    iata: String
+    name: String!
+    city: String
+    countryCode: String!
+    distanceFromHomeKm: Float!
+    homeIata: String
+    date: Date!
+}
+
+# The longest stretch with no flying, measured between two flights in the log.
+type LongestGap {
+    days: Int!
+    from: Date!
+    to: Date!
+}
+
+type JourneyAircraftRecord {
+    journeyId: ID!
+    title: String!
+    aircraftCount: Int!
+    flightCount: Int!
+}
+
+type CabinRecord {
+    cabinClass: String!
+    flightCount: Int!
+    firstFlight: Date!
 }
 
 type FlightRecord {

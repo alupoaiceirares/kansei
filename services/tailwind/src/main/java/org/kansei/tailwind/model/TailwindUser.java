@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -43,4 +45,9 @@ public class TailwindUser {
     @Enumerated(EnumType.STRING)
     @Column(name = "default_visibility", nullable = false)
     private Visibility defaultVisibility = Visibility.FRIENDS;
+
+    // Frontend display choices, stored as handed over and never interpreted by the backend
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "ui_preferences", columnDefinition = "jsonb")
+    private String uiPreferences;
 }

@@ -1,6 +1,9 @@
 package org.kansei.tailwind.stats;
 
+import org.kansei.tailwind.model.CabinClass;
+import org.kansei.tailwind.model.SeatPosition;
 import org.kansei.tailwind.model.StopType;
+import org.kansei.tailwind.model.TripReason;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,6 +49,9 @@ public final class StatsFlightFixtures {
         private String aircraftIcao = "A346";
         private String aircraftName = "Airbus A340-600";
         private String family = "A340";
+        private CabinClass cabinClass;
+        private SeatPosition seatPosition;
+        private TripReason reason;
 
         private Builder(long journeyId, LocalDate date, Airport from, Airport to) {
             this.journeyId = journeyId;
@@ -102,13 +108,28 @@ public final class StatsFlightFixtures {
             return aircraft(null, null, null, null);
         }
 
+        public Builder cabin(CabinClass cabinClass) {
+            this.cabinClass = cabinClass;
+            return this;
+        }
+
+        public Builder seat(SeatPosition seatPosition) {
+            this.seatPosition = seatPosition;
+            return this;
+        }
+
+        public Builder reason(TripReason reason) {
+            this.reason = reason;
+            return this;
+        }
+
         public StatsFlight build() {
             long id = nextId++;
             return new StatsFlight(id, journeyId, id, date, "LH" + id, distanceKm, cargo, stopType, suggested, departure, arrival,
                     airlineId, "DLH", "LH", airlineName,
                     from.id(), "X" + from.iata(), from.iata(), from.name(), from.name(), from.country(), from.lat(), from.lon(),
                     to.id(), "X" + to.iata(), to.iata(), to.name(), to.name(), to.country(), to.lat(), to.lon(),
-                    aircraftTypeId, aircraftIcao, aircraftName, "Airbus", "WIDE", family);
+                    aircraftTypeId, aircraftIcao, aircraftName, "Airbus", "WIDE", family, cabinClass, seatPosition, reason);
         }
     }
 }
