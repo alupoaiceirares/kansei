@@ -54,14 +54,14 @@ public class TailwindUserController {
         return tailwindUserService.me(userId, role);
     }
 
-    // Only applies to flights added from here on
+    // Own settings: default visibility for flights added from here on, and the January recap email
     @PatchMapping("/me")
     public TailwindUserResponse update(
             @RequestHeader("X-User-Id") UUID userId,
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody UpdateTailwindUserRequest request
     ) {
-        return tailwindUserService.updateDefaultVisibility(userId, request.defaultVisibility(), role);
+        return tailwindUserService.update(userId, request, role);
     }
 
     // The user deleting their own log, their shieldwall account is untouched

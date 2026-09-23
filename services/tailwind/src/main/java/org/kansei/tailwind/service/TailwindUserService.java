@@ -3,8 +3,8 @@ package org.kansei.tailwind.service;
 import lombok.extern.slf4j.Slf4j;
 import org.kansei.tailwind.client.ShieldwallUserClient;
 import org.kansei.tailwind.dto.TailwindUserResponse;
+import org.kansei.tailwind.dto.UpdateTailwindUserRequest;
 import org.kansei.tailwind.model.TailwindUser;
-import org.kansei.tailwind.model.Visibility;
 import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -51,11 +51,16 @@ public class TailwindUserService {
         return toResponse(user, role);
     }
 
-    /** Applies to flights added from here on, the ones already logged keep what they were given. */
-    public TailwindUserResponse updateDefaultVisibility(UUID userId, Visibility visibility, String role) {
+    /** A new default visibility applies to flights added from here on, the ones already logged keep theirs. */
+    public TailwindUserResponse update(UUID userId, UpdateTailwindUserRequest request, String role) {
         TailwindUser user = tailwindUserRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Not opted into tailwind"));
-        user.setDefaultVisibility(visibility);
+        if (request.defaultVisibility() != null) {
+            user.setDefaultVisibility(request.defaultVisibility());
+        }
+        if (request.recapEmails() != null) {
+            user.setRecapEmails(request.recapEmails());
+        }
         return toResponse(tailwindUserRepository.save(user), role);
     }
 

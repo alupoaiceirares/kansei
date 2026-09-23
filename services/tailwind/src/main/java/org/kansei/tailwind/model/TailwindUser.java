@@ -41,6 +41,11 @@ public class TailwindUser {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    // The January recap email, on unless the user turned it off
+    @Builder.Default
+    @Column(name = "recap_emails", nullable = false)
+    private boolean recapEmails = true;
+
     // Set by an admin disable, cleared on reinstatement
     @Column(name = "disabled_at")
     private Instant disabledAt;

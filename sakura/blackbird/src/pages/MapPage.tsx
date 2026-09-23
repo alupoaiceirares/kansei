@@ -108,7 +108,7 @@ function buildMapData(profile: MapProfile, flights: UserFlight[]): MapData {
     airports: profile.airports.map((airport) => [airport.longitude, airport.latitude] as [number, number]),
     // Upcoming flights stay off the map until they have happened.
     routes: flights
-      .filter((item) => !item.flight.upcoming)
+      .filter((item) => !item.flight.upcoming && !item.flight.canceled)
       .map((item) => [
         [item.flight.departureAirport.longitude, item.flight.departureAirport.latitude],
         [item.flight.arrivalAirport.longitude, item.flight.arrivalAirport.latitude],

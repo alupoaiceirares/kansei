@@ -79,6 +79,7 @@ class VisibilityLeakIntegrationTest {
         registry.add("AERODATABOX_API_KEY", () -> "test");
         registry.add("AERODATABOX_MONTHLY_UNIT_CAP", () -> "400");
         registry.add("TAILWIND_ADMIN_EMAIL", () -> "admin@example.test");
+        registry.add("BLACKBIRD_URL", () -> "http://localhost:5173");
     }
 
     private static final String GRAPHQL = "/tailwind/graphql";

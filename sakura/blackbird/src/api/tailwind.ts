@@ -3,24 +3,32 @@ import type {
   AddFlightRequest,
   AdminUser,
   AircraftTypeOption,
+  AircraftTypeRecord,
   AirlineOption,
+  AirlineRecord,
   AirportOption,
+  AirportRecord,
   CommonsCandidate,
+  CountryRecord,
   Friend,
   FriendRequest,
   ImportPreview,
   ImportRun,
+  JoinRequest,
+  JoinResult,
   Journey,
   LookupEntry,
   MapAircraftStringResult,
   ManualFlightRequest,
   PhotoInfo,
+  SharedFriend,
   TailwindUser,
   UnmappedAircraftString,
   UpdateUserFlightRequest,
   UserFlight,
   UserSearchResult,
   Visibility,
+  YearlyRecap,
 } from './types';
 
 /** null means the user has not opted in yet, the service answers 404 for that. */
@@ -232,4 +240,66 @@ export function fetchDisabledUsers() {
 
 export function enableUser(userId: string) {
   return api<void>('/tailwind/admin/users/' + userId + '/enable', { method: 'POST' });
+}
+
+export function fetchCountries() {
+  return api<CountryRecord[]>('/tailwind/countries');
+}
+
+/** Admin only. id null creates the row, otherwise it is replaced as a whole. */
+export function saveAirport(id: number | null, body: Omit<AirportRecord, 'id'>) {
+  return api<AirportRecord>('/tailwind/admin/airports' + (id === null ? '' : '/' + id), { method: id === null ? 'POST' : 'PUT', body });
+}
+
+export function saveAirline(id: number | null, body: Omit<AirlineRecord, 'id'>) {
+  return api<AirlineRecord>('/tailwind/admin/airlines' + (id === null ? '' : '/' + id), { method: id === null ? 'POST' : 'PUT', body });
+}
+
+export function saveAircraftType(id: number | null, body: Omit<AircraftTypeRecord, 'id'>) {
+  return api<AircraftTypeRecord>('/tailwind/admin/aircraft-types' + (id === null ? '' : '/' + id), {
+    method: id === null ? 'POST' : 'PUT',
+    body,
+  });
+}
+
+export function saveCountry(code: string | null, body: CountryRecord) {
+  return api<CountryRecord>('/tailwind/admin/countries' + (code === null ? '' : '/' + code), { method: code === null ? 'POST' : 'PUT', body });
+}
+
+/** Friends who logged the same flight and let you see it. */
+export function fetchSharedWith(userFlightId: number) {
+  return api<SharedFriend[]>('/tailwind/flights/' + userFlightId + '/shared');
+}
+
+/** "I was on this too" on someone else's entry: added straight away between friends, otherwise a request. */
+export function joinFlight(userFlightId: number) {
+  return api<JoinResult>('/tailwind/flights/' + userFlightId + '/join', { method: 'POST' });
+}
+
+export function fetchJoinRequests() {
+  return api<JoinRequest[]>('/tailwind/flights/join-requests');
+}
+
+export function acceptJoinRequest(requestId: number) {
+  return api<void>('/tailwind/flights/join-requests/' + requestId + '/accept', { method: 'POST' });
+}
+
+export function declineJoinRequest(requestId: number) {
+  return api<void>('/tailwind/flights/join-requests/' + requestId + '/decline', { method: 'POST' });
+}
+
+export function withdrawJoinRequest(requestId: number) {
+  return api<void>('/tailwind/flights/join-requests/' + requestId, { method: 'DELETE' });
+}
+
+export function fetchRecapYears() {
+  return api<number[]>('/tailwind/recaps');
+}
+
+export function fetchRecap(year: number) {
+  return api<YearlyRecap>('/tailwind/recaps/' + year);
+}
+
+export function updateRecapEmails(recapEmails: boolean) {
+  return api<TailwindUser>('/tailwind/users/me', { method: 'PATCH', body: { recapEmails } });
 }

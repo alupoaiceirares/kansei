@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.kansei.tailwind.client.ShieldwallUserClient;
 import org.kansei.tailwind.dto.TailwindUserResponse;
+import org.kansei.tailwind.dto.UpdateTailwindUserRequest;
 import org.kansei.tailwind.model.TailwindUser;
 import org.kansei.tailwind.model.Visibility;
 import org.kansei.tailwind.repository.TailwindUserRepository;
@@ -119,7 +120,7 @@ class TailwindUserServiceTest {
         when(tailwindUserRepository.save(row)).thenReturn(row);
         when(shieldwallUserClient.resolveUsernames(List.of(user))).thenReturn(Map.of(user, "alexm"));
 
-        TailwindUserResponse response = service.updateDefaultVisibility(user, Visibility.PUBLIC, "USER");
+        TailwindUserResponse response = service.update(user, new UpdateTailwindUserRequest(Visibility.PUBLIC, null), "USER");
 
         assertThat(row.getDefaultVisibility()).isEqualTo(Visibility.PUBLIC);
         assertThat(response.defaultVisibility()).isEqualTo(Visibility.PUBLIC);

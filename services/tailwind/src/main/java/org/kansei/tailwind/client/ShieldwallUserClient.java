@@ -138,7 +138,22 @@ public class ShieldwallUserClient {
         }
     }
 
+    // Email addresses for a mail sent right now, never cached or stored. Throws on failure so the sender retries later
+    public List<Contact> findContacts(Collection<UUID> userIds) {
+        String idsParam = userIds.stream().map(UUID::toString).collect(Collectors.joining(","));
+        List<Contact> body = restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/internal/users/contacts").queryParam("ids", idsParam).build())
+                .header("X-Internal-Secret", internalServiceSecret)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {
+                });
+        return body == null ? List.of() : body;
+    }
+
     private record UserSummary(UUID id, String username) {
+    }
+
+    public record Contact(UUID id, String username, String email) {
     }
 
     public record UserMatch(UUID id, String username) {

@@ -30,4 +30,10 @@ public class MailEventPublisher {
                 "vars", Map.of("username", username, "userId", userId.toString()));
         rabbitTemplate.convertAndSend(RabbitMQConfig.MAIL_EXCHANGE, "tailwind.disable-request", payload);
     }
+
+    // to is looked up from shieldwall right before this call and not kept anywhere
+    public void publishYearlyRecap(String to, Map<String, Object> vars) {
+        Map<String, Object> payload = Map.of("to", to, "template", "tailwind-yearly-recap", "vars", vars);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.MAIL_EXCHANGE, "tailwind.yearly-recap", payload);
+    }
 }

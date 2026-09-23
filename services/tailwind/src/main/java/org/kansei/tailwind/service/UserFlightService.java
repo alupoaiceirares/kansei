@@ -128,6 +128,15 @@ public class UserFlightService {
                 request.reason(), request.notes());
     }
 
+    // "I was on this too": the same flight row as someone else's entry, a new automatic journey and the user's default visibility
+    public UserFlightResponse addShared(UUID userId, Flight flight) {
+        TailwindUser user = optInGuard.require(userId);
+        if (userFlightRepository.existsByUserIdAndFlightId(userId, flight.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "This flight is already in your log");
+        }
+        return save(userId, user, flight, null, null, null, null, null, null, null);
+    }
+
     // An admin CSV row, already resolved and validated. Stored like a manual flight, keeps an unmapped aircraft string
     public UserFlight addImported(UUID userId, ImportedFlight row, Long journeyId, Visibility defaultVisibility) {
         Instant departureUtc = toUtc(row.date(), row.departureTime(), row.departure());
@@ -217,7 +226,7 @@ public class UserFlightService {
         Flight flight = userFlight.getFlight();
         userFlightRepository.delete(userFlight);
         userFlightRepository.flush();
-        if (flight.getSource() == FlightSource.MANUAL) {
+        if (flight.getSource() == FlightSource.MANUAL && !userFlightRepository.existsByFlightId(flight.getId())) {
             flightRepository.delete(flight);
         }
         journeyService.deleteIfEmptyAndPlain(journeyId);

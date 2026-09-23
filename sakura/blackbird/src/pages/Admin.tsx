@@ -11,17 +11,15 @@ import {
   fetchPhotoCandidates,
   fetchPhotoInfoForType,
   searchAircraftTypes,
-  searchAirlines,
-  searchAirports,
   selectCommonsPhoto,
 } from '../api/tailwind';
-import type { AircraftTypeOption, AirlineOption, AirportOption, CommonsCandidate, PhotoInfo } from '../api/types';
+import type { AircraftTypeOption, CommonsCandidate, PhotoInfo } from '../api/types';
 import { useSession } from '../session';
 import { CARD, CARD_HEAD, DangerButton, PrimaryButton, Row } from './adminShared';
 import { AircraftStringsSection, ImportSection, UsersSection } from './AdminTools';
+import { ReferenceSection } from './AdminReference';
 
 type Section = 'Photos' | 'Reference data' | 'Aircraft strings' | 'Import flights' | 'Users';
-type RefKind = 'Airports' | 'Airlines' | 'Aircraft types';
 
 const SECTION: CSSProperties = {
   display: 'inline-flex',
@@ -43,34 +41,6 @@ const SECTION: CSSProperties = {
 };
 
 const SECTION_ON: CSSProperties = { ...SECTION, background: COLORS.raised, color: COLORS.text, boxShadow: 'inset 0 -2px 0 ' + COLORS.cyan };
-
-const CHIP: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  height: 32,
-  padding: '0 13px',
-  borderRadius: 999,
-  fontFamily: FONT_STACK,
-  fontSize: 12.5,
-  fontWeight: 500,
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-  border: '1px solid ' + COLORS.line,
-  background: 'transparent',
-  color: COLORS.textMuted,
-};
-
-const CHIP_ON: CSSProperties = { ...CHIP, borderColor: COLORS.cyan, background: COLORS.raised, color: COLORS.text };
-
-const REF_GRID: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: '92px minmax(0,1.4fr) minmax(0,1fr) auto',
-  gap: 14,
-  alignItems: 'center',
-  padding: '13px 20px',
-  borderBottom: '1px solid ' + COLORS.lineSoft,
-  fontSize: 13.5,
-};
 
 /** Staff only. The role comes from the JWT, so a promotion needs a fresh login to take effect. */
 export function AdminPage() {
@@ -319,122 +289,6 @@ function PhotosSection() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function ReferenceSection() {
-  const [kind, setKind] = useState<RefKind>('Airports');
-  const [airport, setAirport] = useState<AirportOption | null>(null);
-  const [airline, setAirline] = useState<AirlineOption | null>(null);
-  const [type, setType] = useState<AircraftTypeOption | null>(null);
-
-  const airportSearch = useCallback((value: string) => searchAirports(value, 25), []);
-  const airlineSearch = useCallback((value: string) => searchAirlines(value, 25), []);
-  const typeSearch = useCallback((value: string) => searchAircraftTypes(value, 25), []);
-
-  const rows =
-    kind === 'Airports'
-      ? airport
-        ? [{ code: airport.iata ?? airport.icao ?? '—', name: airport.name, extra: [airport.city, airport.countryCode].filter(Boolean).join(', ') }]
-        : []
-      : kind === 'Airlines'
-        ? airline
-          ? [{ code: airline.iata ?? airline.icao ?? '—', name: airline.name, extra: airline.active ? airline.countryCode ?? '' : (airline.countryCode ?? '') + ' — ceased' }]
-          : []
-        : type
-          ? [{ code: type.icaoCode, name: type.name, extra: type.family ?? '' }]
-          : [];
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 10,
-          alignItems: 'center',
-          padding: '14px 16px',
-          background: COLORS.surfaceOverlay,
-          border: '1px solid ' + COLORS.line,
-          borderRadius: 12,
-        }}
-      >
-        <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-          {kind === 'Airports' && (
-            <ReferencePicker
-              value={airport}
-              onChange={setAirport}
-              search={airportSearch}
-              labelOf={(item) => (item.iata ?? item.icao ?? '') + ' — ' + item.name}
-              metaOf={(item) => [item.city, item.countryCode].filter(Boolean).join(', ')}
-              placeholder="Search airports"
-            />
-          )}
-          {kind === 'Airlines' && (
-            <ReferencePicker
-              value={airline}
-              onChange={setAirline}
-              search={airlineSearch}
-              labelOf={(item) => item.name}
-              metaOf={(item) => [item.iata, item.icao, item.active ? 'active' : 'ceased'].filter(Boolean).join(' · ')}
-              placeholder="Search airlines"
-            />
-          )}
-          {kind === 'Aircraft types' && (
-            <ReferencePicker
-              value={type}
-              onChange={setType}
-              search={typeSearch}
-              labelOf={(item) => item.name}
-              metaOf={(item) => [item.manufacturer, item.icaoCode, item.family].filter(Boolean).join(' · ')}
-              placeholder="Search aircraft types"
-            />
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {(['Airports', 'Airlines', 'Aircraft types'] as RefKind[]).map((item) => (
-            <button key={item} type="button" onClick={() => setKind(item)} style={kind === item ? CHIP_ON : CHIP}>
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={CARD}>
-        <div style={CARD_HEAD}>{kind}</div>
-        <div
-          style={{
-            ...REF_GRID,
-            background: '#082834',
-            borderBottom: '1px solid ' + COLORS.line,
-            fontSize: 11,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: COLORS.textDim,
-          }}
-        >
-          <span>Code</span>
-          <span>Name</span>
-          <span>{kind === 'Aircraft types' ? 'Family' : 'Country'}</span>
-          <span />
-        </div>
-        {rows.length === 0 && (
-          <div style={{ padding: '18px 20px', fontSize: 13, color: COLORS.textMuted }}>
-            Search above to open a row. Editing writes to the shared reference data, so every log sees it.
-          </div>
-        )}
-        {rows.map((row) => (
-          <div key={row.code} style={REF_GRID}>
-            <span style={{ color: COLORS.text, fontWeight: 600, letterSpacing: '0.04em' }}>{row.code}</span>
-            <span style={{ color: COLORS.text }}>{row.name}</span>
-            <span style={{ color: COLORS.textMuted }}>{row.extra}</span>
-            <span style={{ display: 'flex', gap: 7, justifyContent: 'flex-end', fontSize: 12.5, color: COLORS.textDim }}>
-              Editing lands in a later pass
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

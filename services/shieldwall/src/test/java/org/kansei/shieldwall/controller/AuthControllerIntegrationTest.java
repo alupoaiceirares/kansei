@@ -50,6 +50,7 @@ class AuthControllerIntegrationTest {
         registry.add("spring.rabbitmq.password", () -> "test");
         // Rate limiting is unit-tested separately (RateLimitFilterTest) - this class registers many users across many test methods against the one shared filter instance
         registry.add("app.rate-limit.max-requests", () -> "1000");
+        registry.add("internal.service-secret", () -> "test-internal-secret");
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -380,5 +381,26 @@ class AuthControllerIntegrationTest {
                         .content(objectMapper.writeValueAsString(new PasswordResetRequest("nobody-" + uniqueEmail()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("password reset link")));
+    }
+
+    @Test
+    void internalContacts_returnOnlyVerifiedActiveUsers_andNeedTheSecret() throws Exception {
+        String verifiedEmail = uniqueEmail();
+        UUID verified = registerAndVerify(verifiedEmail, uniqueUsername(), "supersecretpw").userId();
+        String pendingEmail = uniqueEmail();
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new RegisterRequest(pendingEmail, uniqueUsername(), "supersecretpw", "First", "Last"))))
+                .andExpect(status().isCreated());
+        UUID pending = userRepository.findByEmail(pendingEmail).orElseThrow().getId();
+
+        mockMvc.perform(get("/api/internal/users/contacts").header("X-Internal-Secret", "test-internal-secret").param("ids", verified + "," + pending))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(verified.toString()))
+                .andExpect(jsonPath("$[0].email").value(verifiedEmail));
+
+        mockMvc.perform(get("/api/internal/users/contacts").header("X-Internal-Secret", "wrong").param("ids", verified.toString()))
+                .andExpect(status().is4xxClientError());
     }
 }

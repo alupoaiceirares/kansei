@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Your {{year}} in the air, The Kansei Project</title>
+<style>
+  @media only screen and (max-width: 620px) {
+    .kx-wrap { width: 100% !important; }
+    .kx-pad { padding-left: 24px !important; padding-right: 24px !important; }
+    .kx-h1 { font-size: 26px !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f1ec;">
+
+<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">{{flights}} flights and {{distance}} in {{year}}.</span>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f4f1ec;">
+<tr>
+<td align="center" style="padding:32px 12px 48px 12px;">
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="kx-wrap" style="width:600px;max-width:600px;background-color:#ffffff;border-radius:16px;border:1px solid #e6e0d8;">
+
+    <!-- gradient band -->
+    <tr>
+      <td width="600" style="width:600px;height:8px;line-height:8px;font-size:0;background-color:#2f7f97;background-image:linear-gradient(90deg,#2f7f97 0%,#2f7f97 24%,#a53125 38%,#d54b96 52%,#c08a1e 64%,#276b4e 76%,#276b4e 100%);border-radius:16px 16px 0 0;">&nbsp;</td>
+    </tr>
+
+    <!-- brand -->
+    <tr>
+      <td align="center" class="kx-pad" style="padding:36px 48px 0 48px;font-family:Georgia,'Times New Roman',serif;">
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:24px;mso-line-height-rule:exactly;color:#2b2724;letter-spacing:0.4px;">The Kansei Project</div>
+      </td>
+    </tr>
+
+    <!-- heading + copy -->
+    <tr>
+      <td align="center" class="kx-pad" style="padding:30px 56px 0 56px;">
+        <div class="kx-h1" style="font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:38px;mso-line-height-rule:exactly;color:#2b2724;">Your {{year}} in the air</div>
+        <div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:26px;mso-line-height-rule:exactly;color:#5f5a54;">
+          Hi {{username}}, here is what your WTW log says about last year.
+        </div>
+      </td>
+    </tr>
+
+    <!-- numbers -->
+    <tr>
+      <td class="kx-pad" style="padding:28px 56px 0 56px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;background-color:#f7f4ef;border:1px solid #e6e0d8;border-radius:12px;">
+          <tr>
+            <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:26px;mso-line-height-rule:exactly;color:#3a3530;">
+              <strong>Flights:</strong> {{flights}}<br>
+              <strong>Distance:</strong> {{distance}}, {{earthLaps}} times around the Earth, {{moonTrips}} of the way to the Moon<br>
+              <strong>Time in the air:</strong> about {{hours}} hours<br>
+              <strong>Countries:</strong> {{countries}}{{#if newCountries}}, new ones: {{newCountries}}{{/if}}<br>
+              {{#if longestRoute}}<strong>Longest flight:</strong> {{longestRoute}}, {{longestDistance}}<br>{{/if}}
+              {{#if topAirline}}<strong>Most flown airline:</strong> {{topAirline}}{{/if}}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <!-- button -->
+    <tr>
+      <td align="center" class="kx-pad" style="padding:32px 56px 0 56px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td align="center" bgcolor="#2f7f97" style="border-radius:999px;">
+              <a href="{{recapUrl}}" style="display:block;padding:15px 40px;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;line-height:20px;mso-line-height-rule:exactly;color:#ffffff;text-decoration:none;border-radius:999px;">See the whole recap</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td align="center" class="kx-pad" style="padding:28px 56px 36px 56px;">
+        <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:22px;mso-line-height-rule:exactly;color:#8a837b;">
+          You get this once a year. Turn it off on your <a href="{{profileUrl}}" style="color:#8a837b;">WTW profile</a>.
+        </div>
+      </td>
+    </tr>
+
+  </table>
+
+  <!-- footer -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="kx-wrap" style="width:600px;max-width:600px;">
+    <tr>
+      <td align="center" class="kx-pad" style="padding:26px 48px 0 48px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:20px;mso-line-height-rule:exactly;color:#918a82;">
+        The Kansei Project
+      </td>
+    </tr>
+  </table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
