@@ -164,3 +164,13 @@ CREATE INDEX friendships_user_id_b ON friendships (user_id_b);
 -- Frontend display choices (map palette, shading, projection, overlays) so they follow the account instead
 -- of one browser. Opaque to the backend beyond being a JSON object under a size cap.
 ALTER TABLE tailwind_users ADD COLUMN ui_preferences JSONB;
+
+--changeset kansei:012-add-awaiting-refresh-to-flights
+-- An API flight looked up before it landed holds schedule data only. The daily refresh job and the manual refresh
+-- button pull the real times and aircraft once, after landing, then clear the flag. Manual flights never refresh.
+ALTER TABLE flights ADD COLUMN awaiting_refresh BOOLEAN NOT NULL DEFAULT FALSE;
+UPDATE flights SET awaiting_refresh = TRUE
+WHERE source = 'API'
+  AND arrival_actual_utc IS NULL
+  AND COALESCE(arrival_revised_utc, arrival_scheduled_utc) > created_at;
+CREATE INDEX flights_awaiting_refresh ON flights (flight_date) WHERE awaiting_refresh;

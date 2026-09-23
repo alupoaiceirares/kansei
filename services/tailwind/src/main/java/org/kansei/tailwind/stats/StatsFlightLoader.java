@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class StatsFlightLoader {
     public List<StatsFlight> load(UUID viewerId, UUID ownerId, StatsModels.Period period) {
         List<UserFlight> flights = userFlightRepository.findDetailedByUserId(ownerId);
         Set<Visibility> allowed = viewerAccess.visibleTo(viewerId, ownerId);
-        LocalDate today = LocalDate.now(clock);
+        Instant now = clock.instant();
 
         // The stop type suggestion needs the neighbours inside the same journey, so it is worked out before filtering
         Map<Long, List<UserFlight>> byJourney = flights.stream().collect(Collectors.groupingBy(UserFlight::getJourneyId));
@@ -64,7 +65,7 @@ public class StatsFlightLoader {
             if (!allowed.contains(uf.getVisibility())) {
                 continue;
             }
-            if (hasNotHappenedYet(uf, today)) {
+            if (uf.getFlight().isUpcoming(now)) {
                 continue;
             }
             if (outsidePeriod(uf.getFlight().getFlightDate(), period)) {
@@ -74,15 +75,6 @@ public class StatsFlightLoader {
         }
         result.sort(Comparator.comparing(StatsFlight::date).thenComparing(StatsFlight::userFlightId));
         return result;
-    }
-
-    // Uses the arrival time when there is one, otherwise the flight date, so a flight counts from the day after at the latest
-    private static boolean hasNotHappenedYet(UserFlight uf, LocalDate today) {
-        var arrival = uf.getFlight().bestArrival();
-        if (arrival != null) {
-            return arrival.isAfter(java.time.Instant.now());
-        }
-        return uf.getFlight().getFlightDate().isAfter(today);
     }
 
     private static boolean outsidePeriod(LocalDate date, StatsModels.Period period) {

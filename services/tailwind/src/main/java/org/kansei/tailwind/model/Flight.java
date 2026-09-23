@@ -21,6 +21,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 /**
  * Canonical flight shared by every user who took it, so the second user adding it costs no API call.
@@ -112,6 +113,11 @@ public class Flight {
     @Column(name = "created_at")
     private Instant createdAt;
 
+    // Stored from schedule data, cleared once a refresh after landing has pulled the real times and aircraft
+    @Builder.Default
+    @Column(name = "awaiting_refresh")
+    private boolean awaitingRefresh = false;
+
     // Best known times, actual over revised over scheduled
     public Instant bestDeparture() {
         return departureActualUtc != null ? departureActualUtc : departureRevisedUtc != null ? departureRevisedUtc : departureScheduledUtc;
@@ -119,5 +125,11 @@ public class Flight {
 
     public Instant bestArrival() {
         return arrivalActualUtc != null ? arrivalActualUtc : arrivalRevisedUtc != null ? arrivalRevisedUtc : arrivalScheduledUtc;
+    }
+
+    // Not landed yet by the best known arrival, without one the flight counts from the day after its date
+    public boolean isUpcoming(Instant now) {
+        Instant arrival = bestArrival();
+        return arrival != null ? arrival.isAfter(now) : flightDate.isAfter(LocalDate.ofInstant(now, ZoneOffset.UTC));
     }
 }

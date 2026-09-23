@@ -54,6 +54,8 @@ export type Flight = {
   status: string | null;
   cargo: boolean;
   upcoming: boolean;
+  /** Still on schedule data, a refresh after landing brings the real times and aircraft. */
+  awaitingRefresh: boolean;
   distanceKm: number;
   airline: AirlineRef;
   departureAirport: AirportRef;

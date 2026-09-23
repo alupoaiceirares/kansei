@@ -64,6 +64,10 @@ export function updateUserFlight(userFlightId: number, request: UpdateUserFlight
   return api<UserFlight>('/tailwind/flights/' + userFlightId, { method: 'PATCH', body: request });
 }
 
+export function refreshUserFlight(userFlightId: number) {
+  return api<UserFlight>('/tailwind/flights/' + userFlightId + '/refresh', { method: 'POST' });
+}
+
 export function deleteUserFlight(userFlightId: number) {
   return api<void>('/tailwind/flights/' + userFlightId, { method: 'DELETE' });
 }
