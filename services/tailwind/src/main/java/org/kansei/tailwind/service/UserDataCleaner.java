@@ -1,11 +1,13 @@
 package org.kansei.tailwind.service;
 
 import org.kansei.tailwind.repository.CsvImportRepository;
+import org.kansei.tailwind.repository.FlightJoinRequestRepository;
 import org.kansei.tailwind.repository.FlightRepository;
 import org.kansei.tailwind.repository.FriendshipRepository;
 import org.kansei.tailwind.repository.JourneyRepository;
 import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.kansei.tailwind.repository.UserFlightRepository;
+import org.kansei.tailwind.repository.YearlyRecapRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,16 +28,21 @@ public class UserDataCleaner {
     private final TailwindUserRepository tailwindUserRepository;
     private final FriendshipRepository friendshipRepository;
     private final CsvImportRepository csvImportRepository;
+    private final FlightJoinRequestRepository joinRequestRepository;
+    private final YearlyRecapRepository yearlyRecapRepository;
 
     public UserDataCleaner(UserFlightRepository userFlightRepository, JourneyRepository journeyRepository, FlightRepository flightRepository,
                            TailwindUserRepository tailwindUserRepository, FriendshipRepository friendshipRepository,
-                           CsvImportRepository csvImportRepository) {
+                           CsvImportRepository csvImportRepository, FlightJoinRequestRepository joinRequestRepository,
+                           YearlyRecapRepository yearlyRecapRepository) {
         this.userFlightRepository = userFlightRepository;
         this.journeyRepository = journeyRepository;
         this.flightRepository = flightRepository;
         this.tailwindUserRepository = tailwindUserRepository;
         this.friendshipRepository = friendshipRepository;
         this.csvImportRepository = csvImportRepository;
+        this.joinRequestRepository = joinRequestRepository;
+        this.yearlyRecapRepository = yearlyRecapRepository;
     }
 
     @Transactional
@@ -44,6 +51,8 @@ public class UserDataCleaner {
             return;
         }
         List<Long> flightIds = userFlightRepository.findFlightIdsByUserIds(userIds);
+        // Requests they sent, the ones waiting on their own entries go with those entries
+        joinRequestRepository.deleteByRequesterIds(userIds);
         userFlightRepository.deleteByUserIds(userIds);
         journeyRepository.deleteByUserIds(userIds);
         if (!flightIds.isEmpty()) {
@@ -51,6 +60,7 @@ public class UserDataCleaner {
         }
         friendshipRepository.deleteByUserIds(userIds);
         csvImportRepository.deleteByTargetUserIds(userIds);
+        yearlyRecapRepository.deleteByUserIds(userIds);
         tailwindUserRepository.deleteAllById(userIds);
     }
 }

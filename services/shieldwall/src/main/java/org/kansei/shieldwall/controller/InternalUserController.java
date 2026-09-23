@@ -1,5 +1,6 @@
 package org.kansei.shieldwall.controller;
 
+import org.kansei.shieldwall.dto.UserContactResponse;
 import org.kansei.shieldwall.dto.UserSummaryResponse;
 import org.kansei.shieldwall.exception.InvalidInternalSecretException;
 import org.kansei.shieldwall.model.User;
@@ -54,6 +55,23 @@ public class InternalUserController {
 
         return userRepository.findAllById(userIds).stream()
                 .map(user -> new UserSummaryResponse(user.getId(), user.getUsername()))
+                .toList();
+    }
+
+    // Email for a mail sent right now (tailwind's yearly recap), looked up per send and never stored by the caller.
+    // Only active users with a verified address come back, anyone else is left out rather than mailed
+    @GetMapping("/users/contacts")
+    public List<UserContactResponse> findContacts(
+            @RequestHeader("X-Internal-Secret") String providedSecret,
+            @RequestParam String ids
+    ) {
+        requireValidSecret(providedSecret);
+
+        List<UUID> userIds = parseIds(ids);
+
+        return userRepository.findAllById(userIds).stream()
+                .filter(user -> user.isActive() && user.isEmailVerified())
+                .map(user -> new UserContactResponse(user.getId(), user.getUsername(), user.getEmail()))
                 .toList();
     }
 

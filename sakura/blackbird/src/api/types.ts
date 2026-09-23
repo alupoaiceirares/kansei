@@ -8,6 +8,7 @@ export type TailwindUser = {
   joinedAt: string;
   enabled: boolean;
   defaultVisibility: Visibility;
+  recapEmails: boolean;
   role: string | null;
 };
 
@@ -258,4 +259,58 @@ export type ImportRun = {
   errorRows: number;
   errors: { line: number; message: string }[];
   createdAt: string;
+};
+
+/** Full reference rows as the admin editor reads and writes them. */
+export type AirportRecord = AirportOption & { airportType: string | null };
+
+export type AirlineRecord = AirlineOption;
+
+export type BodyType = 'NARROW' | 'WIDE' | 'REGIONAL' | 'TURBOPROP' | 'BUSINESS' | 'OTHER';
+export type EngineType = 'JET' | 'TURBOPROP' | 'PISTON' | 'ELECTRIC';
+
+export type AircraftTypeRecord = AircraftTypeOption & {
+  bodyType: BodyType;
+  engineType: EngineType;
+  engineCount: number | null;
+  wakeCategory: string | null;
+};
+
+export type CountryRecord = { code: string; name: string; continent: string };
+
+/** Phase 10: flights taken together and the yearly recap. */
+export type SharedFriend = { userId: string; username: string | null };
+
+export type JoinResult = { outcome: 'ADDED' | 'REQUESTED'; userFlight: UserFlight | null };
+
+export type JoinRequest = {
+  id: number;
+  direction: 'INCOMING' | 'OUTGOING';
+  otherUserId: string;
+  otherUsername: string | null;
+  userFlightId: number;
+  flight: Flight;
+  requestedAt: string;
+};
+
+export type RecapMoment = { userFlightId: number; route: string; date: string; distanceKm: number; aircraft: string | null };
+
+export type YearlyRecap = {
+  year: number;
+  flightCount: number;
+  distanceKm: number;
+  earthLaps: number;
+  moonTrips: number;
+  timeInAirMinutes: number;
+  flightsWithDuration: number;
+  countryCount: number;
+  newCountries: { code: string; name: string }[];
+  airportCount: number;
+  airlineCount: number;
+  newAircraftFamilies: string[];
+  monthCounts: number[];
+  busiestMonth: number | null;
+  longestFlight: RecapMoment | null;
+  firstFlight: RecapMoment | null;
+  topAirline: { name: string; count: number } | null;
 };

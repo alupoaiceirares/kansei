@@ -143,7 +143,7 @@ export function StatsPage() {
     };
   }, []);
 
-  const flown = useMemo(() => flights.filter((item) => !item.flight.upcoming), [flights]);
+  const flown = useMemo(() => flights.filter((item) => !item.flight.upcoming && !item.flight.canceled), [flights]);
 
   // Cabin, reason and per-year counts come from the service, the labels and colours are the design's.
   const years = useMemo(

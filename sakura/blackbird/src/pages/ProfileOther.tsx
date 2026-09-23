@@ -10,6 +10,9 @@ import {
   acceptFriendRequest,
   fetchFriendRequests,
   fetchFriends,
+  fetchJoinRequests,
+  fetchMyFlights,
+  joinFlight,
   fetchUserFlights,
   removeFriend,
   sendFriendRequest,
@@ -97,10 +100,24 @@ function DangerAction({ label, onClick, busy }: { label: string; onClick: () => 
   );
 }
 
-function FlightRow({ userFlight }: { userFlight: UserFlight }) {
-  const hover = useHoverStyle(ROW, { background: COLORS.raised });
+/** Where "I was on this too" stands for one of their flights, from the caller's side. */
+type JoinState = { kind: 'none' } | { kind: 'mine'; userFlightId: number | null } | { kind: 'requested' } | { kind: 'busy' };
+
+function FlightRow({
+  userFlight,
+  state,
+  isFriend,
+  onJoin,
+}: {
+  userFlight: UserFlight;
+  state: JoinState;
+  isFriend: boolean;
+  onJoin: () => void;
+}) {
+  // Between friends a looked-up flight is added at once, anything else asks the owner first
+  const direct = isFriend && userFlight.flight.source === 'API';
   return (
-    <Link to={'/flights/' + userFlight.id} {...hover}>
+    <div style={{ ...ROW, gridTemplateColumns: '88px 64px minmax(0,1fr) 78px auto' }}>
       <span style={{ color: COLORS.textMuted, fontVariantNumeric: 'tabular-nums' }}>{formatDate(userFlight.flight.flightDate)}</span>
       <span style={{ color: COLORS.bodyOnCard, fontWeight: 600, letterSpacing: '0.03em' }}>{userFlight.flight.flightNumber ?? '—'}</span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
@@ -110,10 +127,29 @@ function FlightRow({ userFlight }: { userFlight: UserFlight }) {
       <span style={{ color: COLORS.textMuted, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
         {formatNumber(Math.round(userFlight.flight.distanceKm))}
       </span>
-      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={COLORS.cyan} strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
-        <path d="M9 6l6 6-6 6" />
-      </svg>
-    </Link>
+      <span style={{ textAlign: 'right', fontSize: 12, whiteSpace: 'nowrap' }}>
+        {state.kind === 'mine' &&
+          (state.userFlightId ? (
+            <Link to={'/flights/' + state.userFlightId} style={{ fontWeight: 600 }}>
+              In your log
+            </Link>
+          ) : (
+            <span style={{ color: COLORS.textMuted }}>In your log</span>
+          ))}
+        {state.kind === 'requested' && <span style={{ color: COLORS.textMuted }}>Asked</span>}
+        {state.kind === 'busy' && <Spinner size={12} />}
+        {state.kind === 'none' && (
+          <button
+            type="button"
+            onClick={onJoin}
+            title={direct ? 'Adds it to your log' : 'Asks them to confirm you were on it'}
+            style={{ background: 'none', border: 'none', padding: 0, fontFamily: FONT_STACK, fontSize: 12, fontWeight: 600, color: COLORS.cyan, cursor: 'pointer' }}
+          >
+            I was on this too
+          </button>
+        )}
+      </span>
+    </div>
   );
 }
 
@@ -151,15 +187,21 @@ export function ProfileOtherPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // My own entry per flight id, and their entries I already asked to join
+  const [mineByFlight, setMineByFlight] = useState<Map<number, number>>(new Map());
+  const [asked, setAsked] = useState<Set<number>>(new Set());
+  const [joining, setJoining] = useState<number | null>(null);
 
   const load = async () => {
     if (!userId) return;
-    const [theirProfile, ownProfile, theirFlights, friends, requests] = await Promise.all([
+    const [theirProfile, ownProfile, theirFlights, friends, requests, myFlights, joinRequests] = await Promise.all([
       fetchOtherProfile(userId).catch(() => null),
       fetchOwnComparableProfile().catch(() => null),
       fetchUserFlights(userId).catch(() => []),
       fetchFriends().catch(() => []),
       fetchFriendRequests().catch(() => []),
+      fetchMyFlights().catch(() => []),
+      fetchJoinRequests().catch(() => []),
     ]);
 
     const friend = friends.find((item) => item.userId === userId);
@@ -170,6 +212,8 @@ export function ProfileOtherPage() {
     setProfile(theirProfile);
     setMine(ownProfile);
     setFlights(theirFlights);
+    setMineByFlight(new Map(myFlights.map((entry) => [entry.flight.id, entry.id])));
+    setAsked(new Set(joinRequests.filter((request) => request.direction === 'OUTGOING').map((request) => request.userFlightId)));
     setLoading(false);
   };
 
@@ -178,6 +222,31 @@ export function ProfileOtherPage() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  const joinStateOf = (userFlight: UserFlight): JoinState => {
+    if (joining === userFlight.id) return { kind: 'busy' };
+    if (mineByFlight.has(userFlight.flight.id)) return { kind: 'mine', userFlightId: mineByFlight.get(userFlight.flight.id) ?? null };
+    if (asked.has(userFlight.id)) return { kind: 'requested' };
+    return { kind: 'none' };
+  };
+
+  const join = async (userFlight: UserFlight) => {
+    setJoining(userFlight.id);
+    setError(null);
+    try {
+      const result = await joinFlight(userFlight.id);
+      if (result.outcome === 'ADDED' && result.userFlight) {
+        const added = result.userFlight;
+        setMineByFlight((current) => new Map(current).set(added.flight.id, added.id));
+      } else {
+        setAsked((current) => new Set(current).add(userFlight.id));
+      }
+    } catch (cause) {
+      setError(cause instanceof ApiError ? (cause.detail ?? 'That did not work.') : 'That did not work.');
+    } finally {
+      setJoining(null);
+    }
+  };
 
   const act = async (action: () => Promise<unknown>) => {
     setBusy(true);
@@ -444,7 +513,13 @@ export function ProfileOtherPage() {
                 <span style={{ fontSize: 12, color: COLORS.textDim }}>Only what they share with you</span>
               </div>
               {recent.map((userFlight) => (
-                <FlightRow key={userFlight.id} userFlight={userFlight} />
+                <FlightRow
+                  key={userFlight.id}
+                  userFlight={userFlight}
+                  isFriend={isFriend}
+                  onJoin={() => join(userFlight)}
+                  state={joinStateOf(userFlight)}
+                />
               ))}
               <div style={{ padding: '13px 20px', fontSize: 12.5, color: COLORS.textDim }}>
                 Showing {recent.length} of {flights.length} shared flights.

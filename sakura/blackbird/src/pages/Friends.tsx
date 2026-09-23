@@ -7,18 +7,22 @@ import { Banner } from '../components/Banner';
 import { Spinner } from '../components/Spinner';
 import {
   acceptFriendRequest,
+  acceptJoinRequest,
   declineFriendRequest,
+  declineJoinRequest,
   fetchFriendRequests,
   fetchFriends,
+  fetchJoinRequests,
   removeFriend,
   searchUsers,
   sendFriendRequest,
+  withdrawJoinRequest,
 } from '../api/tailwind';
 import { fetchFriendTotals, type FriendTotals } from '../api/profile';
 import { ApiError } from '../api/client';
-import type { Friend, FriendRequest, UserSearchResult } from '../api/types';
+import type { Friend, FriendRequest, JoinRequest, UserSearchResult } from '../api/types';
 import { useSession } from '../session';
-import { formatKm, formatNumber, initialsOf } from '../format';
+import { formatDate, formatKm, formatNumber, initialsOf } from '../format';
 
 const CARD: CSSProperties = {
   background: COLORS.surfaceOverlay,
@@ -190,6 +194,14 @@ function StateChip({ label, tone }: { label: string; tone: 'friend' | 'pending' 
   );
 }
 
+/** "RO301 OTP → FRA", the flight a join request is about. */
+function flightLabel(request: JoinRequest): string {
+  const from = request.flight.departureAirport;
+  const to = request.flight.arrivalAirport;
+  const route = (from.iata ?? from.icao) + ' → ' + (to.iata ?? to.icao);
+  return request.flight.flightNumber ? request.flight.flightNumber + ' ' + route : route;
+}
+
 /** "2 days ago" from an instant, for requests waiting on an answer. */
 function ago(instant: string): string {
   const days = Math.floor((Date.now() - new Date(instant).getTime()) / 86_400_000);
@@ -204,6 +216,7 @@ export function FriendsPage() {
   const { refreshRequests } = useSession();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
+  const [flightRequests, setFlightRequests] = useState<JoinRequest[]>([]);
   const [totals, setTotals] = useState<FriendTotals[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -213,12 +226,14 @@ export function FriendsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [loadedFriends, loadedRequests] = await Promise.all([
+    const [loadedFriends, loadedRequests, loadedFlightRequests] = await Promise.all([
       fetchFriends().catch(() => []),
       fetchFriendRequests().catch(() => []),
+      fetchJoinRequests().catch(() => []),
     ]);
     setFriends(loadedFriends);
     setRequests(loadedRequests);
+    setFlightRequests(loadedFlightRequests);
     setLoading(false);
     if (loadedFriends.length > 0) {
       fetchFriendTotals(loadedFriends.map((friend) => friend.userId))
@@ -262,6 +277,8 @@ export function FriendsPage() {
 
   const incoming = requests.filter((request) => request.direction === 'INCOMING');
   const outgoing = requests.filter((request) => request.direction === 'OUTGOING');
+  const flightsIncoming = flightRequests.filter((request) => request.direction === 'INCOMING');
+  const flightsOutgoing = flightRequests.filter((request) => request.direction === 'OUTGOING');
 
   if (loading) {
     return (
@@ -423,7 +440,7 @@ export function FriendsPage() {
         </div>
       )}
 
-      {!results && (friends.length > 0 || incoming.length > 0 || outgoing.length > 0) && (
+      {!results && (friends.length > 0 || incoming.length > 0 || outgoing.length > 0 || flightRequests.length > 0) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           {incoming.length > 0 && (
             <div style={{ ...CARD, border: '1px solid #7A4A16' }}>
@@ -473,6 +490,37 @@ export function FriendsPage() {
             </div>
           )}
 
+          {flightsIncoming.length > 0 && (
+            <div style={{ ...CARD, border: '1px solid #7A4A16' }}>
+              <div style={{ padding: '15px 20px', borderBottom: '1px solid #7A4A16', background: 'rgba(46,29,12,0.4)' }}>
+                <span style={{ fontSize: 16, fontWeight: 600 }}>Were they on your flight?</span>
+              </div>
+              {flightsIncoming.map((request) => (
+                <div
+                  key={request.id}
+                  style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: ROW_BORDER, flexWrap: 'wrap' }}
+                >
+                  <span style={AVATAR}>{initialsOf(request.otherUsername)}</span>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: '1 1 220px' }}>
+                    <span style={{ fontSize: 14, color: COLORS.text }}>
+                      <Link to={'/users/' + request.otherUserId} style={{ fontWeight: 600 }}>
+                        {request.otherUsername ?? 'Someone'}
+                      </Link>{' '}
+                      says they were on {flightLabel(request)}
+                    </span>
+                    <span style={{ fontSize: 12.5, color: COLORS.textDim }}>
+                      {formatDate(request.flight.flightDate)} · asked {ago(request.requestedAt)}
+                    </span>
+                  </span>
+                  <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <AcceptButton busy={busyId === 'join-' + request.id} onClick={() => act('join-' + request.id, () => acceptJoinRequest(request.id))} />
+                    <QuietButton label="Decline" onClick={() => act('join-' + request.id, () => declineJoinRequest(request.id))} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {friends.length > 0 && (
             <div style={CARD}>
               <div
@@ -509,6 +557,27 @@ export function FriendsPage() {
                     <span style={{ fontSize: 12, color: COLORS.textDim }}>sent {ago(request.requestedAt)}</span>
                   </span>
                   <QuietButton label="Cancel" danger onClick={() => act(request.userId, () => removeFriend(request.userId))} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {flightsOutgoing.length > 0 && (
+            <div style={CARD}>
+              <div style={{ padding: '15px 20px', borderBottom: '1px solid ' + COLORS.line, fontSize: 16, fontWeight: 600 }}>
+                Flights you asked to join
+              </div>
+              {flightsOutgoing.map((request) => (
+                <div key={request.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 20px', borderBottom: ROW_BORDER }}>
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, flex: '1 1 auto' }}>
+                    <span style={{ fontSize: 14, fontWeight: 500 }}>
+                      {flightLabel(request)} with {request.otherUsername ?? 'someone'}
+                    </span>
+                    <span style={{ fontSize: 12, color: COLORS.textDim }}>
+                      {formatDate(request.flight.flightDate)} · waiting since {ago(request.requestedAt)}
+                    </span>
+                  </span>
+                  <QuietButton label="Withdraw" danger onClick={() => act('join-' + request.id, () => withdrawJoinRequest(request.id))} />
                 </div>
               ))}
             </div>

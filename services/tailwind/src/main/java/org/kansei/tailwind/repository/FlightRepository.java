@@ -46,7 +46,9 @@ public interface FlightRepository extends JpaRepository<Flight, Long> {
 
     boolean existsByFlightNumberAndFlightDateAndDepartureAirportIdAndSource(String number, LocalDate date, Long departureAirportId, FlightSource source);
 
+    // A manual flight can be shared through "I was on this too", so it only goes once nobody logs it any more
     @Modifying
-    @Query("delete from Flight f where f.id in :ids and f.source = org.kansei.tailwind.model.FlightSource.MANUAL")
+    @Query("delete from Flight f where f.id in :ids and f.source = org.kansei.tailwind.model.FlightSource.MANUAL"
+            + " and not exists (select uf.id from UserFlight uf where uf.flight = f)")
     int deleteManualByIds(@Param("ids") Collection<Long> ids);
 }

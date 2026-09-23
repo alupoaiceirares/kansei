@@ -7,7 +7,7 @@ import { Banner } from '../components/Banner';
 import { Spinner } from '../components/Spinner';
 import { Segmented } from '../components/Segmented';
 import { ApiError } from '../api/client';
-import { deleteOwnLog, fetchFriendRequests, fetchFriends, fetchJourneys, requestDisable, updateDefaultVisibility } from '../api/tailwind';
+import { deleteOwnLog, fetchFriendRequests, fetchFriends, fetchJourneys, requestDisable, updateDefaultVisibility, updateRecapEmails } from '../api/tailwind';
 import { fetchDashboardProfile, type DashboardProfile } from '../api/profile';
 import type { Journey, UserFlight, Visibility } from '../api/types';
 import { aircraftLabel, routeOf } from '../components/FlightFlags';
@@ -193,6 +193,8 @@ export function ProfileMinePage() {
   const [loading, setLoading] = useState(true);
   const [visibility, setVisibility] = useState<Visibility>(me?.defaultVisibility ?? 'FRIENDS');
   const [savingVisibility, setSavingVisibility] = useState(false);
+  const [recapEmails, setRecapEmails] = useState(me?.recapEmails ?? true);
+  const [savingRecap, setSavingRecap] = useState(false);
   const [exported, setExported] = useState<string | null>(null);
   const [askDelete, setAskDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -247,6 +249,21 @@ export function ProfileMinePage() {
       setError(cause instanceof ApiError ? (cause.detail ?? 'The default could not be saved.') : 'The default could not be saved.');
     } finally {
       setSavingVisibility(false);
+    }
+  };
+
+  const saveRecapEmails = async (next: boolean) => {
+    setRecapEmails(next);
+    setSavingRecap(true);
+    setError(null);
+    try {
+      await updateRecapEmails(next);
+      await refreshMe();
+    } catch (cause) {
+      setRecapEmails(!next);
+      setError(cause instanceof ApiError ? (cause.detail ?? 'The setting could not be saved.') : 'The setting could not be saved.');
+    } finally {
+      setSavingRecap(false);
     }
   };
 
@@ -467,6 +484,22 @@ export function ProfileMinePage() {
                 journey screen to set every leg of a trip at once.
               </span>
             </div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 11, paddingTop: 18, borderTop: '1px solid ' + COLORS.lineSoft, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={recapEmails}
+                disabled={savingRecap}
+                onChange={(event) => saveRecapEmails(event.target.checked)}
+                style={{ width: 17, height: 17, marginTop: 1, accentColor: COLORS.cyan }}
+              />
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 500, color: COLORS.bodyOnCard }}>Yearly recap email</span>
+                <span style={{ fontSize: 11.5, lineHeight: 1.55, color: COLORS.textDim }}>
+                  {savingRecap ? 'Saving…' : 'Early each January, last year in the air, sent to your Kansei email.'}
+                </span>
+              </span>
+            </label>
           </div>
         </div>
 

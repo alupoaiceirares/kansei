@@ -11,6 +11,7 @@ const SUBJECTS = {
   'password-reset': 'Reset your password',
   'wirehood-disable-request': 'Wirehood account disable request',
   'tailwind-disable-request': 'Tailwind account disable request',
+  'tailwind-yearly-recap': 'Your year in the air',
 };
 
 const compiled = new Map();

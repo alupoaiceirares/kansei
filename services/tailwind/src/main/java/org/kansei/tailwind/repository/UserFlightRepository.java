@@ -35,6 +35,14 @@ public interface UserFlightRepository extends JpaRepository<UserFlight, Long> {
 
     boolean existsByUserIdAndFlightId(UUID userId, Long flightId);
 
+    boolean existsByFlightId(Long flightId);
+
+    @Query(DETAILS + " where f.id = :flightId and uf.userId <> :userId")
+    List<UserFlight> findDetailedByFlightIdExcludingUser(@Param("flightId") Long flightId, @Param("userId") UUID userId);
+
+    @Query(DETAILS + " where uf.id = :id")
+    Optional<UserFlight> findDetailedById(@Param("id") Long id);
+
     long countByJourneyId(Long journeyId);
 
     List<UserFlight> findByJourneyId(Long journeyId);

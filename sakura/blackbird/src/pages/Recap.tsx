@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { COLORS, FONT_STACK } from '../design/tokens';
 import { PageShell } from '../components/PageShell';
 import { Spinner } from '../components/Spinner';
-import { fetchMyFlights } from '../api/tailwind';
-import type { UserFlight } from '../api/types';
-import { aircraftLabel, routeOf } from '../components/FlightFlags';
-import { earthLaps, formatDate, formatKm, formatNumber } from '../format';
+import { Banner } from '../components/Banner';
+import { fetchRecap, fetchRecapYears } from '../api/tailwind';
+import type { YearlyRecap } from '../api/types';
+import { formatDate, formatKm, formatNumber } from '../format';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -38,56 +39,53 @@ const CELL: CSSProperties = {
 
 const EYEBROW: CSSProperties = { fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: COLORS.textDim };
 
-function minutesOf(flight: UserFlight): number {
-  const start = flight.flight.departureActualUtc ?? flight.flight.departureScheduledUtc;
-  const end = flight.flight.arrivalActualUtc ?? flight.flight.arrivalScheduledUtc;
-  if (!start || !end) return 0;
-  const minutes = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
-  return minutes > 0 ? minutes : 0;
-}
-
 /**
- * The yearly recap. The job that mails one out each January is a later feature, but the page itself is
- * built from the log as it stands, so the numbers are real.
+ * The yearly recap. The numbers come from tailwind, the same ones the January email carries, and upcoming or
+ * canceled flights never count.
  */
 export function RecapPage() {
-  const [flights, setFlights] = useState<UserFlight[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [year, setYear] = useState<number | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [years, setYears] = useState<number[] | null>(null);
+  const [recap, setRecap] = useState<YearlyRecap | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const requested = Number(params.get('year'));
+  const year = years === null ? null : years.includes(requested) ? requested : (years[0] ?? new Date().getFullYear());
 
   useEffect(() => {
+    fetchRecapYears()
+      .then(setYears)
+      .catch(() => {
+        setYears([]);
+        setFailed(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (year === null) return;
     let live = true;
-    fetchMyFlights()
-      .then((loaded) => {
-        if (!live) return;
-        const flown = loaded.filter((flight) => !flight.flight.upcoming);
-        setFlights(flown);
-        const years = [...new Set(flown.map((flight) => Number(flight.flight.flightDate.slice(0, 4))))].sort((a, b) => b - a);
-        setYear(years[0] ?? new Date().getFullYear());
-      })
-      .catch(() => undefined)
-      .finally(() => live && setLoading(false));
+    setRecap(null);
+    fetchRecap(year)
+      .then((loaded) => live && setRecap(loaded))
+      .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
-  }, []);
+  }, [year]);
 
-  const years = useMemo(
-    () => [...new Set(flights.map((flight) => Number(flight.flight.flightDate.slice(0, 4))))].sort((a, b) => b - a),
-    [flights],
-  );
+  const setYear = (next: number) => setParams({ year: String(next) }, { replace: true });
 
-  const inYear = useMemo(
-    () => flights.filter((flight) => Number(flight.flight.flightDate.slice(0, 4)) === year),
-    [flights, year],
-  );
+  if (failed) {
+    return (
+      <PageShell maxWidth={1000}>
+        <Banner tone="error" title="The recap could not be loaded">
+          Try again in a moment.
+        </Banner>
+      </PageShell>
+    );
+  }
 
-  const before = useMemo(
-    () => flights.filter((flight) => Number(flight.flight.flightDate.slice(0, 4)) < (year ?? 0)),
-    [flights, year],
-  );
-
-  if (loading || year === null) {
+  if (year === null || recap === null || years === null) {
     return (
       <PageShell maxWidth={1000}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, color: COLORS.textMuted, fontSize: 14 }}>
@@ -98,83 +96,51 @@ export function RecapPage() {
     );
   }
 
-  const distance = inYear.reduce((sum, flight) => sum + flight.flight.distanceKm, 0);
-  const minutes = inYear.reduce((sum, flight) => sum + minutesOf(flight), 0);
-
-  const countriesThisYear = new Set<string>();
-  const countriesBefore = new Set<string>();
-  const familiesThisYear = new Set<string>();
-  const familiesBefore = new Set<string>();
-  for (const flight of inYear) {
-    countriesThisYear.add(flight.flight.departureAirport.countryCode);
-    countriesThisYear.add(flight.flight.arrivalAirport.countryCode);
-    if (flight.flight.aircraft.family) familiesThisYear.add(flight.flight.aircraft.family);
-  }
-  for (const flight of before) {
-    countriesBefore.add(flight.flight.departureAirport.countryCode);
-    countriesBefore.add(flight.flight.arrivalAirport.countryCode);
-    if (flight.flight.aircraft.family) familiesBefore.add(flight.flight.aircraft.family);
-  }
-  const newCountries = [...countriesThisYear].filter((code) => !countriesBefore.has(code));
-  const newAircraft = [...familiesThisYear].filter((family) => !familiesBefore.has(family));
-
-  const monthCounts = MONTHS.map((_, index) => inYear.filter((flight) => Number(flight.flight.flightDate.slice(5, 7)) === index + 1).length);
+  const monthCounts = recap.monthCounts;
   const maxMonth = Math.max(1, ...monthCounts);
-  const busiest = monthCounts.indexOf(maxMonth);
-
-  const longest = [...inYear].sort((a, b) => b.flight.distanceKm - a.flight.distanceKm)[0];
-  const first = [...inYear].sort((a, b) => a.flight.flightDate.localeCompare(b.flight.flightDate))[0];
-  const airlineCounts = new Map<string, number>();
-  for (const flight of inYear) airlineCounts.set(flight.flight.airline.name, (airlineCounts.get(flight.flight.airline.name) ?? 0) + 1);
-  const topAirline = [...airlineCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const busiest = recap.busiestMonth === null ? -1 : recap.busiestMonth - 1;
+  const minutes = recap.timeInAirMinutes;
+  const longest = recap.longestFlight;
+  const first = recap.firstFlight;
 
   const hero = [
-    { label: 'Distance', value: formatKm(distance), note: earthLaps(distance) + ' times around the Earth', color: COLORS.text },
-    { label: 'Flights', value: formatNumber(inYear.length), note: 'logged in ' + year, color: COLORS.text },
+    {
+      label: 'Distance',
+      value: formatKm(recap.distanceKm),
+      note: recap.earthLaps + ' times around the Earth, ' + recap.moonTrips + ' of the way to the Moon',
+      color: COLORS.text,
+    },
+    { label: 'Flights', value: formatNumber(recap.flightCount), note: 'flown in ' + year, color: COLORS.text },
     {
       label: 'Time in air',
       value: minutes > 0 ? Math.round(minutes / 60) + ' h' : '—',
       note: minutes > 0 ? 'from the flights with times' : 'no times recorded',
       color: COLORS.cyan,
     },
-    { label: 'Countries', value: formatNumber(countriesThisYear.size), note: newCountries.length + ' of them new', color: COLORS.cyan },
+    { label: 'Countries', value: formatNumber(recap.countryCount), note: recap.newCountries.length + ' of them new', color: COLORS.cyan },
   ];
 
   const moments = [
     longest && {
       label: 'Longest flight',
-      value: routeOf(longest),
-      note: formatKm(longest.flight.distanceKm) + ' · ' + formatDate(longest.flight.flightDate),
+      value: longest.route,
+      note: formatKm(longest.distanceKm) + ' · ' + formatDate(longest.date),
     },
-    first && { label: 'The year started with', value: routeOf(first), note: formatDate(first.flight.flightDate) },
-    topAirline && { label: 'Most flown airline', value: topAirline[0], note: topAirline[1] + (topAirline[1] === 1 ? ' flight' : ' flights') },
-    longest && {
-      label: 'Aircraft of the year',
-      value: aircraftLabel(longest),
-      note: 'on your longest flight of ' + year,
+    first && { label: 'The year started with', value: first.route, note: formatDate(first.date) },
+    recap.topAirline && {
+      label: 'Most flown airline',
+      value: recap.topAirline.name,
+      note: recap.topAirline.count + (recap.topAirline.count === 1 ? ' flight' : ' flights'),
     },
+    longest?.aircraft && { label: 'Aircraft of the year', value: longest.aircraft, note: 'on your longest flight of ' + year },
   ].filter(Boolean) as { label: string; value: string; note: string }[];
+
+  const newCountries = recap.newCountries;
+  const newAircraft = recap.newAircraftFamilies;
 
   return (
     <PageShell maxWidth={1000}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 7,
-            padding: '4px 11px',
-            borderRadius: 999,
-            background: COLORS.laterBg,
-            border: '1px solid ' + COLORS.laterBorder,
-            color: COLORS.laterText,
-            fontSize: 10.5,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-          }}
-        >
-          LATER FEATURE
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {years.map((item) => (
             <button key={item} type="button" onClick={() => setYear(item)} style={year === item ? CHIP_ON : CHIP}>
@@ -201,15 +167,15 @@ export function RecapPage() {
             <div style={{ fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: COLORS.orange }}>Your year in the air</div>
             <h1 style={{ margin: 0, fontSize: 'clamp(38px, 6vw, 62px)', fontWeight: 600, letterSpacing: '-0.03em', lineHeight: 1 }}>{year}</h1>
             <p style={{ margin: 0, fontSize: 16, lineHeight: 1.6, color: COLORS.bodyOnCard, maxWidth: 520, textWrap: 'pretty' }}>
-              {inYear.length === 0
+              {recap.flightCount === 0
                 ? 'Nothing logged in ' + year + ' yet.'
-                : formatNumber(inYear.length) +
-                  (inYear.length === 1 ? ' flight, ' : ' flights, ') +
-                  formatKm(distance) +
+                : formatNumber(recap.flightCount) +
+                  (recap.flightCount === 1 ? ' flight, ' : ' flights, ') +
+                  formatKm(recap.distanceKm) +
                   ' and ' +
-                  countriesThisYear.size +
-                  (countriesThisYear.size === 1 ? ' country' : ' countries') +
-                  (busiest >= 0 && maxMonth > 0 ? ', busiest in ' + MONTHS[busiest] + '.' : '.')}
+                  recap.countryCount +
+                  (recap.countryCount === 1 ? ' country' : ' countries') +
+                  (busiest >= 0 ? ', busiest in ' + MONTHS[busiest] + '.' : '.')}
             </p>
           </div>
         </div>
@@ -230,7 +196,7 @@ export function RecapPage() {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 16, fontWeight: 600 }}>Month by month</span>
             <span style={{ fontSize: 12, color: COLORS.textDim }}>
-              {maxMonth > 0 ? MONTHS[busiest] + ' was the busiest with ' + maxMonth : 'nothing logged this year'}
+              {busiest >= 0 ? MONTHS[busiest] + ' was the busiest with ' + maxMonth : 'nothing logged this year'}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 7, height: 150 }}>
@@ -288,9 +254,9 @@ export function RecapPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               <span style={EYEBROW}>Countries you had never been to</span>
               <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-                {newCountries.map((code) => (
+                {newCountries.map((country) => (
                   <span
-                    key={code}
+                    key={country.code}
                     style={{
                       padding: '6px 12px',
                       borderRadius: 999,
@@ -301,7 +267,7 @@ export function RecapPage() {
                       fontWeight: 500,
                     }}
                   >
-                    {code}
+                    {country.name}
                   </span>
                 ))}
                 {newCountries.length === 0 && <span style={{ fontSize: 13, color: COLORS.textMuted }}>No first visits this year.</span>}
@@ -347,8 +313,8 @@ export function RecapPage() {
         }}
       >
         <span style={{ fontSize: 13, lineHeight: 1.6, color: COLORS.textMuted, maxWidth: 560 }}>
-          Built from the flights you have logged, private ones included — a recap is only ever shown to you. The January email and
-          the sharing card are a later feature, so this page is the whole of it for now.
+          Built from the flights you have flown, private ones included, and only ever shown to you. Early each January the
+          previous year comes by email too, you can turn that off on your profile.
         </span>
       </div>
     </PageShell>

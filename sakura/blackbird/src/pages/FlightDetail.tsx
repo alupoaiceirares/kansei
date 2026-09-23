@@ -9,9 +9,9 @@ import { Segmented } from '../components/Segmented';
 import { AircraftPhoto } from '../components/AircraftPhoto';
 import { RouteMap, type RouteStop } from '../map/RouteMap';
 import { ApiError } from '../api/client';
-import { deleteUserFlight, fetchJourneys, refreshUserFlight, updateUserFlight } from '../api/tailwind';
+import { deleteUserFlight, fetchJourneys, fetchSharedWith, refreshUserFlight, updateUserFlight } from '../api/tailwind';
 import { fetchDashboardProfile, type DashboardProfile } from '../api/profile';
-import type { CabinClass, Journey, SeatPosition, TripReason, UserFlight, Visibility } from '../api/types';
+import type { CabinClass, Journey, SeatPosition, SharedFriend, TripReason, UserFlight, Visibility } from '../api/types';
 import { formatDate, formatDuration, formatKm, formatTime } from '../format';
 
 const VISIBILITIES = [
@@ -89,6 +89,7 @@ export function FlightDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshNote, setRefreshNote] = useState<{ tone: BannerTone; title: string; text: string } | null>(null);
+  const [sharedWith, setSharedWith] = useState<SharedFriend[]>([]);
 
   const [visibility, setVisibility] = useState<Visibility>('FRIENDS');
   const [seat, setSeat] = useState('');
@@ -111,6 +112,18 @@ export function FlightDetailPage() {
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Friends who were on the same flight, only ever friends and only entries they let you see
+  useEffect(() => {
+    let live = true;
+    setSharedWith([]);
+    fetchSharedWith(id)
+      .then((friends) => live && setSharedWith(friends))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
   }, [id]);
 
   const journey = useMemo(() => journeys.find((item) => item.flights.some((leg) => leg.id === id)), [journeys, id]);
@@ -274,6 +287,20 @@ export function FlightDetailPage() {
             {manual && flagPill('ADDED BY HAND', COLORS.raised, COLORS.lineStrong, COLORS.textMuted)}
             {flagPill(userFlight.visibility, ...visibilityColors(userFlight.visibility))}
           </div>
+          {sharedWith.length > 0 && (
+            <div style={{ fontSize: 13.5, color: COLORS.bodyOnCard }}>
+              You and{' '}
+              {sharedWith.map((friend, index) => (
+                <span key={friend.userId}>
+                  {index > 0 && (index === sharedWith.length - 1 ? ' and ' : ', ')}
+                  <Link to={'/users/' + friend.userId} style={{ fontWeight: 600 }}>
+                    {friend.username ?? 'a friend'}
+                  </Link>
+                </span>
+              ))}{' '}
+              were on this flight
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>

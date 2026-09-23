@@ -16,10 +16,12 @@ public record TailwindUserResponse(
         Instant joinedAt,
         boolean enabled,
         Visibility defaultVisibility,
+        boolean recapEmails,
         String role
 ) {
 
     public static TailwindUserResponse of(TailwindUser user, String username, String role) {
-        return new TailwindUserResponse(user.getUserId(), username, user.getJoinedAt(), user.isEnabled(), user.getDefaultVisibility(), role);
+        return new TailwindUserResponse(user.getUserId(), username, user.getJoinedAt(), user.isEnabled(), user.getDefaultVisibility(),
+                user.isRecapEmails(), role);
     }
 }

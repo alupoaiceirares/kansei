@@ -46,6 +46,31 @@ test('render(tailwind-disable-request) returns the right subject and interpolate
   assert.match(html, /rares/);
   assert.match(html, /22222222-2222-2222-2222-222222222222/);
 });
+
+test('render(tailwind-yearly-recap) fills the numbers and the links', () => {
+  const { subject, html } = render('tailwind-yearly-recap', {
+    username: 'rares',
+    year: '2025',
+    flights: '12',
+    distance: '23,410 km',
+    earthLaps: '0.6',
+    moonTrips: '0.06',
+    hours: '31',
+    countries: '5',
+    newCountries: 'Japan',
+    longestRoute: 'OTP - HND',
+    longestDistance: '8,900 km',
+    topAirline: 'Tarom',
+    recapUrl: 'http://localhost:5173/recap?year=2025',
+    profileUrl: 'http://localhost:5173/profile',
+  });
+
+  assert.equal(subject, 'Your year in the air');
+  assert.match(html, /Your 2025 in the air/);
+  assert.match(html, /23,410 km/);
+  assert.match(html, /new ones: Japan/);
+  assert.match(html, /recap\?year(=|&#x3D;)2025/);
+});
 test('render(unknown template) throws', () => {
   assert.throws(() => render('not-a-real-template', {}), /Unknown mail template/);
 });
