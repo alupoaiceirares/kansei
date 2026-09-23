@@ -56,6 +56,8 @@ export type Flight = {
   upcoming: boolean;
   /** Still on schedule data, a refresh after landing brings the real times and aircraft. */
   awaitingRefresh: boolean;
+  /** The provider reported it canceled, it stays in the log but never counts. */
+  canceled: boolean;
   distanceKm: number;
   airline: AirlineRef;
   departureAirport: AirportRef;
@@ -196,4 +198,64 @@ export type CommonsCandidate = {
   license: string | null;
   width: number;
   height: number;
+};
+
+/** Admin screens. */
+export type AdminUser = {
+  userId: string;
+  username: string | null;
+  enabled: boolean;
+  joinedAt: string;
+  disabledAt: string | null;
+};
+
+export type UnmappedAircraftString = {
+  modelString: string;
+  family: string | null;
+  flightCount: number;
+  lastSeen: string;
+};
+
+export type MapAircraftStringResult = {
+  aliasKey: string;
+  aircraftType: { id: number; icaoCode: string; name: string; family: string | null };
+  flightsUpdated: number;
+};
+
+export type ImportRowStatus = 'READY' | 'DUPLICATE' | 'ERROR';
+
+export type ImportPreview = {
+  targetUserId: string;
+  targetUsername: string | null;
+  totalRows: number;
+  readyRows: number;
+  duplicateRows: number;
+  errorRows: number;
+  rows: {
+    line: number;
+    status: ImportRowStatus;
+    message: string | null;
+    date: string | null;
+    flightNumber: string | null;
+    airline: string | null;
+    from: string | null;
+    to: string | null;
+    aircraft: string | null;
+    journey: string | null;
+  }[];
+};
+
+export type ImportRun = {
+  id: number;
+  adminUserId: string;
+  adminUsername: string | null;
+  targetUserId: string;
+  targetUsername: string | null;
+  fileName: string | null;
+  totalRows: number;
+  importedRows: number;
+  duplicateRows: number;
+  errorRows: number;
+  errors: { line: number; message: string }[];
+  createdAt: string;
 };

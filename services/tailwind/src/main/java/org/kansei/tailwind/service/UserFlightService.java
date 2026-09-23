@@ -128,6 +128,45 @@ public class UserFlightService {
                 request.reason(), request.notes());
     }
 
+    // An admin CSV row, already resolved and validated. Stored like a manual flight, keeps an unmapped aircraft string
+    public UserFlight addImported(UUID userId, ImportedFlight row, Long journeyId, Visibility defaultVisibility) {
+        Instant departureUtc = toUtc(row.date(), row.departureTime(), row.departure());
+        Instant arrivalUtc = toUtc(row.date(), row.arrivalTime(), row.arrival());
+        if (departureUtc != null && arrivalUtc != null && !arrivalUtc.isAfter(departureUtc)) {
+            arrivalUtc = arrivalUtc.plus(1, ChronoUnit.DAYS);
+        }
+        Flight flight = flightRepository.save(Flight.builder()
+                .source(FlightSource.MANUAL)
+                .flightNumber(row.flightNumber())
+                .flightDate(row.date())
+                .airline(row.airline())
+                .departureAirport(row.departure())
+                .arrivalAirport(row.arrival())
+                .cargo(row.cargo())
+                .aircraftType(row.aircraftType())
+                .aircraftFamily(row.aircraftFamily())
+                .aircraftModelRaw(row.aircraftModelRaw())
+                .departureScheduledUtc(departureUtc)
+                .arrivalScheduledUtc(arrivalUtc)
+                .distanceKm(GeoDistance.haversineKm(row.departure().getLatitude(), row.departure().getLongitude(),
+                        row.arrival().getLatitude(), row.arrival().getLongitude()))
+                .createdAt(clock.instant())
+                .build());
+        Long journey = journeyId != null ? journeyId : journeyService.createAutomatic(userId).getId();
+        return userFlightRepository.save(UserFlight.builder()
+                .userId(userId)
+                .journeyId(journey)
+                .flight(flight)
+                .visibility(row.visibility() != null ? row.visibility() : defaultVisibility)
+                .seat(blankToNull(row.seat()))
+                .seatPosition(row.seatPosition())
+                .cabinClass(row.cabinClass())
+                .reason(row.reason())
+                .notes(blankToNull(row.notes()))
+                .createdAt(clock.instant())
+                .build());
+    }
+
     public UserFlightResponse update(UUID userId, Long userFlightId, UpdateUserFlightRequest request) {
         UserFlight userFlight = userFlightRepository.findDetailedByIdAndUserId(userFlightId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found in your log"));

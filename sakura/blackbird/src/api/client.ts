@@ -45,12 +45,14 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // A FormData body is a file upload, the browser sets the multipart boundary itself
+  const form = body instanceof FormData;
+  if (body !== undefined && !form) headers['Content-Type'] = 'application/json';
 
   const response = await fetch(url.toString(), {
     method,
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : form ? (body as FormData) : JSON.stringify(body),
     signal,
   });
 

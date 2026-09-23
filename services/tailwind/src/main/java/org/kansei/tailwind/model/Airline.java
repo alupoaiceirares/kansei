@@ -39,4 +39,9 @@ public class Airline {
 
     @Builder.Default
     private boolean active = true;
+
+    // The reference data has no cargo flag, the name is the only hint. Shared codes default to the passenger carrier
+    public boolean looksLikeCargoCarrier() {
+        return name != null && name.toLowerCase(java.util.Locale.ROOT).contains("cargo");
+    }
 }

@@ -1,17 +1,22 @@
 import { api } from './client';
 import type {
   AddFlightRequest,
+  AdminUser,
   AircraftTypeOption,
   AirlineOption,
   AirportOption,
   CommonsCandidate,
   Friend,
   FriendRequest,
+  ImportPreview,
+  ImportRun,
   Journey,
   LookupEntry,
+  MapAircraftStringResult,
   ManualFlightRequest,
   PhotoInfo,
   TailwindUser,
+  UnmappedAircraftString,
   UpdateUserFlightRequest,
   UserFlight,
   UserSearchResult,
@@ -175,4 +180,56 @@ export function selectCommonsPhoto(aircraftTypeId: number, title: string) {
 
 export function deleteAircraftPhoto(aircraftTypeId: number) {
   return api<void>('/tailwind/admin/aircraft-types/' + aircraftTypeId + '/photo', { method: 'DELETE' });
+}
+
+/** Emails an admin asking for the account to be disabled. */
+export function requestDisable() {
+  return api<void>('/tailwind/users/me/disable-request', { method: 'POST' });
+}
+
+/** Admin only. Opted-in users, disabled ones included. */
+export function adminSearchUsers(query: string) {
+  return api<AdminUser[]>('/tailwind/admin/users/search', { query: { query } });
+}
+
+export function disableUser(userId: string) {
+  return api<void>('/tailwind/admin/users/' + userId + '/disable', { method: 'POST' });
+}
+
+export function fetchUnmappedAircraft() {
+  return api<UnmappedAircraftString[]>('/tailwind/admin/aircraft-strings/unmapped');
+}
+
+export function mapAircraftString(modelString: string, aircraftTypeId: number) {
+  return api<MapAircraftStringResult>('/tailwind/admin/aircraft-strings/mappings', {
+    method: 'POST',
+    body: { modelString, aircraftTypeId },
+  });
+}
+
+function importForm(file: File) {
+  const form = new FormData();
+  form.append('file', file);
+  return form;
+}
+
+/** Dry run, nothing is written. The commit sends the same file again. */
+export function previewImport(targetUserId: string, file: File) {
+  return api<ImportPreview>('/tailwind/admin/imports/preview', { method: 'POST', query: { targetUserId }, body: importForm(file) });
+}
+
+export function commitImport(targetUserId: string, file: File) {
+  return api<ImportRun>('/tailwind/admin/imports', { method: 'POST', query: { targetUserId }, body: importForm(file) });
+}
+
+export function fetchImportRuns() {
+  return api<ImportRun[]>('/tailwind/admin/imports');
+}
+
+export function fetchDisabledUsers() {
+  return api<AdminUser[]>('/tailwind/admin/users/disabled');
+}
+
+export function enableUser(userId: string) {
+  return api<void>('/tailwind/admin/users/' + userId + '/enable', { method: 'POST' });
 }

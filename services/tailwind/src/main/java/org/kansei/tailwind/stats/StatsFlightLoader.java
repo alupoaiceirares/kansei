@@ -22,8 +22,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Loads the flights a viewer may count for an owner, already flattened. Upcoming flights are left out, they
- * only count once they have happened.
+ * Loads the flights a viewer may count for an owner, already flattened. Upcoming flights are left out until
+ * they have happened, canceled ones for good.
  *
  * <p>Which flights a viewer may count is decided by ViewerAccess alone, so no aggregation can leak a hidden
  * flight into a total.
@@ -65,7 +65,7 @@ public class StatsFlightLoader {
             if (!allowed.contains(uf.getVisibility())) {
                 continue;
             }
-            if (uf.getFlight().isUpcoming(now)) {
+            if (uf.getFlight().isUpcoming(now) || uf.getFlight().isCanceled()) {
                 continue;
             }
             if (outsidePeriod(uf.getFlight().getFlightDate(), period)) {

@@ -65,7 +65,7 @@ public class FriendshipService {
                 .filter(match -> !match.id().equals(callerId))
                 .toList();
         Set<UUID> optedIn = tailwindUserRepository.findAllById(matches.stream().map(ShieldwallUserClient.UserMatch::id).toList())
-                .stream().map(user -> user.getUserId()).collect(Collectors.toSet());
+                .stream().filter(user -> user.isEnabled()).map(user -> user.getUserId()).collect(Collectors.toSet());
 
         Map<UUID, Friendship> existing = friendshipRepository.findByUser(callerId).stream()
                 .collect(Collectors.toMap(friendship -> friendship.otherThan(callerId), friendship -> friendship));

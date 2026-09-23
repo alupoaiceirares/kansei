@@ -10,6 +10,7 @@ const SUBJECTS = {
   'email-verification': 'Confirm your email',
   'password-reset': 'Reset your password',
   'wirehood-disable-request': 'Wirehood account disable request',
+  'tailwind-disable-request': 'Tailwind account disable request',
 };
 
 const compiled = new Map();

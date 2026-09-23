@@ -43,10 +43,15 @@ public class AircraftResolver {
         this.registryLookup = registryLookup;
     }
 
-    public Resolution resolve(String modelString, String registration) {
+    // The alias table key for a model string, empty when nothing usable is left after normalizing
+    public String aliasKey(String modelString) {
         List<String> manufacturers = aircraftTypeRepository.findDistinctManufacturers().stream()
                 .map(m -> m.toLowerCase(Locale.ROOT)).toList();
-        String key = AircraftModelNormalizer.normalize(AircraftModelNormalizer.stripManufacturer(modelString, manufacturers));
+        return AircraftModelNormalizer.normalize(AircraftModelNormalizer.stripManufacturer(modelString, manufacturers));
+    }
+
+    public Resolution resolve(String modelString, String registration) {
+        String key = aliasKey(modelString);
 
         AircraftType aliasType = key.isEmpty() ? null : aliasRepository.findById(key)
                 .flatMap(alias -> aircraftTypeRepository.findById(alias.getAircraftTypeId())).orElse(null);

@@ -11,7 +11,7 @@ export function legsOf(journey: Journey): UserFlight[] {
 
 export function journeyDistance(journey: Journey): number {
   return legsOf(journey)
-    .filter((leg) => !leg.flight.upcoming)
+    .filter((leg) => !leg.flight.upcoming && !leg.flight.canceled)
     .reduce((sum, leg) => sum + leg.flight.distanceKm, 0);
 }
 

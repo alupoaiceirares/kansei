@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState, type CSSProperties } from 'react';
 import { Navigate } from 'react-router-dom';
 import { COLORS, FONT_STACK } from '../design/tokens';
-import { useHoverStyle } from '../design/useHover';
 import { PageShell } from '../components/PageShell';
 import { Banner } from '../components/Banner';
-import { Spinner } from '../components/Spinner';
 import { AircraftPhoto } from '../components/AircraftPhoto';
 import { ReferencePicker } from '../components/ReferencePicker';
 import { ApiError } from '../api/client';
@@ -19,8 +17,10 @@ import {
 } from '../api/tailwind';
 import type { AircraftTypeOption, AirlineOption, AirportOption, CommonsCandidate, PhotoInfo } from '../api/types';
 import { useSession } from '../session';
+import { CARD, CARD_HEAD, DangerButton, PrimaryButton, Row } from './adminShared';
+import { AircraftStringsSection, ImportSection, UsersSection } from './AdminTools';
 
-type Section = 'Photos' | 'Reference data' | 'Later features';
+type Section = 'Photos' | 'Reference data' | 'Aircraft strings' | 'Import flights' | 'Users';
 type RefKind = 'Airports' | 'Airlines' | 'Aircraft types';
 
 const SECTION: CSSProperties = {
@@ -62,15 +62,6 @@ const CHIP: CSSProperties = {
 
 const CHIP_ON: CSSProperties = { ...CHIP, borderColor: COLORS.cyan, background: COLORS.raised, color: COLORS.text };
 
-const CARD: CSSProperties = {
-  background: COLORS.surfaceOverlay,
-  border: '1px solid ' + COLORS.line,
-  borderRadius: 14,
-  overflow: 'hidden',
-};
-
-const CARD_HEAD: CSSProperties = { padding: '16px 20px', borderBottom: '1px solid ' + COLORS.line, fontSize: 16, fontWeight: 600 };
-
 const REF_GRID: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '92px minmax(0,1.4fr) minmax(0,1fr) auto',
@@ -80,61 +71,6 @@ const REF_GRID: CSSProperties = {
   borderBottom: '1px solid ' + COLORS.lineSoft,
   fontSize: 13.5,
 };
-
-function PrimaryButton({ label, onClick, busy = false }: { label: string; onClick: () => void; busy?: boolean }) {
-  const hover = useHoverStyle(
-    {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 8,
-      height: 34,
-      padding: '0 15px',
-      borderRadius: 8,
-      background: COLORS.orange,
-      border: 'none',
-      color: COLORS.textOnOrange,
-      fontFamily: FONT_STACK,
-      fontSize: 12.5,
-      fontWeight: 700,
-      cursor: 'pointer',
-      whiteSpace: 'nowrap',
-    },
-    { background: COLORS.orangeHover },
-  );
-  return (
-    <button type="button" onClick={onClick} disabled={busy} {...hover}>
-      {busy && <Spinner size={12} color={COLORS.textOnOrange} />}
-      {label}
-    </button>
-  );
-}
-
-function DangerButton({ label, onClick, busy = false }: { label: string; onClick: () => void; busy?: boolean }) {
-  const hover = useHoverStyle(
-    {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 8,
-      height: 34,
-      padding: '0 15px',
-      borderRadius: 8,
-      border: '1px solid ' + COLORS.dangerBorder,
-      background: 'transparent',
-      color: COLORS.dangerText,
-      fontFamily: FONT_STACK,
-      fontSize: 12.5,
-      cursor: 'pointer',
-      whiteSpace: 'nowrap',
-    },
-    { background: COLORS.dangerBg },
-  );
-  return (
-    <button type="button" onClick={onClick} disabled={busy} {...hover}>
-      {busy && <Spinner size={12} color={COLORS.dangerText} />}
-      {label}
-    </button>
-  );
-}
 
 /** Staff only. The role comes from the JWT, so a promotion needs a fresh login to take effect. */
 export function AdminPage() {
@@ -151,7 +87,7 @@ export function AdminPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 640 }}>
           <h1 style={{ margin: 0, fontSize: 32, fontWeight: 600, letterSpacing: '-0.02em' }}>Admin</h1>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: COLORS.textMuted, textWrap: 'pretty' }}>
-            Aircraft photos and the reference data every log is built from. Changes here affect everybody, and each one is
+            Aircraft photos, reference data, aircraft strings, imports and users. Changes here affect everybody, and each one is
             published to the audit trail.
           </p>
         </div>
@@ -168,7 +104,7 @@ export function AdminPage() {
           borderRadius: 11,
         }}
       >
-        {(['Photos', 'Reference data', 'Later features'] as Section[]).map((item) => (
+        {(['Photos', 'Reference data', 'Aircraft strings', 'Import flights', 'Users'] as Section[]).map((item) => (
           <button key={item} type="button" onClick={() => setSection(item)} style={section === item ? SECTION_ON : SECTION}>
             {item}
           </button>
@@ -177,7 +113,9 @@ export function AdminPage() {
 
       {section === 'Photos' && <PhotosSection />}
       {section === 'Reference data' && <ReferenceSection />}
-      {section === 'Later features' && <LaterSection />}
+      {section === 'Aircraft strings' && <AircraftStringsSection />}
+      {section === 'Import flights' && <ImportSection />}
+      {section === 'Users' && <UsersSection />}
     </PageShell>
   );
 }
@@ -501,95 +439,3 @@ function ReferenceSection() {
   );
 }
 
-function LaterSection() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <Banner tone="info" title="Not in the first release" bg={COLORS.laterBg} border={COLORS.laterBorder} dot={COLORS.laterText}>
-        These three are designed so the shape is agreed, but they are scheduled after launch. Nothing below is wired up.
-      </Banner>
-
-      <div style={CARD}>
-        <div style={CARD_HEAD}>Unmapped strings</div>
-        <div style={{ padding: '15px 20px', fontSize: 13, lineHeight: 1.6, color: COLORS.textMuted }}>
-          Airline and aircraft names the provider returned that WTW could not match to known reference data. Mapping one fixes it
-          for every log at once. Today these only appear in the service logs.
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-        <div style={CARD}>
-          <div style={CARD_HEAD}>Import flights from a file</div>
-          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 11,
-                padding: '30px 20px',
-                border: '1px dashed ' + COLORS.lineStrong,
-                borderRadius: 11,
-                textAlign: 'center',
-              }}
-            >
-              <svg viewBox="0 0 40 40" width={34} height={34} fill="none" stroke={COLORS.lineStrong} strokeWidth={2} aria-hidden="true">
-                <path d="M20 27 V9" strokeLinecap="round" />
-                <path d="M13 16 L20 9 L27 16" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 27 v4 a2 2 0 0 0 2 2 h20 a2 2 0 0 0 2 -2 v-4" />
-              </svg>
-              <span style={{ fontSize: 13.5, color: COLORS.bodyOnCard }}>Drop a CSV here</span>
-              <span style={{ fontSize: 12, color: COLORS.textDim, lineHeight: 1.5, maxWidth: 260 }}>
-                Date, from, to are required. Flight number, airline, aircraft, seat and cabin are optional.
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12.5, color: COLORS.textMuted }}>
-              <Row label="On import" value="Rows are previewed before anything is written" width={104} small />
-              <Row label="Duplicates" value="Same number and date is skipped, never doubled" width={104} small />
-              <Row label="Visibility" value="Everything lands as friends-only" width={104} small />
-            </div>
-          </div>
-        </div>
-
-        <div style={CARD}>
-          <div style={CARD_HEAD}>Disable a user</div>
-          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 15 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 500, color: COLORS.bodyOnCard }}>What disabling does</span>
-              {[
-                'Their log stops being reachable, for them and for everyone else.',
-                'Nothing is deleted, the flights and journeys stay exactly as they were.',
-                'Their Kansei account is untouched, only WTW is closed to them.',
-              ].map((line) => (
-                <div key={line} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: COLORS.lineStrong, marginTop: 6, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12.5, lineHeight: 1.55, color: COLORS.textMuted }}>{line}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Row({
-  label,
-  value,
-  tone = 'normal',
-  width = 76,
-  small = false,
-}: {
-  label: string;
-  value: string;
-  tone?: 'normal' | 'bad';
-  width?: number;
-  small?: boolean;
-}) {
-  return (
-    <div style={{ display: 'flex', gap: 10, fontSize: small ? 11.5 : 12.5 }}>
-      <span style={{ color: COLORS.textDim, width, flexShrink: 0 }}>{label}</span>
-      <span style={{ color: tone === 'bad' ? COLORS.dangerText : COLORS.bodyOnCard }}>{value}</span>
-    </div>
-  );
-}

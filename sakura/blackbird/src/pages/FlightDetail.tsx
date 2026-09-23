@@ -265,9 +265,11 @@ export function FlightDetailPage() {
             <span style={{ fontSize: 14, color: COLORS.textDim }}>{formatDate(flight.flightDate)}</span>
           </div>
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-            {flight.upcoming
-              ? flagPill('UPCOMING', '#2E1D0C', '#7A4A16', '#FFB067')
-              : flagPill('LANDED', '#123F2C', '#2C6B4C', '#7FE0AE')}
+            {flight.canceled
+              ? flagPill('CANCELED', COLORS.dangerBg, COLORS.dangerBorder, COLORS.dangerText)
+              : flight.upcoming
+                ? flagPill('UPCOMING', '#2E1D0C', '#7A4A16', '#FFB067')
+                : flagPill('LANDED', '#123F2C', '#2C6B4C', '#7FE0AE')}
             {flight.cargo && flagPill('CARGO', '#3A2A12', '#6B5220', COLORS.warning)}
             {manual && flagPill('ADDED BY HAND', COLORS.raised, COLORS.lineStrong, COLORS.textMuted)}
             {flagPill(userFlight.visibility, ...visibilityColors(userFlight.visibility))}
@@ -280,7 +282,13 @@ export function FlightDetailPage() {
         </div>
       </div>
 
-      {flight.upcoming && (
+      {flight.canceled && (
+        <Banner tone="error" title="The provider reports this flight as canceled">
+          It stays in your log, but it is left out of stats, records, collections and the map. Delete it if you never meant to keep it.
+        </Banner>
+      )}
+
+      {flight.upcoming && !flight.canceled && (
         <Banner tone="warning" title={'Not flown yet — ' + formatDate(flight.flightDate)} bg="#2E1D0C" border="#7A4A16" dot="#FFB067">
           Excluded from stats, records, collections and the map until the departure date passes. The aircraft shown is the
           scheduled one.
