@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { COLORS, FONT_STACK, pill } from '../design/tokens';
+import { COLORS, FONT_STACK, pill, type BannerTone } from '../design/tokens';
 import { useHoverStyle } from '../design/useHover';
 import { PageShell } from '../components/PageShell';
 import { Banner } from '../components/Banner';
@@ -9,7 +9,7 @@ import { Segmented } from '../components/Segmented';
 import { AircraftPhoto } from '../components/AircraftPhoto';
 import { RouteMap, type RouteStop } from '../map/RouteMap';
 import { ApiError } from '../api/client';
-import { deleteUserFlight, fetchJourneys, updateUserFlight } from '../api/tailwind';
+import { deleteUserFlight, fetchJourneys, refreshUserFlight, updateUserFlight } from '../api/tailwind';
 import { fetchDashboardProfile, type DashboardProfile } from '../api/profile';
 import type { CabinClass, Journey, SeatPosition, TripReason, UserFlight, Visibility } from '../api/types';
 import { formatDate, formatDuration, formatKm, formatTime } from '../format';
@@ -87,6 +87,8 @@ export function FlightDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [askDelete, setAskDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshNote, setRefreshNote] = useState<{ tone: BannerTone; title: string; text: string } | null>(null);
 
   const [visibility, setVisibility] = useState<Visibility>('FRIENDS');
   const [seat, setSeat] = useState('');
@@ -186,6 +188,32 @@ export function FlightDetailPage() {
       setError(cause instanceof ApiError ? (cause.detail ?? 'The change could not be saved.') : 'The change could not be saved.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Swaps the one leg in place, so the page keeps showing while the provider answers
+  const refresh = async () => {
+    setRefreshing(true);
+    setRefreshNote(null);
+    try {
+      const updated = await refreshUserFlight(userFlight.id);
+      setJourneys((current) =>
+        current.map((item) => ({ ...item, flights: item.flights.map((leg) => (leg.id === updated.id ? updated : leg)) })),
+      );
+      setRefreshNote(
+        updated.flight.awaitingRefresh
+          ? { tone: 'info', title: 'Schedule updated', text: 'The real times and aircraft follow once the flight has landed.' }
+          : { tone: 'success', title: 'Flight data updated', text: 'Real times and aircraft are in.' },
+      );
+    } catch (cause) {
+      const detail = cause instanceof ApiError ? cause.detail : null;
+      if (cause instanceof ApiError && cause.status === 429) {
+        setRefreshNote({ tone: 'warning', title: 'Too soon, try later', text: detail ?? 'This flight was refreshed recently.' });
+      } else {
+        setRefreshNote({ tone: 'error', title: 'Refresh did not work', text: detail ?? 'The flight data could not be refreshed.' });
+      }
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -340,6 +368,7 @@ export function FlightDetailPage() {
                     {flight.aircraft.family ?? 'Unknown'}
                   </Link>
                   <span style={{ fontSize: 14.5, color: COLORS.textMuted }}>{flight.aircraft.typeName ?? 'Variant unknown'}</span>
+                  {flight.awaitingRefresh && flagPill('SCHEDULED, MAY CHANGE', '#2E1D0C', '#7A4A16', '#FFB067')}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7, fontSize: 13.5 }}>
                   <DetailRow label="Registration" value={flight.aircraft.registration ?? 'Not recorded'} />
@@ -516,10 +545,18 @@ export function FlightDetailPage() {
               <div style={{ fontSize: 12.5, lineHeight: 1.6, color: COLORS.textMuted, paddingTop: 4 }}>
                 {manual
                   ? 'Nothing was fetched from a provider. Distance is calculated from the two airports, so it still counts.'
-                  : flight.upcoming
-                    ? 'Scheduled data only. It will be refreshed once the flight has operated.'
-                    : 'Times and aircraft came from the flight data provider and are kept as they were on the day.'}
+                  : flight.awaitingRefresh && flight.upcoming
+                    ? 'Scheduled data only. It is refreshed automatically the day after the flight, or pull the latest schedule now.'
+                    : flight.awaitingRefresh
+                      ? 'Still on schedule data. The daily refresh fills in the real times and aircraft, or pull them now.'
+                      : 'Times and aircraft came from the flight data provider and are kept as they were on the day.'}
               </div>
+              {!manual && flight.awaitingRefresh && <RefreshButton refreshing={refreshing} onClick={refresh} />}
+              {refreshNote && (
+                <Banner tone={refreshNote.tone} title={refreshNote.title}>
+                  {refreshNote.text}
+                </Banner>
+              )}
             </div>
           </div>
         </div>
@@ -681,6 +718,35 @@ function DeleteButton({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} {...hover}>
       Delete
+    </button>
+  );
+}
+
+function RefreshButton({ refreshing, onClick }: { refreshing: boolean; onClick: () => void }) {
+  const hover = useHoverStyle(
+    {
+      display: 'inline-flex',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 9,
+      height: 36,
+      padding: '0 16px',
+      borderRadius: 8,
+      border: '1px solid ' + COLORS.cyan,
+      background: 'transparent',
+      color: COLORS.cyan,
+      fontFamily: FONT_STACK,
+      fontSize: 13,
+      fontWeight: 600,
+      cursor: refreshing ? 'default' : 'pointer',
+      whiteSpace: 'nowrap',
+    },
+    { background: COLORS.raised },
+  );
+  return (
+    <button type="button" onClick={onClick} disabled={refreshing} {...hover}>
+      {refreshing && <Spinner size={13} color={COLORS.cyan} />}
+      {refreshing ? 'Refreshing' : 'Refresh flight data'}
     </button>
   );
 }

@@ -28,6 +28,10 @@ public interface FlightRepository extends JpaRepository<Flight, Long> {
     @Query(DETAILS + " where f.id = :id")
     Optional<Flight> findDetailedById(@Param("id") Long id);
 
+    @Query(DETAILS + " where f.awaitingRefresh = true and f.source = org.kansei.tailwind.model.FlightSource.API"
+            + " and f.flightDate between :from and :to order by f.flightDate, f.flightNumber, f.id")
+    List<Flight> findAwaitingRefresh(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
     boolean existsByFlightNumberAndFlightDateAndDepartureAirportIdAndSource(String number, LocalDate date, Long departureAirportId, FlightSource source);
 
     @Modifying

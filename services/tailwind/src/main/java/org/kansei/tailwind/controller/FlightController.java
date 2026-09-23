@@ -7,6 +7,7 @@ import org.kansei.tailwind.dto.ManualFlightRequest;
 import org.kansei.tailwind.dto.UpdateUserFlightRequest;
 import org.kansei.tailwind.dto.UserFlightResponse;
 import org.kansei.tailwind.service.FlightLookupService;
+import org.kansei.tailwind.service.FlightRefreshService;
 import org.kansei.tailwind.service.JourneyService;
 import org.kansei.tailwind.service.UserFlightService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -37,12 +38,14 @@ public class FlightController {
     private final FlightLookupService flightLookupService;
     private final UserFlightService userFlightService;
     private final JourneyService journeyService;
+    private final FlightRefreshService flightRefreshService;
 
     public FlightController(FlightLookupService flightLookupService, UserFlightService userFlightService,
-                            JourneyService journeyService) {
+                            JourneyService journeyService, FlightRefreshService flightRefreshService) {
         this.flightLookupService = flightLookupService;
         this.userFlightService = userFlightService;
         this.journeyService = journeyService;
+        this.flightRefreshService = flightRefreshService;
     }
 
     // Shows the details for the confirm screen, nothing is added to the user's log yet
@@ -87,6 +90,12 @@ public class FlightController {
             @Valid @RequestBody UpdateUserFlightRequest request
     ) {
         return userFlightService.update(userId, userFlightId, request);
+    }
+
+    // Pulls the latest provider data for a flight still on schedule data, rate-limited and cooled down per flight
+    @PostMapping("/{userFlightId}/refresh")
+    public UserFlightResponse refresh(@RequestHeader("X-User-Id") UUID userId, @PathVariable Long userFlightId) {
+        return flightRefreshService.refresh(userId, userFlightId);
     }
 
     @DeleteMapping("/{userFlightId}")

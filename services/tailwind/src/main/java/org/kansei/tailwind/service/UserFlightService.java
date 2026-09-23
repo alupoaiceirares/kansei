@@ -164,6 +164,13 @@ public class UserFlightService {
         return respond(userFlight);
     }
 
+    @Transactional(readOnly = true)
+    public UserFlightResponse get(UUID userId, Long userFlightId) {
+        UserFlight userFlight = userFlightRepository.findDetailedByIdAndUserId(userFlightId, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found in your log"));
+        return respond(userFlight);
+    }
+
     public void delete(UUID userId, Long userFlightId) {
         UserFlight userFlight = userFlightRepository.findDetailedByIdAndUserId(userFlightId, userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Flight not found in your log"));

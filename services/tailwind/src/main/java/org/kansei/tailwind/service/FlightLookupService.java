@@ -163,7 +163,7 @@ public class FlightLookupService {
         AircraftResolver.Resolution resolution = aircraftResolver.resolve(aircraft == null ? null : aircraft.model(),
                 aircraft == null ? null : aircraft.registration());
 
-        Flight flight = flightRepository.saveAndFlush(Flight.builder()
+        Flight flight = Flight.builder()
                 .source(FlightSource.API)
                 .flightNumber(flightNumber)
                 .flightDate(flightDate)
@@ -187,8 +187,10 @@ public class FlightLookupService {
                 .apiPayload(external.rawJson())
                 .apiLastUpdatedUtc(external.lastUpdated())
                 .createdAt(clock.instant())
-                .build());
-        return flight;
+                .build();
+        // Anything not landed yet is schedule data, the refresh after landing replaces it
+        flight.setAwaitingRefresh(flight.isUpcoming(clock.instant()));
+        return flightRepository.saveAndFlush(flight);
     }
 
     // Uses our own airport when we have it (fills a missing time zone), otherwise stores what the provider sent

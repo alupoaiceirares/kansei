@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * The quota guard, the per-user rate limit and the miss cache against a real Redis.
+ * The quota guard, the per-user rate limit, the miss cache and the refresh cooldown against a real Redis.
  */
 @Testcontainers
 class LookupGuardsRedisTest {
@@ -115,5 +115,19 @@ class LookupGuardsRedisTest {
         assertThat(cache.isKnownMiss("LH400", day)).isTrue();
         assertThat(cache.isKnownMiss("LH400", day.plusDays(1))).isFalse();
         assertThat(cache.isKnownMiss("LH401", day)).isFalse();
+    }
+
+    @Test
+    void refreshCooldownAllowsOneRefreshPerFlightAndCanBeHandedBack() {
+        RefreshCooldown cooldown = new RefreshCooldown(template, 60);
+        cooldown.start(7L);
+
+        assertThatThrownBy(() -> cooldown.start(7L)).isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(statusOf(ex)).isEqualTo(HttpStatus.TOO_MANY_REQUESTS))
+                .hasMessageContaining("try again in 60 minutes");
+        cooldown.start(8L);
+
+        cooldown.cancel(7L);
+        cooldown.start(7L);
     }
 }

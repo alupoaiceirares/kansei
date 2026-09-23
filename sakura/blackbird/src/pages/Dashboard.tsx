@@ -564,6 +564,13 @@ export function DashboardPage() {
                   </svg>
                   <span style={{ fontSize: 24, fontWeight: 700 }}>{nextUp.flight.arrivalAirport.iata ?? nextUp.flight.arrivalAirport.icao}</span>
                 </div>
+                <div style={{ fontSize: 12.5, color: COLORS.textMuted }}>
+                  Aircraft{' '}
+                  <span style={{ color: COLORS.text }}>
+                    {nextUp.flight.aircraft.typeName ?? nextUp.flight.aircraft.family ?? 'not announced yet'}
+                  </span>
+                  {nextUp.flight.awaitingRefresh && ' · scheduled, may change'}
+                </div>
                 <div style={{ fontSize: 12.5, lineHeight: 1.55, color: COLORS.textMuted }}>
                   Not counted in stats, records or the map until it has happened.
                 </div>

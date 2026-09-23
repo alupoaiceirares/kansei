@@ -140,6 +140,10 @@ class FlightFlowIntegrationTest {
     private AuditPublisher auditPublisher;
     @MockitoBean
     private ShieldwallUserClient shieldwallUserClient;
+    @MockitoBean
+    private RefreshCooldown refreshCooldown;
+    @Autowired
+    private FlightRefreshService flightRefreshService;
 
     private static final LocalDate PAST_DAY = LocalDate.of(2026, 9, 12);
 
@@ -569,5 +573,116 @@ class FlightFlowIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM flights WHERE source = 'MANUAL'", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM flights WHERE source = 'API'", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM user_flights WHERE user_id = ?", Integer.class, bystander)).isEqualTo(1);
+    }
+
+    // ---- upcoming flights and refresh
+
+    private static final LocalDate YESTERDAY = LocalDate.of(2026, 9, 19);
+    private static final LocalDate FUTURE_DAY = LocalDate.of(2026, 11, 19);
+
+    // LH400 as it flew yesterday, then knocked back to schedule data as if it had been looked up before departure
+    private long yesterdaysFlightOnScheduleData() throws Exception {
+        when(flightDataClient.fetchByNumber("LH400", YESTERDAY)).thenReturn(external(fixture("lh400-past.json").replace("2026-09-12", "2026-09-19")));
+        String body = lookup(user, "LH400", YESTERDAY).andExpect(status().isOk())
+                .andExpect(jsonPath("$.flights[0].flight.awaitingRefresh").value(false))
+                .andReturn().getResponse().getContentAsString();
+        long flightId = ((Number) JsonPath.read(body, "$.flights[0].flight.id")).longValue();
+        jdbc.update("UPDATE flights SET awaiting_refresh = TRUE, status = 'Expected', registration = NULL, departure_actual_utc = NULL,"
+                + " arrival_actual_utc = NULL, aircraft_type_id = NULL, aircraft_family = NULL WHERE id = ?", flightId);
+        return flightId;
+    }
+
+    private long futureUserFlightId() throws Exception {
+        when(flightDataClient.fetchByNumber("LH400", FUTURE_DAY)).thenReturn(external(fixture("lh400-future.json")));
+        String body = lookup(user, "LH400", FUTURE_DAY).andExpect(status().isOk())
+                .andExpect(jsonPath("$.flights[0].flight.awaitingRefresh").value(true))
+                .andReturn().getResponse().getContentAsString();
+        long flightId = ((Number) JsonPath.read(body, "$.flights[0].flight.id")).longValue();
+        return add(user, "{\"flightId\":" + flightId + "}", HttpStatus.CREATED).number("$.id");
+    }
+
+    private ResultActions refresh(UUID who, long userFlightId) throws Exception {
+        return mockMvc.perform(as(who, post("/tailwind/flights/" + userFlightId + "/refresh")));
+    }
+
+    @Test
+    void theDailyRefreshFillsInLandedFlightsAndLeavesUpcomingOnesAlone() throws Exception {
+        long landed = yesterdaysFlightOnScheduleData();
+        futureUserFlightId();
+
+        assertThat(flightRefreshService.refreshLanded()).isEqualTo(1);
+
+        assertThat(jdbc.queryForMap("SELECT awaiting_refresh, status, registration, aircraft_family FROM flights WHERE id = ?", landed))
+                .containsEntry("awaiting_refresh", false)
+                .containsEntry("status", "Arrived")
+                .containsEntry("registration", "D-AIHX")
+                .containsEntry("aircraft_family", "A340");
+        assertThat(jdbc.queryForObject("SELECT arrival_actual_utc IS NOT NULL FROM flights WHERE id = ?", Boolean.class, landed)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT awaiting_refresh FROM flights WHERE flight_date = ?", Boolean.class, FUTURE_DAY)).isTrue();
+        verify(flightDataClient, times(2)).fetchByNumber(eq("LH400"), eq(YESTERDAY));
+        verify(flightDataClient, times(1)).fetchByNumber(eq("LH400"), eq(FUTURE_DAY));
+        // Only the two lookups count toward the user, the job does not
+        verify(rateLimiter, times(2)).checkAndCount(any());
+
+        // Nothing left to do on the next run
+        assertThat(flightRefreshService.refreshLanded()).isZero();
+        verify(flightDataClient, times(2)).fetchByNumber(eq("LH400"), eq(YESTERDAY));
+    }
+
+    @Test
+    void theDailyRefreshStopsWhenTheBudgetRefusesAndLeavesTheFlightForNextTime() throws Exception {
+        long landed = yesterdaysFlightOnScheduleData();
+        doThrow(new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "budget")).when(quotaGuard).reserveLookup();
+
+        assertThat(flightRefreshService.refreshLanded()).isZero();
+
+        assertThat(jdbc.queryForObject("SELECT awaiting_refresh FROM flights WHERE id = ?", Boolean.class, landed)).isTrue();
+        verify(flightDataClient, times(1)).fetchByNumber(eq("LH400"), eq(YESTERDAY));
+    }
+
+    @Test
+    void theRefreshButtonUpdatesAnUpcomingFlightThroughEveryGuard() throws Exception {
+        long userFlightId = futureUserFlightId();
+
+        refresh(user, userFlightId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userFlightId))
+                .andExpect(jsonPath("$.flight.upcoming").value(true))
+                .andExpect(jsonPath("$.flight.awaitingRefresh").value(true));
+
+        verify(refreshCooldown).start(any());
+        verify(rateLimiter, times(2)).checkAndCount(user);
+        verify(quotaGuard, times(2)).reserveLookup();
+        verify(flightDataClient, times(2)).fetchByNumber(eq("LH400"), eq(FUTURE_DAY));
+    }
+
+    @Test
+    void theRefreshButtonAnswersTooSoonAndHandsTheCooldownBackWhenALaterGuardRefuses() throws Exception {
+        long userFlightId = futureUserFlightId();
+
+        doThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "soon")).when(refreshCooldown).start(any());
+        refresh(user, userFlightId).andExpect(status().isTooManyRequests());
+        verify(rateLimiter, times(1)).checkAndCount(user);
+
+        org.mockito.Mockito.reset(refreshCooldown);
+        doThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "limit")).when(rateLimiter).checkAndCount(user);
+        refresh(user, userFlightId).andExpect(status().isTooManyRequests());
+        verify(refreshCooldown).cancel(any());
+
+        verify(flightDataClient, times(1)).fetchByNumber(eq("LH400"), eq(FUTURE_DAY));
+    }
+
+    @Test
+    void theRefreshButtonRefusesFinalManualAndSomeoneElsesFlights() throws Exception {
+        long finalFlight = add(user, "{\"flightId\":" + lookedUpFlightId() + "}", HttpStatus.CREATED).number("$.id");
+        refresh(user, finalFlight).andExpect(status().isConflict());
+
+        long manual = new JsonPathReader(mockMvc.perform(json(as(user, post("/tailwind/flights/manual")), manualJfkToOtp(null)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).number("$.id");
+        refresh(user, manual).andExpect(status().isBadRequest());
+
+        refresh(optedIn(), futureUserFlightId()).andExpect(status().isNotFound());
+
+        verify(refreshCooldown, never()).start(any());
     }
 }

@@ -21,6 +21,7 @@ public record FlightResponse(
         String status,
         boolean cargo,
         boolean upcoming,
+        boolean awaitingRefresh,
         double distanceKm,
         AirlineRef airline,
         AirportRef departureAirport,
@@ -56,9 +57,8 @@ public record FlightResponse(
 
     public static FlightResponse of(Flight f, Instant now) {
         AircraftType type = f.getAircraftType();
-        Instant arrival = f.bestArrival();
-        boolean upcoming = arrival != null ? arrival.isAfter(now) : f.getFlightDate().isAfter(LocalDate.ofInstant(now, java.time.ZoneOffset.UTC));
-        return new FlightResponse(f.getId(), f.getFlightNumber(), f.getFlightDate(), f.getSource(), f.getStatus(), f.isCargo(), upcoming,
+        return new FlightResponse(f.getId(), f.getFlightNumber(), f.getFlightDate(), f.getSource(), f.getStatus(), f.isCargo(), f.isUpcoming(now),
+                f.isAwaitingRefresh(),
                 f.getDistanceKm(), AirlineRef.of(f.getAirline()), AirportRef.of(f.getDepartureAirport()), AirportRef.of(f.getArrivalAirport()),
                 f.getDepartureScheduledUtc(), f.getDepartureRevisedUtc(), f.getDepartureActualUtc(),
                 f.getArrivalScheduledUtc(), f.getArrivalRevisedUtc(), f.getArrivalActualUtc(),
