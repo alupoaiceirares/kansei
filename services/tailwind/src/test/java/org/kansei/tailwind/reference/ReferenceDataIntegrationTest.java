@@ -101,6 +101,13 @@ class ReferenceDataIntegrationTest {
     }
 
     @Test
+    void aCodeSharedWithACargoArmListsThePassengerAirlineFirst() {
+        // LH is both Lufthansa and Lufthansa Cargo, manual entry pre-fills the first match
+        assertThat(airlineRepository.findByCode("LH")).first().satisfies(airline -> assertThat(airline.getName()).isEqualTo("Lufthansa"));
+        assertThat(airlineRepository.findByCode("LH")).anySatisfy(airline -> assertThat(airline.looksLikeCargoCarrier()).isTrue());
+    }
+
+    @Test
     void importIsSkippedForTablesThatAlreadyHaveRows() throws Exception {
         long airports = airportRepository.count();
 

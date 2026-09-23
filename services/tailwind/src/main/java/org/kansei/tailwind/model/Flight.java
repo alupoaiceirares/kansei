@@ -127,6 +127,11 @@ public class Flight {
         return arrivalActualUtc != null ? arrivalActualUtc : arrivalRevisedUtc != null ? arrivalRevisedUtc : arrivalScheduledUtc;
     }
 
+    // Nobody flew a canceled flight, so it never counts. CanceledUncertain still does until a refresh settles it
+    public boolean isCanceled() {
+        return "Canceled".equalsIgnoreCase(status);
+    }
+
     // Not landed yet by the best known arrival, without one the flight counts from the day after its date
     public boolean isUpcoming(Instant now) {
         Instant arrival = bestArrival();

@@ -40,11 +40,14 @@ class TailwindUserServiceTest {
     @Mock
     private UserDataCleaner userDataCleaner;
 
+    @Mock
+    private MailEventPublisher mailEventPublisher;
+
     private TailwindUserService service;
 
     @BeforeEach
     void setUp() {
-        service = new TailwindUserService(tailwindUserRepository, shieldwallUserClient, userDataCleaner);
+        service = new TailwindUserService(tailwindUserRepository, shieldwallUserClient, userDataCleaner, mailEventPublisher);
     }
 
     private static List<UUID> ids(int count) {
@@ -132,5 +135,25 @@ class TailwindUserServiceTest {
 
         assertThat(deleted).isEqualTo(1);
         verify(userDataCleaner).deleteAllFor(all);
+    }
+
+    @Test
+    void aDisableRequestMailsTheAdminInboxWithTheUsername() {
+        UUID user = UUID.randomUUID();
+        when(tailwindUserRepository.existsById(user)).thenReturn(true);
+        when(shieldwallUserClient.resolveUsernames(List.of(user))).thenReturn(Map.of(user, "alexm"));
+
+        service.requestDisable(user);
+
+        verify(mailEventPublisher).publishDisableRequest(user, "alexm");
+    }
+
+    @Test
+    void aDisableRequestNeedsAnOptedInUser() {
+        UUID user = UUID.randomUUID();
+        when(tailwindUserRepository.existsById(user)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.requestDisable(user)).isInstanceOf(ResponseStatusException.class);
+        verify(mailEventPublisher, never()).publishDisableRequest(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 }

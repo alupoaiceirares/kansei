@@ -41,6 +41,10 @@ public class TailwindUser {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    // Set by an admin disable, cleared on reinstatement
+    @Column(name = "disabled_at")
+    private Instant disabledAt;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "default_visibility", nullable = false)

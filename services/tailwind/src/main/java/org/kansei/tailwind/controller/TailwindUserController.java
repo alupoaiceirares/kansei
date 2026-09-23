@@ -71,6 +71,13 @@ public class TailwindUserController {
         tailwindUserService.deleteOwnLog(userId);
     }
 
+    // Emails an admin inbox asking for the account to be disabled
+    @PostMapping("/me/disable-request")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void requestDisable(@RequestHeader("X-User-Id") UUID userId) {
+        tailwindUserService.requestDisable(userId);
+    }
+
     // Display choices, so the map looks the same on another device
     @GetMapping("/me/preferences")
     public UiPreferencesResponse preferences(@RequestHeader("X-User-Id") UUID userId) {

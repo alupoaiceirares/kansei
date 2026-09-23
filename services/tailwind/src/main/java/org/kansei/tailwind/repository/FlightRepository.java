@@ -1,5 +1,7 @@
 package org.kansei.tailwind.repository;
 
+import org.kansei.tailwind.dto.UnmappedAircraftString;
+import org.kansei.tailwind.model.AircraftType;
 import org.kansei.tailwind.model.Flight;
 import org.kansei.tailwind.model.FlightSource;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,6 +33,16 @@ public interface FlightRepository extends JpaRepository<Flight, Long> {
     @Query(DETAILS + " where f.awaitingRefresh = true and f.source = org.kansei.tailwind.model.FlightSource.API"
             + " and f.flightDate between :from and :to order by f.flightDate, f.flightNumber, f.id")
     List<Flight> findAwaitingRefresh(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("select new org.kansei.tailwind.dto.UnmappedAircraftString(f.aircraftModelRaw, max(f.aircraftFamily), count(f), max(f.flightDate))"
+            + " from Flight f where f.aircraftType is null and f.aircraftModelRaw is not null"
+            + " group by f.aircraftModelRaw order by count(f) desc, f.aircraftModelRaw")
+    List<UnmappedAircraftString> findUnmappedModelStrings();
+
+    @Modifying
+    @Query("update Flight f set f.aircraftType = :type, f.aircraftFamily = :family"
+            + " where f.aircraftType is null and f.aircraftModelRaw in :modelStrings")
+    int assignAircraftType(@Param("modelStrings") Collection<String> modelStrings, @Param("type") AircraftType type, @Param("family") String family);
 
     boolean existsByFlightNumberAndFlightDateAndDepartureAirportIdAndSource(String number, LocalDate date, Long departureAirportId, FlightSource source);
 

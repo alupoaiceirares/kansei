@@ -35,6 +35,17 @@ test('render(wirehood-disable-request) returns the right subject and interpolate
   assert.match(html, /11111111-1111-1111-1111-111111111111/);
 });
 
+
+test('render(tailwind-disable-request) returns the right subject and interpolates vars', () => {
+  const { subject, html } = render('tailwind-disable-request', {
+    username: 'rares',
+    userId: '22222222-2222-2222-2222-222222222222',
+  });
+
+  assert.equal(subject, 'Tailwind account disable request');
+  assert.match(html, /rares/);
+  assert.match(html, /22222222-2222-2222-2222-222222222222/);
+});
 test('render(unknown template) throws', () => {
   assert.throws(() => render('not-a-real-template', {}), /Unknown mail template/);
 });

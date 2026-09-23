@@ -1,4 +1,4 @@
-import { cargoBox, upcomingPill, VISIBILITY_PILL } from '../design/tokens';
+import { canceledPill, cargoBox, upcomingPill, VISIBILITY_PILL } from '../design/tokens';
 import type { UserFlight, Visibility } from '../api/types';
 
 export function VisibilityPill({ visibility }: { visibility: Visibility }) {
@@ -17,12 +17,16 @@ export function UpcomingPill() {
   return <span style={upcomingPill}>UPCOMING</span>;
 }
 
-/** The marker set a flight row carries: cargo, upcoming, then its visibility. */
+export function CanceledPill() {
+  return <span style={canceledPill}>CANCELED</span>;
+}
+
+/** The marker set a flight row carries: cargo, upcoming or canceled, then its visibility. */
 export function FlightFlags({ userFlight }: { userFlight: UserFlight }) {
   return (
     <>
       {userFlight.flight.cargo && <CargoMark />}
-      {userFlight.flight.upcoming && <UpcomingPill />}
+      {userFlight.flight.canceled ? <CanceledPill /> : userFlight.flight.upcoming && <UpcomingPill />}
       <VisibilityPill visibility={userFlight.visibility} />
     </>
   );

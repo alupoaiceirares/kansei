@@ -22,6 +22,7 @@ public record FlightResponse(
         boolean cargo,
         boolean upcoming,
         boolean awaitingRefresh,
+        boolean canceled,
         double distanceKm,
         AirlineRef airline,
         AirportRef departureAirport,
@@ -58,7 +59,7 @@ public record FlightResponse(
     public static FlightResponse of(Flight f, Instant now) {
         AircraftType type = f.getAircraftType();
         return new FlightResponse(f.getId(), f.getFlightNumber(), f.getFlightDate(), f.getSource(), f.getStatus(), f.isCargo(), f.isUpcoming(now),
-                f.isAwaitingRefresh(),
+                f.isAwaitingRefresh(), f.isCanceled(),
                 f.getDistanceKm(), AirlineRef.of(f.getAirline()), AirportRef.of(f.getDepartureAirport()), AirportRef.of(f.getArrivalAirport()),
                 f.getDepartureScheduledUtc(), f.getDepartureRevisedUtc(), f.getDepartureActualUtc(),
                 f.getArrivalScheduledUtc(), f.getArrivalRevisedUtc(), f.getArrivalActualUtc(),

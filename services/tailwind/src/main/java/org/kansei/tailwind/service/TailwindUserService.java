@@ -29,11 +29,14 @@ public class TailwindUserService {
     private final TailwindUserRepository tailwindUserRepository;
     private final UserDataCleaner userDataCleaner;
     private final ShieldwallUserClient shieldwallUserClient;
+    private final MailEventPublisher mailEventPublisher;
 
-    public TailwindUserService(TailwindUserRepository tailwindUserRepository, ShieldwallUserClient shieldwallUserClient, UserDataCleaner userDataCleaner) {
+    public TailwindUserService(TailwindUserRepository tailwindUserRepository, ShieldwallUserClient shieldwallUserClient, UserDataCleaner userDataCleaner,
+                               MailEventPublisher mailEventPublisher) {
         this.tailwindUserRepository = tailwindUserRepository;
         this.userDataCleaner = userDataCleaner;
         this.shieldwallUserClient = shieldwallUserClient;
+        this.mailEventPublisher = mailEventPublisher;
     }
 
     public TailwindUserResponse me(UUID userId, String role) {
@@ -66,6 +69,15 @@ public class TailwindUserService {
         }
         userDataCleaner.deleteAllFor(List.of(userId));
         log.info("user {} deleted their own tailwind log", userId);
+    }
+
+    // Asks an admin to disable the account, emailed through courier-one. Deleting the own log is the instant alternative
+    public void requestDisable(UUID userId) {
+        if (!tailwindUserRepository.existsById(userId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Not opted into tailwind");
+        }
+        String username = shieldwallUserClient.resolveUsernames(List.of(userId)).getOrDefault(userId, "Unknown user");
+        mailEventPublisher.publishDisableRequest(userId, username);
     }
 
     /**

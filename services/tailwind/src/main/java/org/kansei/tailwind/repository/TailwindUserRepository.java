@@ -11,4 +11,6 @@ public interface TailwindUserRepository extends JpaRepository<TailwindUser, UUID
 
     @Query("select u.userId from TailwindUser u")
     List<UUID> findAllUserIds();
+
+    List<TailwindUser> findByEnabledFalseOrderByDisabledAtDesc();
 }

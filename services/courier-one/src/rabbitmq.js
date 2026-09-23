@@ -3,7 +3,7 @@ import { info, error } from './logger.js';
 
 const MAIL_EXCHANGE = 'mail.events';
 const QUEUE_NAME = 'courier-one.queue';
-const ROUTING_KEYS = ['email.verification', 'email.password-reset', 'wirehood.disable-request'];
+const ROUTING_KEYS = ['email.verification', 'email.password-reset', 'wirehood.disable-request', 'tailwind.disable-request'];
 
 // Retry hop: a failed message parks here for RETRY_DELAY_MS, then TTL expiry dead-letters it back into MAIL_EXCHANGE (same routing key, so it lands on courier-one.queue again) for another attempt
 const RETRY_EXCHANGE = 'mail.events.retry.dlx';

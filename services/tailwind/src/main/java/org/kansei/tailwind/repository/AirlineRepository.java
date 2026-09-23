@@ -21,11 +21,11 @@ public interface AirlineRepository extends JpaRepository<Airline, Long> {
             """)
     List<Airline> search(@Param("code") String code, @Param("contains") String contains, Pageable pageable);
 
-    // Every airline whose IATA or ICAO code is exactly this, active carriers first
+    // Every airline whose IATA or ICAO code is exactly this, active passenger carriers first (LH is also Lufthansa Cargo)
     @Query("""
             select a from Airline a
             where upper(a.iata) = :code or upper(a.icao) = :code
-            order by a.active desc, a.name
+            order by a.active desc, case when lower(a.name) like '%cargo%' then 1 else 0 end, a.name
             """)
     List<Airline> findByCode(@Param("code") String code);
 

@@ -78,6 +78,7 @@ class VisibilityLeakIntegrationTest {
         registry.add("STORAGE_ROOT", () -> "target/test-storage");
         registry.add("AERODATABOX_API_KEY", () -> "test");
         registry.add("AERODATABOX_MONTHLY_UNIT_CAP", () -> "400");
+        registry.add("TAILWIND_ADMIN_EMAIL", () -> "admin@example.test");
     }
 
     private static final String GRAPHQL = "/tailwind/graphql";

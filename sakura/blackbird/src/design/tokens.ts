@@ -197,6 +197,7 @@ export const VISIBILITY_PILL = {
 } as const satisfies Record<string, CSSProperties>;
 
 export const upcomingPill: CSSProperties = { ...pill, background: '#2E1D0C', borderColor: '#7A4A16', color: '#FFB067' };
+export const canceledPill: CSSProperties = { ...pill, background: COLORS.dangerBg, borderColor: COLORS.dangerBorder, color: COLORS.dangerText };
 
 export const laterPill: CSSProperties = {
   ...pill,

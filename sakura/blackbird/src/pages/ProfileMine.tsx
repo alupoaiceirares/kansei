@@ -7,7 +7,7 @@ import { Banner } from '../components/Banner';
 import { Spinner } from '../components/Spinner';
 import { Segmented } from '../components/Segmented';
 import { ApiError } from '../api/client';
-import { deleteOwnLog, fetchFriendRequests, fetchFriends, fetchJourneys, updateDefaultVisibility } from '../api/tailwind';
+import { deleteOwnLog, fetchFriendRequests, fetchFriends, fetchJourneys, requestDisable, updateDefaultVisibility } from '../api/tailwind';
 import { fetchDashboardProfile, type DashboardProfile } from '../api/profile';
 import type { Journey, UserFlight, Visibility } from '../api/types';
 import { aircraftLabel, routeOf } from '../components/FlightFlags';
@@ -196,6 +196,7 @@ export function ProfileMinePage() {
   const [exported, setExported] = useState<string | null>(null);
   const [askDelete, setAskDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [closeRequest, setCloseRequest] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -298,6 +299,17 @@ export function ProfileMinePage() {
     );
     download('wtw-my-log.csv', 'text/csv', [head, ...rows].join('\n'));
     setExported('Downloaded wtw-my-log.csv');
+  };
+
+  // Keeps the data, an admin closes WTW to the account by hand
+  const askToClose = async () => {
+    setCloseRequest('sending');
+    try {
+      await requestDisable();
+      setCloseRequest('sent');
+    } catch {
+      setCloseRequest('failed');
+    }
   };
 
   const removeLog = async () => {
@@ -550,6 +562,24 @@ export function ProfileMinePage() {
                 you could opt in again from scratch.
               </div>
               <DeleteButton onClick={() => setAskDelete(true)} />
+              <div style={{ fontSize: 12.5, lineHeight: 1.6, color: COLORS.textMuted, paddingTop: 11, borderTop: '1px solid ' + COLORS.lineSoft }}>
+                {closeRequest === 'sent' ? (
+                  'Request sent. An admin will close WTW to your account, your log stays as it is.'
+                ) : (
+                  <>
+                    Rather keep the log and just leave?{' '}
+                    <button
+                      type="button"
+                      onClick={askToClose}
+                      disabled={closeRequest === 'sending'}
+                      style={{ background: 'none', border: 'none', padding: 0, fontFamily: FONT_STACK, fontSize: 12.5, color: COLORS.cyan, cursor: 'pointer' }}
+                    >
+                      {closeRequest === 'sending' ? 'Sending' : 'Ask an admin to close my account'}
+                    </button>
+                    {closeRequest === 'failed' && <span style={{ color: COLORS.dangerText }}> The request did not go through, try again.</span>}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

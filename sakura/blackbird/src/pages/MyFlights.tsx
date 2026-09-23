@@ -144,7 +144,7 @@ export function MyFlightsPage() {
     return list;
   }, [flights, filter, query]);
 
-  const totalKm = flights.filter((item) => !item.flight.upcoming).reduce((sum, item) => sum + item.flight.distanceKm, 0);
+  const totalKm = flights.filter((item) => !item.flight.upcoming && !item.flight.canceled).reduce((sum, item) => sum + item.flight.distanceKm, 0);
   const upcomingCount = flights.filter((item) => item.flight.upcoming).length;
 
   if (loading) {

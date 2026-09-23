@@ -1,7 +1,9 @@
 package org.kansei.tailwind.service;
 
+import org.kansei.tailwind.model.TailwindUser;
 import org.kansei.tailwind.model.Visibility;
 import org.kansei.tailwind.repository.FriendshipRepository;
+import org.kansei.tailwind.repository.TailwindUserRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -19,14 +21,20 @@ public class ViewerAccess {
     private static final Set<Visibility> STRANGER = Set.of(Visibility.PUBLIC);
 
     private final FriendshipRepository friendshipRepository;
+    private final TailwindUserRepository tailwindUserRepository;
 
-    public ViewerAccess(FriendshipRepository friendshipRepository) {
+    public ViewerAccess(FriendshipRepository friendshipRepository, TailwindUserRepository tailwindUserRepository) {
         this.friendshipRepository = friendshipRepository;
+        this.tailwindUserRepository = tailwindUserRepository;
     }
 
     public Set<Visibility> visibleTo(UUID viewerId, UUID ownerId) {
         if (viewerId.equals(ownerId)) {
             return OWN;
+        }
+        // A disabled user's log is closed to everyone, nothing is deleted
+        if (!tailwindUserRepository.findById(ownerId).map(TailwindUser::isEnabled).orElse(true)) {
+            return Set.of();
         }
         return friendshipRepository.areFriends(viewerId, ownerId) ? FRIEND : STRANGER;
     }
